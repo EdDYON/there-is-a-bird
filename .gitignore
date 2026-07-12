@@ -1,0 +1,39 @@
+# eclipse
+bin
+*.launch
+.settings
+.metadata
+.classpath
+.project
+
+# idea
+out
+*.ipr
+*.iws
+*.iml
+.idea
+.vscode
+
+# gradle
+build
+.gradle
+
+# other
+eclipse
+run
+logs
+crash-reports
+*.log
+*.hprof
+*.heapdump
+
+# local restore/decompile/tooling scratch
+.backup*
+.codex_restore_from_jar
+.restore_from_eqqq
+.restore_tools
+.tmp_*
+.tools
+
+# Files from Forge MDK
+forge*changelog.txt

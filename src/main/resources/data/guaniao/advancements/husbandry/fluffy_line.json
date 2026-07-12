@@ -1,0 +1,28 @@
+{
+  "parent": "minecraft:husbandry/root",
+  "display": {
+    "icon": {
+      "item": "guaniao:long_tailed_tit_spawn_egg"
+    },
+    "title": {
+      "translate": "advancements.guaniao.husbandry.fluffy_line.title"
+    },
+    "description": {
+      "translate": "advancements.guaniao.husbandry.fluffy_line.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "triggered": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "triggered"
+    ]
+  ]
+}

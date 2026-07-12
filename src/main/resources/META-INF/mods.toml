@@ -1,0 +1,36 @@
+modLoader = "javafml"
+loaderVersion = "[47,)"
+license = "All Rights Reserved"
+issueTrackerURL = ""
+
+[[mixins]]
+config = "guaniao.mixins.json"
+
+[[mods]]
+modId = "guaniao"
+version = "${file.jarVersion}"
+displayName = "Bird Watching"
+logoFile = "guaniao_logo.png"
+authors = "EdDYON"
+description = "\u6211\u53bb\uff01\u54ea\u6765\u7684\u9e1f\uff1f"
+
+[[dependencies.guaniao]]
+modId = "forge"
+mandatory = true
+versionRange = "[47,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.guaniao]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.20.1,1.21)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.guaniao]]
+modId = "geckolib"
+mandatory = true
+versionRange = "[4.4,)"
+ordering = "AFTER"
+side = "BOTH"

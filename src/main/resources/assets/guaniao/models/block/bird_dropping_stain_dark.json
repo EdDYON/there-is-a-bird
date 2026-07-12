@@ -1,0 +1,21 @@
+{
+  "render_type": "cutout",
+  "textures": {
+    "stain": "guaniao:block/bird_dropping_stain_dark",
+    "particle": "guaniao:block/bird_dropping_stain_dark"
+  },
+  "elements": [
+    {
+      "from": [1, 0, 1],
+      "to": [15, 1, 15],
+      "faces": {
+        "up": { "texture": "#stain" },
+        "down": { "texture": "#stain" },
+        "north": { "texture": "#stain" },
+        "south": { "texture": "#stain" },
+        "west": { "texture": "#stain" },
+        "east": { "texture": "#stain" }
+      }
+    }
+  ]
+}

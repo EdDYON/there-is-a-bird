@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "eggs=0": {
+      "model": "guaniao:block/crow_nest"
+    },
+    "eggs=1": {
+      "model": "guaniao:block/crow_nest"
+    },
+    "eggs=2": {
+      "model": "guaniao:block/crow_nest"
+    },
+    "eggs=3": {
+      "model": "guaniao:block/crow_nest"
+    }
+  }
+}

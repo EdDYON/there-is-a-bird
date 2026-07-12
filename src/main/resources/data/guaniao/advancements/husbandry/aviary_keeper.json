@@ -1,0 +1,28 @@
+{
+  "parent": "guaniao:husbandry/accepted_by_bird",
+  "display": {
+    "icon": {
+      "item": "guaniao:large_bird_cage"
+    },
+    "title": {
+      "translate": "advancements.guaniao.husbandry.aviary_keeper.title"
+    },
+    "description": {
+      "translate": "advancements.guaniao.husbandry.aviary_keeper.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "triggered": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "triggered"
+    ]
+  ]
+}
