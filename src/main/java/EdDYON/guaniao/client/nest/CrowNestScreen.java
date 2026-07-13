@@ -16,7 +16,7 @@ public final class CrowNestScreen extends AbstractContainerScreen<CrowNestMenu> 
     private static final ResourceLocation GENERIC_54 = new ResourceLocation("textures/gui/container/generic_54.png");
     private static final int SCREEN_WIDTH = 176;
     private static final int SCREEN_HEIGHT = 222;
-    private static final int LOOT_GRID_X = 62;
+    private static final int LOOT_GRID_X = 8;
     private static final int LOOT_GRID_Y = 18;
     private static final int LOOT_CELL = 18;
 
@@ -68,8 +68,8 @@ public final class CrowNestScreen extends AbstractContainerScreen<CrowNestMenu> 
         for (CrowNestLootLayout.Placement placement : placements) {
             int x = this.leftPos + LOOT_GRID_X + placement.column() * LOOT_CELL;
             int y = this.topPos + LOOT_GRID_Y + placement.row() * LOOT_CELL;
-            int width = placement.profile().width() * LOOT_CELL;
-            int height = placement.profile().height() * LOOT_CELL;
+            int width = placement.width() * LOOT_CELL;
+            int height = placement.height() * LOOT_CELL;
             if (this.menu.isSlotRummaged(placement.storageSlot())) {
                 this.renderDiscoveredLoot(graphics, placement, x, y, width, height);
             } else {
@@ -79,6 +79,9 @@ public final class CrowNestScreen extends AbstractContainerScreen<CrowNestMenu> 
     }
 
     private void renderDiscoveredLoot(GuiGraphics graphics, CrowNestLootLayout.Placement placement, int x, int y, int width, int height) {
+        if (placement.width() > 1 || placement.height() > 1) {
+            this.drawMergedSlot(graphics, x, y, width, height);
+        }
         ItemStack stack = this.menu.getTreasureStack(placement.storageSlot());
         int centerX = x + width / 2;
         int centerY = y + height / 2;
@@ -112,11 +115,19 @@ public final class CrowNestScreen extends AbstractContainerScreen<CrowNestMenu> 
         for (CrowNestLootLayout.Placement placement : placements) {
             int x = this.leftPos + LOOT_GRID_X + placement.column() * LOOT_CELL;
             int y = this.topPos + LOOT_GRID_Y + placement.row() * LOOT_CELL;
-            if (mouseX >= x && mouseX < x + placement.profile().width() * LOOT_CELL
-                    && mouseY >= y && mouseY < y + placement.profile().height() * LOOT_CELL) {
+            if (mouseX >= x && mouseX < x + placement.width() * LOOT_CELL
+                    && mouseY >= y && mouseY < y + placement.height() * LOOT_CELL) {
                 return placement;
             }
         }
         return null;
+    }
+
+    private void drawMergedSlot(GuiGraphics graphics, int x, int y, int width, int height) {
+        graphics.fill(x, y, x + width, y + height, 0xFF373737);
+        graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, 0xFFFFFFFF);
+        graphics.fill(x + 2, y + 2, x + width - 2, y + height - 2, 0xFF8B8B8B);
+        graphics.fill(x + 1, y + height - 2, x + width - 1, y + height - 1, 0xFF555555);
+        graphics.fill(x + width - 2, y + 1, x + width - 1, y + height - 1, 0xFF555555);
     }
 }

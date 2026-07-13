@@ -3,39 +3,21 @@ package EdDYON.guaniao.content.nest;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-/** The rummage footprint and search duration for each level of crow treasure. */
+/** Search duration and reveal sound tier. This is deliberately independent of grid footprint. */
 public enum CrowNestLootProfile {
-    COMMON(1, 1, 14, 0xFF70836E),
-    VALUABLE(2, 1, 24, 0xFF7F9FB4),
-    RARE(1, 2, 38, 0xFFC6954B),
-    TREASURE(2, 2, 64, 0xFFD8B65C);
+    COMMON(12),
+    VALUABLE(24),
+    RARE(42),
+    TREASURE(68);
 
-    private final int width;
-    private final int height;
     private final int searchTicks;
-    private final int color;
 
-    CrowNestLootProfile(int width, int height, int searchTicks, int color) {
-        this.width = width;
-        this.height = height;
+    CrowNestLootProfile(int searchTicks) {
         this.searchTicks = searchTicks;
-        this.color = color;
-    }
-
-    public int width() {
-        return this.width;
-    }
-
-    public int height() {
-        return this.height;
     }
 
     public int searchTicks() {
         return this.searchTicks;
-    }
-
-    public int color() {
-        return this.color;
     }
 
     public static CrowNestLootProfile forStack(ItemStack stack) {

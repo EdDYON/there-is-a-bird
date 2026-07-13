@@ -41,6 +41,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -86,6 +87,11 @@ public final class BirdFlybySpawnEvents {
         } else {
             PLAYER_COOLDOWNS.put(playerId, 80 + random.nextInt(121));
         }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        PLAYER_COOLDOWNS.remove(event.getEntity().getUUID());
     }
 
     private static boolean trySpawnFlyby(ServerLevel level, ServerPlayer player, RandomSource random) {

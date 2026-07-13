@@ -23,6 +23,7 @@ public final class BirdFlightTargeting {
     private static final double FORWARD_CONE_RADIANS = Math.toRadians(15.0D);
     private static final double FORWARD_FALLBACK_RADIANS = 0.62D;
     private static final double WIDE_FALLBACK_RADIANS = 1.35D;
+    private static final double FLIGHT_PATH_SAMPLE_SPACING = 0.75D;
 
     private BirdFlightTargeting() {
     }
@@ -76,8 +77,59 @@ public final class BirdFlightTargeting {
             targetY = Mth.clamp(targetY, bird.getY() - profile.maxVerticalStep(), bird.getY() + profile.maxVerticalStep());
             targetY = Mth.clamp(targetY, level.getMinBuildHeight() + 3.0D, level.getMaxBuildHeight() - 3.0D);
             BlockPos airPos = BlockPos.containing(horizontalTarget.x, targetY, horizontalTarget.z);
-            if (isOpenAir(bird, airPos)) {
-                return new Vec3(blockX + 0.5D, targetY, blockZ + 0.5D);
+            Vec3 airTarget = new Vec3(blockX + 0.5D, targetY, blockZ + 0.5D);
+            if (isOpenAir(bird, airPos) && hasClearFlightPath(bird, airTarget)) {
+                return airTarget;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Checks the entire direct flight corridor, rather than validating only the
+     * destination block. This keeps birds from selecting air beyond walls,
+     * cave ceilings, or closed doors.
+     */
+    public static boolean hasClearFlightPath(Entity bird, Vec3 target) {
+        Vec3 start = bird.position();
+        Vec3 path = target.subtract(start);
+        double distance = path.length();
+        if (distance <= 1.0E-4D) {
+            return true;
+        }
+        int samples = Math.max(1, Mth.ceil(distance / FLIGHT_PATH_SAMPLE_SPACING));
+        for (int sample = 1; sample <= samples; ++sample) {
+            Vec3 point = start.add(path.scale((double)sample / (double)samples));
+            if (!isOpenAir(bird, BlockPos.containing(point))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** Chooses a short, visible climb or reverse corridor after blocked flight. */
+    public static Vec3 findRecoveryTarget(PathfinderMob bird, Vec3 blockedDirection, int maxClimb, int maxHorizontalDistance) {
+        int blockX = Mth.floor(bird.getX());
+        int blockZ = Mth.floor(bird.getZ());
+        for (int climb = Math.max(2, maxClimb); climb >= 2; --climb) {
+            BlockPos airPos = new BlockPos(blockX, Mth.floor(bird.getY() + (double)climb), blockZ);
+            Vec3 target = Vec3.atBottomCenterOf(airPos);
+            if (isOpenAir(bird, airPos) && hasClearFlightPath(bird, target)) {
+                return target;
+            }
+        }
+
+        Vec3 reverse = normalizeHorizontal(blockedDirection.scale(-1.0D), bird.getDeltaMovement());
+        double[] angles = {0.0D, 0.45D, -0.45D, 0.9D, -0.9D, 1.35D, -1.35D};
+        for (double angle : angles) {
+            Vec3 direction = rotateHorizontal(reverse, angle);
+            for (int distance = Math.max(3, maxHorizontalDistance); distance >= 3; --distance) {
+                Vec3 point = bird.position().add(direction.scale(distance));
+                BlockPos airPos = BlockPos.containing(point);
+                Vec3 target = Vec3.atBottomCenterOf(airPos);
+                if (isOpenAir(bird, airPos) && hasClearFlightPath(bird, target)) {
+                    return target;
+                }
             }
         }
         return null;

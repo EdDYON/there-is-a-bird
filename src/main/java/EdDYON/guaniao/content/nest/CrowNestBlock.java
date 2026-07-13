@@ -22,6 +22,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -32,11 +33,12 @@ import org.jetbrains.annotations.Nullable;
 
 public class CrowNestBlock extends BaseEntityBlock {
     public static final IntegerProperty EGGS = IntegerProperty.create("eggs", 0, 3);
+    public static final BooleanProperty NATURAL_NEST = BooleanProperty.create("natural_nest");
     private static final VoxelShape SHAPE = Block.box(1.0D, 0.0D, 1.0D, 15.0D, 5.0D, 15.0D);
 
     public CrowNestBlock(BlockBehaviour.Properties properties) {
         super(properties);
-        this.registerDefaultState(this.stateDefinition.any().setValue(EGGS, 0));
+        this.registerDefaultState(this.stateDefinition.any().setValue(EGGS, 0).setValue(NATURAL_NEST, false));
     }
 
     @Override
@@ -59,13 +61,12 @@ public class CrowNestBlock extends BaseEntityBlock {
             return InteractionResult.PASS;
         }
         ItemStack held = player.getItemInHand(hand);
-        if (held.is(Items.EGG)) {
+        // Eggs keep their dedicated placement interaction. Sneak-use lets a player
+        // open the nest without having to move an egg out of their hand.
+        if (held.is(Items.EGG) && !player.isShiftKeyDown()) {
             return this.addEgg(state, level, pos, player, held);
         }
-        if (held.isEmpty()) {
-            return this.openSearchScreen(level, pos, player, nest);
-        }
-        return InteractionResult.PASS;
+        return this.openSearchScreen(level, pos, player, nest);
     }
 
     @Override
@@ -101,7 +102,7 @@ public class CrowNestBlock extends BaseEntityBlock {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(EGGS);
+        builder.add(EGGS, NATURAL_NEST);
     }
 
     private InteractionResult addEgg(BlockState state, Level level, BlockPos pos, Player player, ItemStack held) {

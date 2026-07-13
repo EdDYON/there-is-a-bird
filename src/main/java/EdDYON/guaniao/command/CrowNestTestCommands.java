@@ -3,14 +3,14 @@ package EdDYON.guaniao.command;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import EdDYON.guaniao.GuaniaoMod;
 import EdDYON.guaniao.content.nest.CrowNestBlockEntity;
+import EdDYON.guaniao.content.nest.CrowNestTestLootPool;
+import java.util.List;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -43,12 +43,10 @@ public final class CrowNestTestCommands {
             return 0;
         }
 
-        put(nest, 0, new ItemStack(Items.IRON_NUGGET, 12));
-        put(nest, 1, new ItemStack(Items.IRON_INGOT, 4));
-        put(nest, 2, new ItemStack(Items.AMETHYST_SHARD, 3));
-        put(nest, 3, new ItemStack(Items.GOLD_INGOT, 2));
-        put(nest, 4, new ItemStack(Items.EMERALD));
-        put(nest, 5, new ItemStack(Items.DIAMOND));
+        List<ItemStack> rewards = CrowNestTestLootPool.roll(player.getRandom());
+        for (int slot = 0; slot < rewards.size(); slot++) {
+            put(nest, slot, rewards.get(slot));
+        }
         BlockPos pos = blockHit.getBlockPos();
         source.sendSuccess(() -> Component.translatable("message.guaniao.crow_nest.test_filled", pos.getX(), pos.getY(), pos.getZ()), false);
         return 1;

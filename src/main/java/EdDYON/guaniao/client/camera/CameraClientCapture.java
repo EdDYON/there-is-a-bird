@@ -5,7 +5,6 @@ import EdDYON.guaniao.network.GuaniaoNetwork;
 import EdDYON.guaniao.network.PhotographTakenPacket;
 import EdDYON.guaniao.registry.GuaniaoItems;
 import com.mojang.blaze3d.platform.NativeImage;
-import java.util.Locale;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
@@ -169,8 +168,7 @@ public final class CameraClientCapture {
 
         try (NativeImage image = Screenshot.takeScreenshot(minecraft.getMainRenderTarget())) {
             int[] pixels = cropSquare(image, PhotographData.IMAGE_SIZE);
-            String id = safeId(minecraft.player.getScoreboardName()) + "_" + System.currentTimeMillis();
-            GuaniaoNetwork.CHANNEL.sendToServer(new PhotographTakenPacket(hand, id, pixels));
+            GuaniaoNetwork.CHANNEL.sendToServer(new PhotographTakenPacket(hand, pixels));
             minecraft.player.displayClientMessage(Component.translatable("item.guaniao.nikon_d750.captured"), true);
         } catch (Exception exception) {
             minecraft.player.displayClientMessage(Component.translatable("item.guaniao.nikon_d750.capture_failed"), true);
@@ -226,10 +224,6 @@ public final class CameraClientCapture {
                 | ((int)(b / count) << 16)
                 | ((int)(g / count) << 8)
                 | (int)(r / count);
-    }
-
-    private static String safeId(String name) {
-        return name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_.-]", "_");
     }
 
     private static void beginCleanCapture(InteractionHand hand, double fov) {

@@ -37,7 +37,6 @@ public class NikonD750Item extends Item implements GeoItem {
             return InteractionResultHolder.fail(stack);
         }
 
-        player.getCooldowns().addCooldown(this, 8);
         level.playSound(player, player.blockPosition(), SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.PLAYERS, 0.7F, 1.35F);
 
         if (level.isClientSide) {

@@ -363,6 +363,13 @@ public class BirdConfigScreen extends Screen {
             BirdGlobalConfig global = this.data.global;
             settings.add(SettingSpec.storageScope());
             settings.add(SettingSpec.toggle("natural_spawning", () -> global.naturalSpawning, value -> global.naturalSpawning = value));
+            settings.add(SettingSpec.toggle("colonial_mode", () -> global.colonialMode, value -> global.colonialMode = value));
+            settings.add(SettingSpec.toggle("natural_crow_nests", () -> global.naturalCrowNests, value -> global.naturalCrowNests = value));
+            settings.add(SettingSpec.number("crow_nest_generation_multiplier", () -> global.crowNestGenerationMultiplier, value -> global.crowNestGenerationMultiplier = value, 0.0D, 10.0D, false));
+            settings.add(SettingSpec.toggle("crows_store_treasures", () -> global.crowsStoreTreasures, value -> global.crowsStoreTreasures = value));
+            settings.add(SettingSpec.number("crow_nest_search_distance", () -> global.crowNestSearchDistance, value -> global.crowNestSearchDistance = (int)value, 16.0D, 128.0D, true));
+            settings.add(SettingSpec.number("max_crow_nest_treasures", () -> global.maxCrowNestTreasures, value -> global.maxCrowNestTreasures = (int)value, 1.0D, 6.0D, true));
+            settings.add(SettingSpec.toggle("crows_claim_player_nests", () -> global.crowsClaimPlayerNests, value -> global.crowsClaimPlayerNests = value));
             settings.add(SettingSpec.number("spawn_multiplier", () -> global.spawnMultiplier, value -> global.spawnMultiplier = value, 0.0D, 10.0D, false));
             settings.add(SettingSpec.number("dropping_multiplier", () -> global.droppingFrequencyMultiplier, value -> global.droppingFrequencyMultiplier = value, 0.0D, 10.0D, false));
             settings.add(SettingSpec.number("sound_multiplier", () -> global.soundVolumeMultiplier, value -> global.soundVolumeMultiplier = value, 0.0D, 4.0D, false));

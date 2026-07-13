@@ -435,6 +435,14 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
             this.finishAirCruise();
             return;
         }
+        if (BirdFlightController.isFlightProgressStalled(this, this.flightTarget, 12, 12)) {
+            Vec3 recovery = BirdFlightTargeting.findRecoveryTarget(this, this.flightTarget.subtract(this.position()), 8, 12);
+            if (recovery == null) {
+                this.finishAirCruise();
+                return;
+            }
+            this.flightTarget = recovery;
+        }
         Vec3 toTarget = this.flightTarget.subtract(this.position());
         Vec3 horizontal = BirdFlightTargeting.normalizeHorizontal(new Vec3(toTarget.x, 0.0D, toTarget.z), this.getDeltaMovement());
         double vertical = Mth.clamp(toTarget.y * 0.11D + Math.sin((this.tickCount + this.getId()) * 0.20D) * 0.016D, -0.085D, 0.18D);
@@ -483,19 +491,12 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
         if (target != null) {
             return target;
         }
-        Vec3 direction = this.randomHorizontalDirection();
-        double y = Mth.clamp(
-                this.getY() + 8.0D + this.getRandom().nextDouble() * 8.0D,
-                this.level().getMinBuildHeight() + 3.0D,
-                this.level().getMaxBuildHeight() - 3.0D);
-        return new Vec3(
-                this.getX() + direction.x * (16.0D + this.getRandom().nextDouble() * 14.0D),
-                y,
-                this.getZ() + direction.z * (16.0D + this.getRandom().nextDouble() * 14.0D));
+        return BirdFlightTargeting.findRecoveryTarget(this, preferredDirection, 8, 12);
     }
 
     private void finishAirCruise() {
         this.flightTicks = 0;
+        BirdFlightController.clearFlightProgress(this);
         this.flightTarget = null;
         this.setNoGravity(false);
         this.airborneGraceTicks = 50;

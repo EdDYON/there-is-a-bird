@@ -43,11 +43,20 @@ public final class BirdSpawnConfigEvents {
                 continue;
             }
             int weight = Math.max(1, (int)Math.round(original.getWeight().asInt() * multiplier));
+            int minGroup = BirdConfigManager.minGroup(species);
+            int maxGroup = BirdConfigManager.maxGroup(species);
+            if (event.getLevel() instanceof ServerLevel level) {
+                BirdColonySpawnRules.GroupSize colonyGroup = BirdColonySpawnRules.groupAt(level, event.getPos(), species);
+                if (colonyGroup != null) {
+                    minGroup = colonyGroup.min();
+                    maxGroup = colonyGroup.max();
+                }
+            }
             event.addSpawnerData(new MobSpawnSettings.SpawnerData(
                     original.type,
                     weight,
-                    BirdConfigManager.minGroup(species),
-                    BirdConfigManager.maxGroup(species)
+                    minGroup,
+                    maxGroup
             ));
         }
     }
@@ -65,8 +74,14 @@ public final class BirdSpawnConfigEvents {
             event.setResult(Event.Result.DENY);
             return;
         }
-        if (event.getLevel() instanceof ServerLevel level && nearbyBirdCount(level, event.getPos().getX(), event.getPos().getY(), event.getPos().getZ()) >= BirdConfigManager.maxBirdsNearby()) {
-            event.setResult(Event.Result.DENY);
+        if (event.getLevel() instanceof ServerLevel level) {
+            if (!level.canSeeSky(event.getPos())) {
+                event.setResult(Event.Result.DENY);
+                return;
+            }
+            if (nearbyBirdCount(level, event.getPos().getX(), event.getPos().getY(), event.getPos().getZ()) >= BirdConfigManager.maxBirdsNearby()) {
+                event.setResult(Event.Result.DENY);
+            }
         }
     }
 

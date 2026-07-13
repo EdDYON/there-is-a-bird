@@ -1124,14 +1124,25 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
                 double angle = this.getRandom().nextDouble() * Math.PI * 2.0;
                 away = new Vec3(Math.cos(angle), 0.0, Math.sin(angle));
             }
-            away = away.normalize();
-            target = this.position().add(away.scale(12.0 + this.getRandom().nextDouble() * 7.0)).add(0.0, 3.4, 0.0);
+            target = BirdFlightTargeting.findRecoveryTarget(this, away, 5, 10);
+            if (target == null) {
+                return false;
+            }
         }
         this.suppressOwnerFollow(160);
         return this.startControlledFlight(target, this.randomBetween(48, 86), ESCAPE_FLIGHT_SPEED, true);
     }
 
     private boolean startControlledFlight(Vec3 target, int duration, double speed, boolean escapeFlight) {
+        if (target == null) {
+            return false;
+        }
+        if (!BirdFlightTargeting.hasClearFlightPath(this, target)) {
+            target = BirdFlightTargeting.findRecoveryTarget(this, target.subtract(this.position()), 5, 8);
+            if (target == null) {
+                return false;
+            }
+        }
         this.pendingScareSource = null;
         this.pendingScareTicks = 0;
         this.flightTarget = target;
@@ -1181,6 +1192,7 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
         Vec3 toTarget = this.flightTarget.subtract(this.position());
         double distance = toTarget.length();
         double horizontalDistance = Math.sqrt(toTarget.x * toTarget.x + toTarget.z * toTarget.z);
+        boolean progressStalled = BirdFlightController.isFlightProgressStalled(this, this.flightTarget, 12, 12);
         int flightAge = this.flightDuration - this.flightTicks;
         boolean closeToTarget = distance < (this.escapeFlight ? 0.65 : 0.9);
         boolean groundedNearTarget = this.onGround() && flightAge > 8 && horizontalDistance < (this.escapeFlight ? 1.3 : 1.8);
@@ -1240,14 +1252,17 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
             }
             movement = horizontalDirection.scale(Math.max(speed, this.flightSpeed * 0.65D)).add(0.0D, this.escapeFlight ? 0.12D : 0.08D, 0.0D);
         }
-        if (this.horizontalCollision || (this.verticalCollision && flightAge > 6)) {
+        if (this.horizontalCollision || (this.verticalCollision && flightAge > 6) || progressStalled) {
             ++this.blockedFlightTicks;
             movement = movement.add(0.0, 0.08, 0.0);
         } else {
             this.blockedFlightTicks = Math.max(0, this.blockedFlightTicks - 1);
         }
         if (this.blockedFlightTicks > 5) {
-            Vec3 newTarget = this.findShortFlightTarget(null, false, 3, 8);
+            Vec3 newTarget = BirdFlightTargeting.findRecoveryTarget(this, toTarget, 5, 8);
+            if (newTarget == null) {
+                newTarget = this.findShortFlightTarget(null, false, 3, 8);
+            }
             if (newTarget == null) {
                 this.finishControlledFlight(false);
                 return;
@@ -1289,6 +1304,7 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
 
     private void finishControlledFlight(boolean landed) {
         boolean wasEscapeFlight = this.escapeFlight;
+        BirdFlightController.clearFlightProgress(this);
         this.flightTarget = null;
         this.flightTicks = 0;
         this.flightDuration = 0;
@@ -1344,9 +1360,13 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
                 continue;
             }
             double score = this.scoreShortFlightLanding(landing, threatPosition, escape);
+            Vec3 candidate = new Vec3((double)landing.getX() + 0.5, (double)landing.getY() + 0.05, (double)landing.getZ() + 0.5);
+            if (!BirdFlightTargeting.hasClearFlightPath(this, candidate)) {
+                continue;
+            }
             if (score > bestScore) {
                 bestScore = score;
-                bestTarget = new Vec3((double)landing.getX() + 0.5, (double)landing.getY() + 0.05, (double)landing.getZ() + 0.5);
+                bestTarget = candidate;
             }
         }
         return bestTarget;

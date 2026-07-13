@@ -15,6 +15,7 @@ import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.client.event.RenderGuiEvent;
 import net.minecraftforge.client.event.RenderGuiOverlayEvent;
@@ -96,6 +97,12 @@ public final class CameraClientEvents {
         if (event.getAction() == GLFW.GLFW_PRESS && event.getKey() == GLFW.GLFW_KEY_ESCAPE && CameraClientCapture.isViewfinderOpen()) {
             CameraClientCapture.closeViewfinder();
         }
+    }
+
+    @SubscribeEvent
+    public static void onClientLogout(ClientPlayerNetworkEvent.LoggingOut event) {
+        CameraClientCapture.closeViewfinder();
+        PhotographTextureCache.clear();
     }
 
     private static boolean holdsCamera(LocalPlayer player) {

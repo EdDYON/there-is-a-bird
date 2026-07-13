@@ -862,6 +862,7 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
     private void tickFlight() {
         if (!this.isControlledFlightActive()) {
             this.timeFlying = 0;
+            BirdFlightController.clearFlightProgress(this);
             if (this.isNoGravity()) {
                 this.setNoGravity(false);
             }
@@ -895,9 +896,21 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
         if (this.autonomousCruiseFlight && !landingPhase) {
             this.updateAutonomousFlightWaypoint();
         }
+        if (!landingPhase && !this.autonomousCruiseFlight && this.flightWaypoint != null
+                && (--this.flightWaypointTicks <= 0 || this.flightWaypoint.distanceToSqr(this.position()) < 4.0D)) {
+            this.flightWaypoint = null;
+        }
         Vec3 steeringTarget = landingPhase
                 ? this.flightTarget
-                : (this.autonomousCruiseFlight && this.flightWaypoint != null ? this.flightWaypoint : new Vec3(this.flightTarget.x, this.flightCruiseY, this.flightTarget.z));
+                : (this.flightWaypoint != null ? this.flightWaypoint : new Vec3(this.flightTarget.x, this.flightCruiseY, this.flightTarget.z));
+        if (!landingPhase && BirdFlightController.isFlightProgressStalled(this, steeringTarget, 12, 12)) {
+            Vec3 recovery = BirdFlightTargeting.findRecoveryTarget(this, steeringTarget.subtract(this.position()), 8, 12);
+            if (recovery != null) {
+                this.flightWaypoint = recovery;
+                this.flightWaypointTicks = 36;
+                steeringTarget = recovery;
+            }
+        }
         Vec3 toSteeringTarget = steeringTarget.subtract(this.position());
         Vec3 horizontal = new Vec3(toSteeringTarget.x, 0.0D, toSteeringTarget.z);
         double heightAboveLanding = this.getY() - this.flightTarget.y;
@@ -1001,6 +1014,7 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
     }
 
     private void finishControlledFlight(boolean landed) {
+        BirdFlightController.clearFlightProgress(this);
         this.flightTarget = null;
         this.flightTicks = 0;
         this.flightDuration = 0;
@@ -1028,6 +1042,7 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
     }
 
     private void clearFlightState() {
+        BirdFlightController.clearFlightProgress(this);
         this.flightTarget = null;
         this.flightTicks = 0;
         this.flightDuration = 0;

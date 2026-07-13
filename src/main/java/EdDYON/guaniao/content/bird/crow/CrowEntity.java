@@ -21,6 +21,7 @@ import EdDYON.guaniao.content.bird.scale.BirdModelScaleProfile;
 import EdDYON.guaniao.content.bird.scale.ScalableBirdModel;
 import EdDYON.guaniao.content.nest.CrowNestBlockEntity;
 import EdDYON.guaniao.content.nest.CrowNestTreasure;
+import EdDYON.guaniao.config.BirdConfigManager;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
 import java.util.EnumSet;
 import java.util.UUID;
@@ -589,7 +590,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
             return false;
         }
         ItemStack stack = itemEntity.getItem();
-        if (!isCrowDroppedFoodCandidate(stack) && !isLowValueShiny(stack)) {
+        if (!isCrowDroppedFoodCandidate(stack) && !CrowNestTreasure.isShiny(stack)) {
             return false;
         }
         Vec3 sourcePos = itemEntity.position();
@@ -623,9 +624,11 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
 
     private boolean hasNearbyAvailableNest() {
         ItemStack heldItem = this.getHeldFoodForRendering();
-        return !heldItem.isEmpty()
+        return BirdConfigManager.crowsStoreTreasures()
+                && !heldItem.isEmpty()
                 && CrowNestTreasure.isShiny(heldItem)
-                && CrowNestBlockEntity.findNearest(this.level(), this.position(), 18, 8, heldItem).isPresent();
+                && CrowNestBlockEntity.findNestForCrow(
+                this.level(), this.position(), BirdConfigManager.crowNestSearchDistance(), 32, heldItem, this.getUUID()).isPresent();
     }
 
     private boolean dropHeldItem() {
@@ -892,7 +895,9 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         this.shinyCooldown = Math.max(this.shinyCooldown, 260 + this.getRandom().nextInt(240));
         this.playSound(SoundEvents.ITEM_PICKUP, 0.42F, 0.92F + this.getRandom().nextFloat() * 0.18F);
         this.notifyNearbyCrowsOfPickup(player.position(), isCrowFood(stolen));
-        this.startCarryAwayFlight(player.position());
+        if (!this.hasNearbyAvailableNest()) {
+            this.startCarryAwayFlight(player.position());
+        }
         return true;
     }
 
@@ -1166,6 +1171,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
     private void tickFlight() {
         if (this.flightTicks <= 0 && !this.landingFlight) {
             this.timeFlying = 0;
+            BirdFlightController.clearFlightProgress(this);
             this.setNoGravity(false);
             if (this.onGround() && this.airborneGraceTicks <= 0) {
                 this.setFlyingAnimationActive(false);
@@ -1193,6 +1199,10 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
                 }
             } else {
                 this.retargetAirCruise(this.escapeFlightActive);
+                if (this.flightTarget == null) {
+                    this.finishFlight();
+                    return;
+                }
             }
         }
         Vec3 toTarget = this.flightTarget.subtract(this.position());
@@ -1208,6 +1218,21 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
             }
         } else if (toTarget.lengthSqr() < 2.2D || --this.hoverRetargetTicks <= 0) {
             this.retargetAirCruise(this.escapeFlightActive);
+            if (this.flightTarget == null) {
+                this.finishFlight();
+                return;
+            }
+            toTarget = this.flightTarget.subtract(this.position());
+            horizontalDistance = Math.sqrt(toTarget.x * toTarget.x + toTarget.z * toTarget.z);
+        }
+        if (!this.landingFlight && BirdFlightController.isFlightProgressStalled(this, this.flightTarget, 12, 12)) {
+            Vec3 recovery = BirdFlightTargeting.findRecoveryTarget(this, toTarget, 6, 8);
+            this.flightTarget = recovery == null ? this.findAirCruiseTarget(this.escapeFlightActive) : this.clampFlightTarget(recovery);
+            if (this.flightTarget == null) {
+                this.finishFlight();
+                return;
+            }
+            this.hoverRetargetTicks = this.nextHoverRetargetDelay();
             toTarget = this.flightTarget.subtract(this.position());
             horizontalDistance = Math.sqrt(toTarget.x * toTarget.x + toTarget.z * toTarget.z);
         }
@@ -1270,9 +1295,16 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         if (this.flightCooldown > 0 || this.flightTicks > 0 || this.landingFlight) {
             return;
         }
+        Vec3 selectedTarget = target == null ? this.findAirCruiseTarget(fleeing) : this.clampFlightTarget(target);
+        if (selectedTarget != null && !BirdFlightTargeting.hasClearFlightPath(this, selectedTarget)) {
+            selectedTarget = BirdFlightTargeting.findRecoveryTarget(this, selectedTarget.subtract(this.position()), 6, 8);
+        }
+        if (selectedTarget == null) {
+            return;
+        }
         this.escapeFlightActive = fleeing;
         this.landingFlight = false;
-        this.flightTarget = target == null ? this.findAirCruiseTarget(fleeing) : this.clampFlightTarget(target);
+        this.flightTarget = selectedTarget;
         this.flightTicks = fleeing
                 ? 100 + this.getRandom().nextInt(80)
                 : FLIGHT_PROFILE.minFlightTicks() + this.getRandom().nextInt(FLIGHT_PROFILE.maxFlightTicks() - FLIGHT_PROFILE.minFlightTicks() + 1);
@@ -1294,6 +1326,14 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         this.hasImpulse = true;
     }
 
+    /** Keeps a treasure delivery on course without changing normal ambient-flight behaviour. */
+    private void setDeliveryFlightTarget(Vec3 target) {
+        if (target != null && this.flightTicks > 0 && !this.landingFlight && !this.escapeFlightActive) {
+            this.flightTarget = this.clampFlightTarget(target);
+            this.hoverRetargetTicks = 20;
+        }
+    }
+
     private void startEscapeFlight(Vec3 sourcePos) {
         Vec3 away = this.position().subtract(sourcePos).multiply(1.0D, 0.0D, 1.0D);
         if (away.lengthSqr() <= 1.0E-4D) {
@@ -1301,14 +1341,14 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         }
         Vec3 target = BirdFlightTargeting.findAirTarget(this, FLIGHT_PROFILE, away, true);
         if (target == null) {
-            target = this.position().add(away.normalize().scale(8.0D + this.getRandom().nextDouble() * 6.0D)).add(0.0D, 3.0D, 0.0D);
+            target = BirdFlightTargeting.findRecoveryTarget(this, away, 6, 10);
         }
         this.startShortFlight(target, true);
     }
 
     private void beginLandingFlight() {
         Vec3 landingTarget = this.findLandingTarget();
-        if (landingTarget == null) {
+        if (landingTarget == null || !BirdFlightTargeting.hasClearFlightPath(this, landingTarget)) {
             this.extendCruiseAfterUnsafeLanding();
             return;
         }
@@ -1333,6 +1373,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         boolean wasEscaping = this.escapeFlightActive;
         this.flightTicks = 0;
         this.timeFlying = 0;
+        BirdFlightController.clearFlightProgress(this);
         this.flightTarget = null;
         this.hoverRetargetTicks = 0;
         this.escapeFlightActive = false;
@@ -1365,7 +1406,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         if (target != null) {
             return this.clampFlightTarget(target);
         }
-        return this.clampFlightTarget(this.position().add(this.randomHorizontalDirection().scale(10.0D)).add(0.0D, this.onGround() ? 4.0D : 1.0D, 0.0D));
+        return BirdFlightTargeting.findRecoveryTarget(this, direction, 6, 10);
     }
 
     private Vec3 findLandingTarget() {
@@ -1613,8 +1654,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
     }
 
     private static final class CrowDepositTreasureGoal extends Goal {
-        private static final int SEARCH_HORIZONTAL = 18;
-        private static final int SEARCH_VERTICAL = 8;
+        private static final int SEARCH_VERTICAL = 32;
         private static final double DEPOSIT_REACH_SQR = 1.45D * 1.45D;
         private final CrowEntity crow;
         private CrowNestBlockEntity targetNest;
@@ -1639,8 +1679,9 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
                 return false;
             }
             ItemStack carried = this.crow.getHeldFoodForRendering();
-            this.targetNest = CrowNestBlockEntity.findNearest(
-                    this.crow.level(), this.crow.position(), SEARCH_HORIZONTAL, SEARCH_VERTICAL, carried).orElse(null);
+            this.targetNest = CrowNestBlockEntity.findNestForCrow(
+                    this.crow.level(), this.crow.position(), BirdConfigManager.crowNestSearchDistance(), SEARCH_VERTICAL,
+                    carried, this.crow.getUUID()).orElse(null);
             this.searchCooldown = this.targetNest == null
                     ? 55 + this.crow.getRandom().nextInt(45)
                     : 24;
@@ -1651,7 +1692,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         public boolean canContinueToUse() {
             ItemStack carried = this.crow.getHeldFoodForRendering();
             return !this.deposited
-                    && this.totalTicks < 260
+                    && this.totalTicks < 420
                     && this.canCarryToNest()
                     && this.isValidTarget(this.targetNest, carried);
         }
@@ -1681,6 +1722,9 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
                 this.depositCarriedTreasure();
                 return;
             }
+            if (this.crow.isFlightInProgress()) {
+                this.crow.setDeliveryFlightTarget(depositPosition.add(0.0D, 1.2D, 0.0D));
+            }
             if (this.crow.onGround()
                     && this.launchCooldown <= 0
                     && this.crow.position().distanceToSqr(depositPosition) > 3.5D * 3.5D
@@ -1708,6 +1752,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         private boolean canCarryToNest() {
             ItemStack carried = this.crow.getHeldFoodForRendering();
             return !this.crow.level().isClientSide
+                    && BirdConfigManager.crowsStoreTreasures()
                     && this.crow.isActiveTime()
                     && this.crow.isCarryingHeldItem()
                     && CrowNestTreasure.isShiny(carried)
@@ -1721,7 +1766,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
             return nest != null
                     && !nest.isRemoved()
                     && nest.getLevel() == this.crow.level()
-                    && nest.hasSpaceFor(carried);
+                    && nest.canAcceptCrow(this.crow.getUUID(), carried);
         }
 
         private void moveTowardNest() {
@@ -1963,7 +2008,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         public boolean canContinueToUse() {
             return this.target != null
                     && this.target.isAlive()
-                    && isLowValueShiny(this.target.getItem())
+                    && CrowNestTreasure.isShiny(this.target.getItem())
                     && !this.pickedUp
                     && this.observeTicks > 0
                     && !this.crow.isEating()
@@ -2018,7 +2063,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         private ItemEntity findNearestShiny() {
             ItemEntity best = null;
             double bestDistance = 10.0D * 10.0D;
-            for (ItemEntity item : this.crow.level().getEntitiesOfClass(ItemEntity.class, this.crow.getBoundingBox().inflate(10.0D, 4.0D, 10.0D), entity -> entity.isAlive() && isLowValueShiny(entity.getItem()))) {
+            for (ItemEntity item : this.crow.level().getEntitiesOfClass(ItemEntity.class, this.crow.getBoundingBox().inflate(10.0D, 4.0D, 10.0D), entity -> entity.isAlive() && CrowNestTreasure.isShiny(entity.getItem()))) {
                 double distance = this.crow.distanceToSqr(item);
                 if (distance < bestDistance) {
                     best = item;

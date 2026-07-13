@@ -11,6 +11,11 @@ public final class CrowNestTreasure {
         return isShiny(stack);
     }
 
+    /** Items that may be present in a rummage nest, including harmless bits of crow junk. */
+    public static boolean isAllowedNestLoot(ItemStack stack) {
+        return !stack.isEmpty() && !stack.hasTag() && (isShiny(stack) || isJunk(stack));
+    }
+
     public static boolean isShiny(ItemStack stack) {
         if (stack.isEmpty() || stack.hasCustomHoverName()) {
             return false;
@@ -30,6 +35,21 @@ public final class CrowNestTreasure {
                 || stack.is(Items.EMERALD)
                 || stack.is(Items.QUARTZ)
                 || stack.is(Items.PRISMARINE_CRYSTALS);
+    }
+
+    private static boolean isJunk(ItemStack stack) {
+        if (stack.isEmpty() || stack.hasCustomHoverName()) {
+            return false;
+        }
+        return stack.is(Items.ROTTEN_FLESH)
+                || stack.is(Items.FEATHER)
+                || stack.is(Items.STICK)
+                || stack.is(Items.BONE)
+                || stack.is(Items.STRING)
+                || stack.is(Items.LEATHER)
+                || stack.is(Items.FLINT)
+                || stack.is(Items.CLAY_BALL)
+                || stack.is(Items.COAL);
     }
 
 }

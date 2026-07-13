@@ -8,6 +8,7 @@ import EdDYON.guaniao.registry.GuaniaoBiomeModifierSerializers;
 import EdDYON.guaniao.registry.GuaniaoCreativeTabs;
 import EdDYON.guaniao.registry.GuaniaoBlocks;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
+import EdDYON.guaniao.registry.GuaniaoFeatures;
 import EdDYON.guaniao.registry.GuaniaoItems;
 import EdDYON.guaniao.registry.GuaniaoMenuTypes;
 import EdDYON.guaniao.registry.GuaniaoRecipeSerializers;
@@ -33,6 +34,7 @@ public class GuaniaoMod {
         GuaniaoItems.ITEMS.register(modEventBus);
         GuaniaoMenuTypes.MENU_TYPES.register(modEventBus);
         GuaniaoEntityTypes.ENTITY_TYPES.register(modEventBus);
+        GuaniaoFeatures.FEATURES.register(modEventBus);
         GuaniaoBiomeModifierSerializers.BIOME_MODIFIER_SERIALIZERS.register(modEventBus);
         GuaniaoRecipeSerializers.RECIPE_SERIALIZERS.register(modEventBus);
         GuaniaoSoundEvents.SOUND_EVENTS.register(modEventBus);

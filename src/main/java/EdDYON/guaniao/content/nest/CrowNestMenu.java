@@ -18,13 +18,13 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * The nest only exposes egg slots to the vanilla container. Crow treasures are
- * rendered as a custom masked rummage grid and are claimed through validated menu buttons.
+ * The entire vanilla double-chest area belongs to the masked rummage grid. Nest eggs
+ * remain a world-model state so every cell can be used by large 3x3 finds.
  */
 public class CrowNestMenu extends AbstractContainerMenu {
     public static final int TAKE_TREASURE_BUTTON_BASE = 32;
     public static final int TREASURE_SLOT_COUNT = CrowNestBlockEntity.TREASURE_SLOTS;
-    public static final int EGG_SLOT_COUNT = 3;
+    public static final int EGG_SLOT_COUNT = 0;
     public static final int EGG_START_X = 8;
     public static final int EGG_START_Y = 18;
     public static final int PLAYER_START_X = 8;
@@ -56,7 +56,7 @@ public class CrowNestMenu extends AbstractContainerMenu {
         this.clientSide = clientSide;
 
         for (int slot = 0; slot < EGG_SLOT_COUNT; slot++) {
-            this.addSlot(new EggSlot(this, slot, EGG_START_X + slot * 21, EGG_START_Y));
+            this.addSlot(new EggSlot(this, slot, EGG_START_X + slot * 18, EGG_START_Y));
         }
         this.addPlayerInventory(inventory, PLAYER_START_X, PLAYER_START_Y);
         this.addRummageDataSlots();
@@ -137,7 +137,8 @@ public class CrowNestMenu extends AbstractContainerMenu {
     @Override
     public boolean clickMenuButton(Player player, int buttonId) {
         int treasureSlot = buttonId - TAKE_TREASURE_BUTTON_BASE;
-        if (treasureSlot < 0 || treasureSlot >= TREASURE_SLOT_COUNT || this.clientSide || this.nest == null) {
+        if (treasureSlot < 0 || treasureSlot >= TREASURE_SLOT_COUNT || this.clientSide || this.nest == null
+                || player.containerMenu != this || !this.stillValid(player)) {
             return false;
         }
         ItemStack claimed = this.nest.takeDiscoveredTreasure(treasureSlot);
@@ -216,7 +217,7 @@ public class CrowNestMenu extends AbstractContainerMenu {
         for (int slot = 0; slot < TREASURE_SLOT_COUNT; slot++) {
             stacks.add(this.getTreasureStack(slot));
         }
-        return CrowNestLootLayout.arrange(stacks);
+        return CrowNestLootLayout.fromStored(stacks, this.getLootFootprints(), this.getLootColumns(), this.getLootRows());
     }
 
     private boolean hasUnsearchedTreasure() {
@@ -234,6 +235,30 @@ public class CrowNestMenu extends AbstractContainerMenu {
 
     private int getServerRummagedMask() {
         return this.nest == null ? 0 : this.nest.getRummagedMask();
+    }
+
+    private int[] getLootFootprints() {
+        int[] footprints = new int[TREASURE_SLOT_COUNT];
+        for (int slot = 0; slot < TREASURE_SLOT_COUNT; slot++) {
+            footprints[slot] = this.nest == null ? 1 : this.nest.getLootFootprint(slot);
+        }
+        return footprints;
+    }
+
+    private int[] getLootColumns() {
+        int[] columns = new int[TREASURE_SLOT_COUNT];
+        for (int slot = 0; slot < TREASURE_SLOT_COUNT; slot++) {
+            columns[slot] = this.nest == null ? -1 : this.nest.getLootColumn(slot);
+        }
+        return columns;
+    }
+
+    private int[] getLootRows() {
+        int[] rows = new int[TREASURE_SLOT_COUNT];
+        for (int slot = 0; slot < TREASURE_SLOT_COUNT; slot++) {
+            rows[slot] = this.nest == null ? -1 : this.nest.getLootRow(slot);
+        }
+        return rows;
     }
 
     private int getServerCurrentSearchSlot() {

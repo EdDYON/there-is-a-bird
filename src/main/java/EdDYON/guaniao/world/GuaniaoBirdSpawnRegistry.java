@@ -19,16 +19,16 @@ import java.util.function.Supplier;
 
 public final class GuaniaoBirdSpawnRegistry {
     private static final List<SpawnRule> SPAWN_RULES = List.of(
-            new SpawnRule(BirdSpecies.NIGHT_HERON, GuaniaoEntityTypes.NIGHT_HERON, 9),
-            new SpawnRule(BirdSpecies.SPARROW, GuaniaoEntityTypes.SPARROW, 18),
-            new SpawnRule(BirdSpecies.LONG_TAILED_TIT, GuaniaoEntityTypes.LONG_TAILED_TIT, 14),
-            new SpawnRule(BirdSpecies.COCKATIEL, GuaniaoEntityTypes.COCKATIEL, 10),
-            new SpawnRule(BirdSpecies.MACAW, GuaniaoEntityTypes.MACAW, 8),
-            new SpawnRule(BirdSpecies.BUDGERIGAR, GuaniaoEntityTypes.BUDGERIGAR, 12),
-            new SpawnRule(BirdSpecies.SPOTTED_DOVE, GuaniaoEntityTypes.SPOTTED_DOVE, 10),
-            new SpawnRule(BirdSpecies.PIGEON, GuaniaoEntityTypes.PIGEON, 14),
-            new SpawnRule(BirdSpecies.CROW, GuaniaoEntityTypes.CROW, 9),
-            new SpawnRule(BirdSpecies.SEAGULL, GuaniaoEntityTypes.SEAGULL, 12)
+            new SpawnRule(BirdSpecies.NIGHT_HERON, GuaniaoEntityTypes.NIGHT_HERON, 3),
+            new SpawnRule(BirdSpecies.SPARROW, GuaniaoEntityTypes.SPARROW, 6),
+            new SpawnRule(BirdSpecies.LONG_TAILED_TIT, GuaniaoEntityTypes.LONG_TAILED_TIT, 5),
+            new SpawnRule(BirdSpecies.COCKATIEL, GuaniaoEntityTypes.COCKATIEL, 3),
+            new SpawnRule(BirdSpecies.MACAW, GuaniaoEntityTypes.MACAW, 2),
+            new SpawnRule(BirdSpecies.BUDGERIGAR, GuaniaoEntityTypes.BUDGERIGAR, 4),
+            new SpawnRule(BirdSpecies.SPOTTED_DOVE, GuaniaoEntityTypes.SPOTTED_DOVE, 3),
+            new SpawnRule(BirdSpecies.PIGEON, GuaniaoEntityTypes.PIGEON, 5),
+            new SpawnRule(BirdSpecies.CROW, GuaniaoEntityTypes.CROW, 3),
+            new SpawnRule(BirdSpecies.SEAGULL, GuaniaoEntityTypes.SEAGULL, 4)
     );
 
     private GuaniaoBirdSpawnRegistry() {

@@ -1,0 +1,6 @@
+{
+  "type": "forge:add_features",
+  "biomes": "#guaniao:crow_habitat",
+  "features": "guaniao:crow_nest",
+  "step": "vegetal_decoration"
+}

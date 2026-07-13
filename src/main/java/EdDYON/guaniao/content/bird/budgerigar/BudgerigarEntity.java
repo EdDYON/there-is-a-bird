@@ -532,9 +532,16 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
     }
 
     public void startFlybyFlight(Vec3 target) {
+        Vec3 selectedTarget = target == null ? this.findAirCruiseTarget(false) : this.clampFlightTarget(target);
+        if (selectedTarget != null && !BirdFlightTargeting.hasClearFlightPath(this, selectedTarget)) {
+            selectedTarget = BirdFlightTargeting.findRecoveryTarget(this, selectedTarget.subtract(this.position()), 5, 8);
+        }
+        if (selectedTarget == null) {
+            return;
+        }
         this.escapeFlightActive = false;
         this.landingFlight = false;
-        this.flightTarget = target == null ? this.findAirCruiseTarget(false) : this.clampFlightTarget(target);
+        this.flightTarget = selectedTarget;
         this.flightTicks = 150 + this.getRandom().nextInt(91);
         this.timeFlying = 0;
         this.hoverRetargetTicks = 52 + this.getRandom().nextInt(46);
@@ -711,9 +718,16 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
         if (this.flightCooldown > 0 || this.flightTicks > 0 || this.landingFlight) {
             return;
         }
+        Vec3 selectedTarget = target == null ? this.findAirCruiseTarget(fleeing) : this.clampFlightTarget(target);
+        if (selectedTarget != null && !BirdFlightTargeting.hasClearFlightPath(this, selectedTarget)) {
+            selectedTarget = BirdFlightTargeting.findRecoveryTarget(this, selectedTarget.subtract(this.position()), 5, 8);
+        }
+        if (selectedTarget == null) {
+            return;
+        }
         this.escapeFlightActive = fleeing;
         this.landingFlight = false;
-        this.flightTarget = target == null ? this.findAirCruiseTarget(fleeing) : target;
+        this.flightTarget = selectedTarget;
         this.flightTicks = fleeing
                 ? ESCAPE_AIR_CRUISE_MIN_TICKS + this.getRandom().nextInt(ESCAPE_AIR_CRUISE_RANDOM_TICKS)
                 : AMBIENT_AIR_CRUISE_MIN_TICKS + this.getRandom().nextInt(AMBIENT_AIR_CRUISE_RANDOM_TICKS);
@@ -968,6 +982,7 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
     private void tickFlight() {
         if (this.flightTicks <= 0 && !this.landingFlight) {
             this.timeFlying = 0;
+            BirdFlightController.clearFlightProgress(this);
             this.setNoGravity(false);
             return;
         }
@@ -991,6 +1006,10 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
                 }
             } else {
                 this.retargetAirCruise(this.escapeFlightActive);
+                if (this.flightTarget == null) {
+                    this.finishFlight();
+                    return;
+                }
             }
         }
         Vec3 toTarget = this.flightTarget.subtract(this.position());
@@ -1006,6 +1025,21 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
             }
         } else if (toTarget.lengthSqr() < 1.85D || --this.hoverRetargetTicks <= 0) {
             this.retargetAirCruise(this.escapeFlightActive);
+            if (this.flightTarget == null) {
+                this.finishFlight();
+                return;
+            }
+            toTarget = this.flightTarget.subtract(this.position());
+            horizontalDistance = Math.sqrt(toTarget.x * toTarget.x + toTarget.z * toTarget.z);
+        }
+        if (!this.landingFlight && BirdFlightController.isFlightProgressStalled(this, this.flightTarget, 12, 12)) {
+            Vec3 recovery = BirdFlightTargeting.findRecoveryTarget(this, toTarget, 5, 8);
+            this.flightTarget = recovery == null ? this.findAirCruiseTarget(this.escapeFlightActive) : this.clampFlightTarget(recovery);
+            if (this.flightTarget == null) {
+                this.finishFlight();
+                return;
+            }
+            this.hoverRetargetTicks = this.nextHoverRetargetDelay();
             toTarget = this.flightTarget.subtract(this.position());
             horizontalDistance = Math.sqrt(toTarget.x * toTarget.x + toTarget.z * toTarget.z);
         }
@@ -1040,6 +1074,7 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
         boolean wasEscaping = this.escapeFlightActive;
         this.flightTicks = 0;
         this.timeFlying = 0;
+        BirdFlightController.clearFlightProgress(this);
         this.flightTarget = null;
         this.hoverRetargetTicks = 0;
         this.escapeFlightActive = false;
@@ -1058,7 +1093,10 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
             away = new Vec3(this.getRandom().nextDouble() - 0.5D, 0.0D, this.getRandom().nextDouble() - 0.5D);
         }
         Vec3 direction = new Vec3(away.x, 0.0D, away.z).normalize();
-        Vec3 target = this.position().add(direction.scale(4.5D + this.getRandom().nextDouble() * 5.0D)).add(0.0D, 1.5D + this.getRandom().nextDouble() * 1.8D, 0.0D);
+        Vec3 target = BirdFlightTargeting.findAirTarget(this, FLIGHT_PROFILE, direction, true);
+        if (target == null) {
+            target = BirdFlightTargeting.findRecoveryTarget(this, direction, 5, 8);
+        }
         this.startShortFlight(target, true);
     }
 
@@ -1090,7 +1128,7 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
 
     private void beginLandingFlight() {
         Vec3 landingTarget = this.findLandingTarget();
-        if (landingTarget == null) {
+        if (landingTarget == null || !BirdFlightTargeting.hasClearFlightPath(this, landingTarget)) {
             this.extendCruiseAfterUnsafeLanding();
             return;
         }
@@ -1132,7 +1170,7 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
         if (target != null) {
             return this.clampFlightTarget(target);
         }
-        return this.clampFlightTarget(this.position().add(0.0D, this.onGround() ? 2.0D : 0.8D, 0.0D));
+        return BirdFlightTargeting.findRecoveryTarget(this, direction, 5, 8);
     }
 
     private Vec3 findLandingTarget() {

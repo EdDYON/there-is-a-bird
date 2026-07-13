@@ -115,6 +115,34 @@ public final class BirdConfigManager {
         return current.global.spawnMultiplier * speciesConfig(current, species).spawnMultiplier;
     }
 
+    public static boolean colonialMode() {
+        return config.global.colonialMode;
+    }
+
+    public static boolean naturalCrowNests() {
+        return config.global.naturalCrowNests;
+    }
+
+    public static double crowNestGenerationMultiplier() {
+        return config.global.crowNestGenerationMultiplier;
+    }
+
+    public static boolean crowsStoreTreasures() {
+        return config.global.crowsStoreTreasures;
+    }
+
+    public static boolean crowsClaimPlayerNests() {
+        return config.global.crowsClaimPlayerNests;
+    }
+
+    public static int crowNestSearchDistance() {
+        return config.global.crowNestSearchDistance;
+    }
+
+    public static int maxCrowNestTreasures() {
+        return config.global.maxCrowNestTreasures;
+    }
+
     public static int minGroup(BirdSpecies species) {
         return speciesConfig(species).minGroup;
     }
@@ -198,11 +226,18 @@ public final class BirdConfigManager {
         BirdConfigData normalized = new BirdConfigData();
         BirdGlobalConfig sourceGlobal = input == null || input.global == null ? defaults.global : input.global;
         normalized.global.naturalSpawning = sourceGlobal.naturalSpawning;
+        normalized.global.colonialMode = sourceGlobal.colonialMode;
+        normalized.global.naturalCrowNests = sourceGlobal.naturalCrowNests;
+        normalized.global.crowsStoreTreasures = sourceGlobal.crowsStoreTreasures;
+        normalized.global.crowsClaimPlayerNests = sourceGlobal.crowsClaimPlayerNests;
         normalized.global.spawnMultiplier = finiteClamp(sourceGlobal.spawnMultiplier, 0.0D, 10.0D, 1.0D);
+        normalized.global.crowNestGenerationMultiplier = finiteClamp(sourceGlobal.crowNestGenerationMultiplier, 0.0D, 10.0D, 1.0D);
         normalized.global.droppingFrequencyMultiplier = finiteClamp(sourceGlobal.droppingFrequencyMultiplier, 0.0D, 10.0D, 1.0D);
         normalized.global.soundVolumeMultiplier = finiteClamp(sourceGlobal.soundVolumeMultiplier, 0.0D, 4.0D, 1.0D);
         normalized.global.maxBirdsNearby = clamp(sourceGlobal.maxBirdsNearby, 0, 256);
         normalized.global.maxGroundDroppingsNearby = clamp(sourceGlobal.maxGroundDroppingsNearby, 0, 128);
+        normalized.global.crowNestSearchDistance = clamp(sourceGlobal.crowNestSearchDistance, 16, 128);
+        normalized.global.maxCrowNestTreasures = clamp(sourceGlobal.maxCrowNestTreasures, 1, 6);
         normalized.birds.clear();
 
         for (BirdSpecies species : BirdSpecies.values()) {

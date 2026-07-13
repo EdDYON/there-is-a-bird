@@ -17,11 +17,18 @@ final class BirdConfigPacketCodec {
     static void encode(FriendlyByteBuf buffer, BirdConfigData data) {
         BirdGlobalConfig global = data.global;
         buffer.writeBoolean(global.naturalSpawning);
+        buffer.writeBoolean(global.colonialMode);
+        buffer.writeBoolean(global.naturalCrowNests);
+        buffer.writeBoolean(global.crowsStoreTreasures);
+        buffer.writeBoolean(global.crowsClaimPlayerNests);
         buffer.writeDouble(global.spawnMultiplier);
+        buffer.writeDouble(global.crowNestGenerationMultiplier);
         buffer.writeDouble(global.droppingFrequencyMultiplier);
         buffer.writeDouble(global.soundVolumeMultiplier);
         buffer.writeVarInt(global.maxBirdsNearby);
         buffer.writeVarInt(global.maxGroundDroppingsNearby);
+        buffer.writeVarInt(global.crowNestSearchDistance);
+        buffer.writeVarInt(global.maxCrowNestTreasures);
         buffer.writeVarInt(data.birds.size());
         for (Map.Entry<String, BirdSpeciesConfig> entry : data.birds.entrySet()) {
             BirdSpeciesConfig bird = entry.getValue();
@@ -41,11 +48,18 @@ final class BirdConfigPacketCodec {
     static BirdConfigData decode(FriendlyByteBuf buffer) {
         BirdConfigData data = new BirdConfigData();
         data.global.naturalSpawning = buffer.readBoolean();
+        data.global.colonialMode = buffer.readBoolean();
+        data.global.naturalCrowNests = buffer.readBoolean();
+        data.global.crowsStoreTreasures = buffer.readBoolean();
+        data.global.crowsClaimPlayerNests = buffer.readBoolean();
         data.global.spawnMultiplier = buffer.readDouble();
+        data.global.crowNestGenerationMultiplier = buffer.readDouble();
         data.global.droppingFrequencyMultiplier = buffer.readDouble();
         data.global.soundVolumeMultiplier = buffer.readDouble();
         data.global.maxBirdsNearby = buffer.readVarInt();
         data.global.maxGroundDroppingsNearby = buffer.readVarInt();
+        data.global.crowNestSearchDistance = buffer.readVarInt();
+        data.global.maxCrowNestTreasures = buffer.readVarInt();
         int size = buffer.readVarInt();
         if (size < 0 || size > MAX_BIRD_ENTRIES) {
             throw new IllegalArgumentException("Invalid bird config entry count: " + size);

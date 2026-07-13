@@ -4,7 +4,13 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.Collections;
+import java.util.Map;
+import java.util.WeakHashMap;
+
 public final class BirdFlightController {
+    private static final Map<Mob, FlightProgress> FLIGHT_PROGRESS = Collections.synchronizedMap(new WeakHashMap<>());
+
     private BirdFlightController() {
     }
 
@@ -39,6 +45,34 @@ public final class BirdFlightController {
 
     public static boolean isStalledInAir(Mob bird, int timeFlying, double minMovementSqr) {
         return timeFlying > 15 && !bird.onGround() && bird.getDeltaMovement().lengthSqr() < minMovementSqr;
+    }
+
+    /** Detects looping by measuring whether distance to the current target is actually shrinking. */
+    public static boolean isFlightProgressStalled(Mob bird, Vec3 target, int graceTicks, int maxStalledTicks) {
+        if (target == null || bird.onGround()) {
+            clearFlightProgress(bird);
+            return false;
+        }
+        double distanceSqr = bird.position().distanceToSqr(target);
+        FlightProgress progress = FLIGHT_PROGRESS.get(bird);
+        if (progress == null || progress.target.distanceToSqr(target) > 0.25D) {
+            FLIGHT_PROGRESS.put(bird, new FlightProgress(target, distanceSqr));
+            return false;
+        }
+        ++progress.ticks;
+        if (distanceSqr + 0.01D < progress.bestDistanceSqr) {
+            progress.bestDistanceSqr = distanceSqr;
+            progress.stalledTicks = 0;
+            return false;
+        }
+        if (progress.ticks <= graceTicks) {
+            return false;
+        }
+        return ++progress.stalledTicks >= maxStalledTicks;
+    }
+
+    public static void clearFlightProgress(Mob bird) {
+        FLIGHT_PROGRESS.remove(bird);
     }
 
     public static void faceMovement(Mob bird, Vec3 movement, float maxPitchDegrees) {
@@ -91,5 +125,17 @@ public final class BirdFlightController {
             return true;
         }
         return movement.horizontalDistanceSqr() > 0.001D;
+    }
+
+    private static final class FlightProgress {
+        private final Vec3 target;
+        private double bestDistanceSqr;
+        private int ticks;
+        private int stalledTicks;
+
+        private FlightProgress(Vec3 target, double bestDistanceSqr) {
+            this.target = target;
+            this.bestDistanceSqr = bestDistanceSqr;
+        }
     }
 }

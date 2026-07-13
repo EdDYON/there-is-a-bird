@@ -6,8 +6,8 @@ import com.mojang.blaze3d.platform.NativeImage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import net.minecraft.client.Minecraft;
@@ -16,8 +16,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
 public final class PhotographTextureCache {
+    private static final int MAX_TEXTURES = 64;
     private static final ResourceLocation FALLBACK = new ResourceLocation(GuaniaoMod.MOD_ID, "textures/item/photograph.png");
-    private static final Map<String, ResourceLocation> TEXTURES = new HashMap<>();
+    private static final Map<String, ResourceLocation> TEXTURES = new LinkedHashMap<>(MAX_TEXTURES + 1, 0.75F, true);
 
     private PhotographTextureCache() {
     }
@@ -35,16 +36,30 @@ public final class PhotographTextureCache {
                 return FALLBACK;
             }
 
-            String key = safe(PhotographData.id(stack)) + "_" + width + "x" + height + "_" + Integer.toUnsignedString(Arrays.hashCode(pixels));
-            return TEXTURES.computeIfAbsent(key, ignored -> {
-                NativeImage image = toNativeImage(pixels, width, height);
-                DynamicTexture texture = new DynamicTexture(image);
-                texture.upload();
-                return Minecraft.getInstance().getTextureManager().register("guaniao_photo/" + key, texture);
-            });
+            String key = safe(PhotographData.id(stack)) + "_" + width + "x" + height;
+            ResourceLocation cached = TEXTURES.get(key);
+            if (cached != null) {
+                return cached;
+            }
+
+            NativeImage image = toNativeImage(pixels, width, height);
+            DynamicTexture texture = new DynamicTexture(image);
+            texture.upload();
+            ResourceLocation registered = Minecraft.getInstance().getTextureManager().register("guaniao_photo/" + key, texture);
+            TEXTURES.put(key, registered);
+            evictOldestTextures();
+            return registered;
         } catch (RuntimeException exception) {
             return FALLBACK;
         }
+    }
+
+    public static void clear() {
+        Minecraft minecraft = Minecraft.getInstance();
+        for (ResourceLocation texture : TEXTURES.values()) {
+            minecraft.getTextureManager().release(texture);
+        }
+        TEXTURES.clear();
     }
 
     public static Path export(ItemStack stack) throws IOException {
@@ -69,6 +84,16 @@ public final class PhotographTextureCache {
             }
         }
         return image;
+    }
+
+    private static void evictOldestTextures() {
+        Iterator<ResourceLocation> iterator = TEXTURES.values().iterator();
+        Minecraft minecraft = Minecraft.getInstance();
+        while (TEXTURES.size() > MAX_TEXTURES && iterator.hasNext()) {
+            ResourceLocation texture = iterator.next();
+            iterator.remove();
+            minecraft.getTextureManager().release(texture);
+        }
     }
 
     private static String safe(String id) {
