@@ -1,5 +1,7 @@
 package EdDYON.guaniao.content.bird.brain;
 
+import EdDYON.guaniao.config.BirdConfigManager;
+import EdDYON.guaniao.config.BirdSpecies;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.LivingEntity;
@@ -23,6 +25,8 @@ public class BirdSenses {
     private long dayTime;
     private BlockPos lastKnownWaterEdge;
     private BlockPos lastKnownRoost;
+    private long nextPlayerScanTick;
+    private long nextPreyScanTick;
 
     public void tick(BirdBrain brain) {
         PathfinderMob bird = brain.bird();
@@ -32,20 +36,31 @@ public class BirdSenses {
         this.onGround = bird.onGround();
         this.airborne = !this.onGround;
 
-        this.nearestPlayer = bird.level().getNearestPlayer(bird, profile.playerSenseRadius());
-        if (this.nearestPlayer != null && !this.nearestPlayer.isSpectator()) {
-            this.nearestPlayerDistance = Math.sqrt(bird.distanceToSqr(this.nearestPlayer));
-            this.nearestPlayerSprinting = this.nearestPlayer.isSprinting();
-            this.temptingPlayerNearby = profile.isTemptingPlayer(this.nearestPlayer);
-        } else {
-            this.nearestPlayer = null;
-            this.nearestPlayerDistance = Double.MAX_VALUE;
-            this.nearestPlayerSprinting = false;
-            this.temptingPlayerNearby = false;
+        BirdSpecies species = BirdSpecies.from(bird);
+        long now = bird.level().getGameTime();
+        int threatInterval = species == null ? 20 : BirdConfigManager.threatScanInterval(species);
+        int foodInterval = species == null ? 20 : BirdConfigManager.foodScanInterval(species);
+
+        if (now >= this.nextPlayerScanTick) {
+            this.nextPlayerScanTick = now + threatInterval;
+            this.nearestPlayer = bird.level().getNearestPlayer(bird, profile.playerSenseRadius());
+            if (this.nearestPlayer != null && !this.nearestPlayer.isSpectator()) {
+                this.nearestPlayerDistance = Math.sqrt(bird.distanceToSqr(this.nearestPlayer));
+                this.nearestPlayerSprinting = this.nearestPlayer.isSprinting();
+                this.temptingPlayerNearby = profile.isTemptingPlayer(bird, this.nearestPlayer);
+            } else {
+                this.nearestPlayer = null;
+                this.nearestPlayerDistance = Double.MAX_VALUE;
+                this.nearestPlayerSprinting = false;
+                this.temptingPlayerNearby = false;
+            }
         }
 
-        this.nearestPrey = profile.findNearestPrey(bird);
-        this.nearestPreyDistance = this.nearestPrey == null ? Double.MAX_VALUE : Math.sqrt(bird.distanceToSqr(this.nearestPrey));
+        if (now >= this.nextPreyScanTick) {
+            this.nextPreyScanTick = now + foodInterval;
+            this.nearestPrey = profile.findNearestPrey(bird);
+            this.nearestPreyDistance = this.nearestPrey == null ? Double.MAX_VALUE : Math.sqrt(bird.distanceToSqr(this.nearestPrey));
+        }
 
         this.nearWater = profile.isNearWater(bird);
         this.waterEdge = profile.isWaterEdge(bird);
@@ -131,6 +146,8 @@ public class BirdSenses {
     }
 
     public boolean hasNearbyThreat() {
-        return this.nearestPlayer != null && this.nearestPlayerDistance < 16.0D;
+        return !BirdConfigManager.aprilFoolsMode()
+                && this.nearestPlayer != null
+                && this.nearestPlayerDistance < 16.0D;
     }
 }

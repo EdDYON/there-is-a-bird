@@ -24,7 +24,8 @@ public class BudgerigarCuriousFollowGoal extends Goal {
         if (player == null || player.isSpectator()) {
             return false;
         }
-        boolean holdingFood = BudgerigarEntity.isEdibleFood(player.getMainHandItem()) || BudgerigarEntity.isEdibleFood(player.getOffhandItem());
+        boolean holdingFood = this.budgerigar.isEdibleFoodForThisBird(player.getMainHandItem())
+                || this.budgerigar.isEdibleFoodForThisBird(player.getOffhandItem());
         if (!holdingFood && this.budgerigar.trustTicks() < 650) {
             return false;
         }

@@ -4,15 +4,17 @@ import EdDYON.guaniao.content.bird.BirdActivitySchedule;
 import EdDYON.guaniao.content.bird.brain.BirdBrain;
 import EdDYON.guaniao.content.bird.brain.BirdSenses;
 import EdDYON.guaniao.content.bird.brain.BirdSpeciesProfile;
+import EdDYON.guaniao.content.bird.BirdTags;
+import EdDYON.guaniao.content.bird.BirdScanBudget;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.FluidTags;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.animal.AbstractFish;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Items;
+import EdDYON.guaniao.content.bird.nightheron.NightHeronEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -60,13 +62,15 @@ public final class NightHeronProfile extends BirdSpeciesProfile {
 
     @Override
     public boolean isPreferredPrey(LivingEntity entity) {
-        return entity instanceof AbstractFish
-                || entity.getType() == EntityType.FROG
-                || entity.getType() == EntityType.TADPOLE;
+        return entity != null && entity.getType().is(BirdTags.NIGHT_HERON_PREY);
     }
 
     @Override
     public LivingEntity findNearestPrey(PathfinderMob bird) {
+        if (!(bird.level() instanceof ServerLevel serverLevel)
+                || !BirdScanBudget.tryAcquire(serverLevel, bird)) {
+            return null;
+        }
         return bird.level().getEntitiesOfClass(
                         LivingEntity.class,
                         bird.getBoundingBox().inflate(8.0D),
@@ -78,10 +82,14 @@ public final class NightHeronProfile extends BirdSpeciesProfile {
 
     @Override
     public boolean isTemptingPlayer(Player player) {
-        return player.getMainHandItem().is(Items.COD)
-                || player.getMainHandItem().is(Items.SALMON)
-                || player.getOffhandItem().is(Items.COD)
-                || player.getOffhandItem().is(Items.SALMON);
+        return NightHeronEntity.isEdibleFishItem(player.getMainHandItem())
+                || NightHeronEntity.isEdibleFishItem(player.getOffhandItem());
+    }
+
+    @Override
+    public boolean isTemptingPlayer(PathfinderMob bird, Player player) {
+        return NightHeronEntity.isEdibleFishItem(player.getMainHandItem())
+                || NightHeronEntity.isEdibleFishItem(player.getOffhandItem());
     }
 
     @Override

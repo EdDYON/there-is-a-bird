@@ -1,10 +1,15 @@
 package EdDYON.guaniao.content.bird.nightheron;
 
+import EdDYON.guaniao.config.BirdConfigManager;
 import EdDYON.guaniao.content.bird.BirdSoundVolume;
+import EdDYON.guaniao.content.bird.BirdFlockSoundLimiter;
 import EdDYON.guaniao.content.bird.BirdActivitySchedule;
 import EdDYON.guaniao.content.bird.CleanBirdTemptGoal;
 import EdDYON.guaniao.content.bird.BirdFoodSafety;
+import EdDYON.guaniao.content.bird.BirdTags;
+import EdDYON.guaniao.content.bird.flock.FlockCompatibleBird;
 import EdDYON.guaniao.content.bird.BirdGroundAnimation;
+import EdDYON.guaniao.content.bird.BirdSleepWakeable;
 import EdDYON.guaniao.content.bird.PollutedFoodReactionUtil;
 import EdDYON.guaniao.content.bird.brain.BirdBrain;
 import EdDYON.guaniao.content.bird.flight.BirdFlightAware;
@@ -85,13 +90,13 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 
 public class NightHeronEntity
 extends PathfinderMob
-implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, BirdBathFeedingAnimatable {
+implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, BirdBathFeedingAnimatable, FlockCompatibleBird, BirdSleepWakeable {
     private static final EntityDataAccessor<Integer> BEHAVIOR_STATE = SynchedEntityData.defineId(NightHeronEntity.class, (EntityDataSerializer)EntityDataSerializers.INT);
     private static final EntityDataAccessor<Float> MODEL_SCALE = SynchedEntityData.defineId(NightHeronEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<ItemStack> HELD_FISH = SynchedEntityData.defineId(NightHeronEntity.class, EntityDataSerializers.ITEM_STACK);
     private static final EntityDataAccessor<Integer> HELD_FISH_POSE_SEED = SynchedEntityData.defineId(NightHeronEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> EATING_TICKS = SynchedEntityData.defineId(NightHeronEntity.class, EntityDataSerializers.INT);
-    static final Ingredient TEMPT_ITEMS = Ingredient.of((ItemLike[])new ItemLike[]{Items.COD, Items.SALMON, Items.TROPICAL_FISH, Items.PUFFERFISH});
+    static final Ingredient TEMPT_ITEMS = Ingredient.of(BirdTags.NIGHT_HERON_FOODS);
     private static final RawAnimation IDLE_ANIMATION = RawAnimation.begin().thenLoop("idle");
     private static final RawAnimation IDLE_DIFF_1_ANIMATION = RawAnimation.begin().thenPlay("idle_diff_1").thenLoop("idle");
     private static final RawAnimation IDLE_DIFF_2_ANIMATION = RawAnimation.begin().thenPlay("idle_diff_2").thenLoop("idle");
@@ -104,8 +109,7 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
     private static final RawAnimation FLY_FLAPPING_WING_ANIMATION = RawAnimation.begin().thenPlay("fly_flapping_wing").thenLoop("fly_flapping_wing_loop");
     private static final RawAnimation FLY_FLAPPING_WING_LOOP_ANIMATION = RawAnimation.begin().thenLoop("fly_flapping_wing_loop");
     private static final RawAnimation EAT_ANIMATION = RawAnimation.begin().thenPlay("eat").thenLoop("idle");
-    private static final int ACTIVE_START_TIME = 11000;
-    private static final int ACTIVE_END_TIME = 1500;
+    private static final RawAnimation SLEEP_ANIMATION = RawAnimation.begin().thenPlay("sleep").thenLoop("sleep_loop");
     private static final int WATER_SEARCH_RADIUS = 8;
     private static final double RUNNING_SPEED_THRESHOLD = 0.018;
     private static final float FLIGHT_YAW_TURN_RATE = 10.0f;
@@ -123,6 +127,7 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
     private int frightMemoryTicks;
     private int recentFrightCount;
     private int externalFrightTicks;
+    private int restInterruptionTicks;
     private boolean severeExternalFright;
     private Vec3 externalFrightSource;
     private int preyStrikeCooldown;
@@ -236,6 +241,9 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
                 this.externalFrightSource = null;
                 this.severeExternalFright = false;
             }
+            if (this.restInterruptionTicks > 0) {
+                --this.restInterruptionTicks;
+            }
             if (this.preyStrikeCooldown > 0) {
                 --this.preyStrikeCooldown;
             }
@@ -268,10 +276,19 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
 
     public boolean hurt(DamageSource damageSource, float amount) {
         boolean hurt = super.hurt(damageSource, amount);
-        if (hurt) {
+        if (hurt && !this.level().isClientSide) {
             this.clearEatingFish();
             Entity attacker = damageSource.getEntity();
-            this.receiveFlockFright(attacker != null ? attacker.position() : this.position(), true);
+            Vec3 sourcePos = attacker != null ? attacker.position() : this.position();
+            this.restInterruptionTicks = Math.max(this.restInterruptionTicks, 240);
+            if (this.isBirdSleeping()) {
+                this.getNavigation().stop();
+                this.setBehaviorState(NightHeronBehaviorState.ALERT_FREEZE);
+            }
+            if (BirdConfigManager.aprilFoolsMode() && attacker instanceof Player) {
+                return true;
+            }
+            this.receiveFlockFright(sourcePos, true);
             this.rememberFright(true);
         }
         return hurt;
@@ -338,7 +355,14 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
     }
 
     public int getAmbientSoundInterval() {
-        return 240;
+        return BirdFlockSoundLimiter.scaledAmbientInterval(this, 240);
+    }
+
+    @Override
+    public void playAmbientSound() {
+        if (BirdFlockSoundLimiter.allowAmbient(this)) {
+            super.playAmbientSound();
+        }
     }
 
     public float getSoundVolume() {
@@ -360,6 +384,28 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
 
     boolean isRoosting() {
         return this.getBehaviorState() == NightHeronBehaviorState.ROOSTING || this.shouldRoost();
+    }
+
+    boolean isRestInterrupted() {
+        return this.restInterruptionTicks > 0;
+    }
+
+    @Override
+    public boolean isBirdSleeping() {
+        return this.getBehaviorState() == NightHeronBehaviorState.ROOSTING;
+    }
+
+    @Override
+    public void wakeFromLoudSound(Vec3 soundPosition) {
+        if (this.level().isClientSide || !this.isBirdSleeping()) {
+            return;
+        }
+        Vec3 sourcePos = soundPosition == null ? this.position() : soundPosition;
+        this.restInterruptionTicks = Math.max(this.restInterruptionTicks, 240);
+        this.getNavigation().stop();
+        this.setBehaviorState(NightHeronBehaviorState.ALERT_FREEZE);
+        this.getLookControl().setLookAt(sourcePos.x, sourcePos.y, sourcePos.z, 35.0F, this.getMaxHeadXRot());
+        this.receiveFlockFright(sourcePos, false);
     }
 
     public ItemStack getHeldFishForRendering() {
@@ -683,7 +729,8 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
     }
 
     boolean isTemptingPlayer(Player player) {
-        return BirdFoodSafety.matchesClean(TEMPT_ITEMS, player.getMainHandItem()) || BirdFoodSafety.matchesClean(TEMPT_ITEMS, player.getOffhandItem());
+        return BirdFoodSafety.matchesClean(BirdTags.NIGHT_HERON_FOODS, player.getMainHandItem())
+                || BirdFoodSafety.matchesClean(BirdTags.NIGHT_HERON_FOODS, player.getOffhandItem());
     }
 
     boolean canStrikePrey() {
@@ -731,11 +778,11 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
     }
 
     public static boolean isEdibleFishItem(ItemStack stack) {
-        return BirdFoodSafety.matchesClean(TEMPT_ITEMS, stack);
+        return BirdFoodSafety.matchesClean(BirdTags.NIGHT_HERON_FOODS, stack);
     }
 
     static boolean isDroppedFishCandidate(ItemStack stack) {
-        return BirdFoodSafety.matchesDroppedFoodCandidate(TEMPT_ITEMS, stack);
+        return BirdFoodSafety.matchesDroppedFoodCandidate(BirdTags.NIGHT_HERON_FOODS, stack);
     }
 
     void eatThrownFish(ItemEntity itemEntity) {
@@ -1235,7 +1282,7 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
         }
         NightHeronBehaviorState state = this.getBehaviorState();
         if (state == NightHeronBehaviorState.ROOSTING) {
-            return animationState.setAndContinue(IDLE_ANIMATION);
+            return animationState.setAndContinue(SLEEP_ANIMATION);
         }
         double horizontalSpeed = this.getDeltaMovement().horizontalDistanceSqr();
         if (BirdGroundAnimation.canPlayWalk(this)

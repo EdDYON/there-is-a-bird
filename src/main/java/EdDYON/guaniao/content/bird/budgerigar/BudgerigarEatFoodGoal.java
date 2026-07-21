@@ -1,7 +1,11 @@
 package EdDYON.guaniao.content.bird.budgerigar;
 
+import EdDYON.guaniao.config.BirdConfigManager;
+import EdDYON.guaniao.config.BirdSpecies;
+import EdDYON.guaniao.content.bird.BirdScanBudget;
 import java.util.Comparator;
 import java.util.EnumSet;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -25,7 +29,9 @@ public class BudgerigarEatFoodGoal extends Goal {
         if (this.scanCooldown-- > 0) {
             return false;
         }
-        this.scanCooldown = 10 + this.budgerigar.getRandom().nextInt(20);
+        BirdSpecies species = BirdSpecies.from(this.budgerigar);
+        int interval = species == null ? 20 : BirdConfigManager.foodScanInterval(species);
+        this.scanCooldown = interval + this.budgerigar.getRandom().nextInt(Math.max(1, interval / 2));
         this.targetFood = this.findNearestFood();
         return this.targetFood != null;
     }
@@ -34,7 +40,7 @@ public class BudgerigarEatFoodGoal extends Goal {
     public boolean canContinueToUse() {
         return this.targetFood != null
                 && this.targetFood.isAlive()
-                && BudgerigarEntity.isEdibleFood(this.targetFood.getItem())
+                && this.budgerigar.isEdibleFoodForThisBird(this.targetFood.getItem())
                 && this.budgerigar.canStartFoodGoal()
                 && this.budgerigar.distanceToSqr((Entity)this.targetFood) < 196.0D;
     }
@@ -50,7 +56,7 @@ public class BudgerigarEatFoodGoal extends Goal {
 
     @Override
     public void tick() {
-        if (this.targetFood == null || !this.targetFood.isAlive() || !BudgerigarEntity.isEdibleFood(this.targetFood.getItem())) {
+        if (this.targetFood == null || !this.targetFood.isAlive() || !this.budgerigar.isEdibleFoodForThisBird(this.targetFood.getItem())) {
             this.targetFood = this.findNearestFood();
             this.eatDelayTicks = 0;
             if (this.targetFood == null) {
@@ -83,11 +89,15 @@ public class BudgerigarEatFoodGoal extends Goal {
     }
 
     private ItemEntity findNearestFood() {
+        if (!(this.budgerigar.level() instanceof ServerLevel serverLevel)
+                || !BirdScanBudget.tryAcquire(serverLevel, this.budgerigar)) {
+            return null;
+        }
         return this.budgerigar.level()
                 .getEntitiesOfClass(
                         ItemEntity.class,
                         this.budgerigar.getBoundingBox().inflate(10.0D, 3.0D, 10.0D),
-                        itemEntity -> itemEntity.isAlive() && BudgerigarEntity.isEdibleFood(itemEntity.getItem()))
+                        itemEntity -> itemEntity.isAlive() && this.budgerigar.isEdibleFoodForThisBird(itemEntity.getItem()))
                 .stream()
                 .min(Comparator.comparingDouble(itemEntity -> this.budgerigar.distanceToSqr((Entity)itemEntity)))
                 .orElse(null);

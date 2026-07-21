@@ -1,6 +1,7 @@
 package EdDYON.guaniao.mixin;
 
 import EdDYON.guaniao.content.bird.flight.BirdFlightAware;
+import EdDYON.guaniao.config.BirdConfigManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.BlockGetter;
@@ -34,6 +35,9 @@ public class BlockStateBaseMixin {
         }
         Entity entity = entityContext.getEntity();
         if (!(entity instanceof BirdFlightAware bird)) {
+            return;
+        }
+        if (!BirdConfigManager.birdsPassThroughLeaves()) {
             return;
         }
         boolean activelyFlying = bird.isBirdFlightActive() && (!entity.onGround() || entity.isNoGravity());

@@ -14,6 +14,8 @@ public final class GuaniaoSoundEvents {
     public static final RegistryObject<SoundEvent> NIGHT_HERON_HURT = register("entity.night_heron.hurt");
     public static final RegistryObject<SoundEvent> NIGHT_HERON_DEATH = register("entity.night_heron.death");
     public static final RegistryObject<SoundEvent> NIGHT_HERON_ATTACK = register("entity.night_heron.attack");
+    public static final RegistryObject<SoundEvent> CROW_AMBIENT = register("entity.crow.ambient");
+    public static final RegistryObject<SoundEvent> CROW_HURT = register("entity.crow.hurt");
     public static final RegistryObject<SoundEvent> SPARROW_AMBIENT = register("entity.sparrow.ambient");
     public static final RegistryObject<SoundEvent> SPARROW_HURT = register("entity.sparrow.hurt");
     public static final RegistryObject<SoundEvent> SPARROW_DEATH = register("entity.sparrow.death");
@@ -35,6 +37,7 @@ public final class GuaniaoSoundEvents {
     public static final RegistryObject<SoundEvent> SPOTTED_DOVE_DEATH = register("entity.spotted_dove.death");
     public static final RegistryObject<SoundEvent> SPOTTED_DOVE_MATE = register("entity.spotted_dove.mate");
     public static final RegistryObject<SoundEvent> PIGEON_AMBIENT = register("entity.pigeon.ambient");
+    public static final RegistryObject<SoundEvent> SEAGULL_AMBIENT = register("entity.seagull.ambient");
 
     private GuaniaoSoundEvents() {
     }

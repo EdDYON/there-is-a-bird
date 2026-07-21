@@ -9,7 +9,7 @@ import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 
 public final class GuaniaoNetwork {
-    private static final String PROTOCOL = "6";
+    private static final String PROTOCOL = "10";
     private static int packetId;
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
@@ -22,10 +22,40 @@ public final class GuaniaoNetwork {
     }
 
     public static void register() {
-        CHANNEL.messageBuilder(PhotographTakenPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(PhotographTakenPacket::encode)
-                .decoder(PhotographTakenPacket::decode)
-                .consumerMainThread(PhotographTakenPacket::handle)
+        CHANNEL.messageBuilder(BeginPhotoUploadPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(BeginPhotoUploadPacket::encode)
+                .decoder(BeginPhotoUploadPacket::decode)
+                .consumerMainThread(BeginPhotoUploadPacket::handle)
+                .add();
+        CHANNEL.messageBuilder(PhotoUploadChunkPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(PhotoUploadChunkPacket::encode)
+                .decoder(PhotoUploadChunkPacket::decode)
+                .consumerMainThread(PhotoUploadChunkPacket::handle)
+                .add();
+        CHANNEL.messageBuilder(FinishPhotoUploadPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(FinishPhotoUploadPacket::encode)
+                .decoder(FinishPhotoUploadPacket::decode)
+                .consumerMainThread(FinishPhotoUploadPacket::handle)
+                .add();
+        CHANNEL.messageBuilder(PhotoCaptureResultPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(PhotoCaptureResultPacket::encode)
+                .decoder(PhotoCaptureResultPacket::decode)
+                .consumerMainThread(PhotoCaptureResultPacket::handle)
+                .add();
+        CHANNEL.messageBuilder(PhotoRequestPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(PhotoRequestPacket::encode)
+                .decoder(PhotoRequestPacket::decode)
+                .consumerMainThread(PhotoRequestPacket::handle)
+                .add();
+        CHANNEL.messageBuilder(PhotoDownloadStartPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(PhotoDownloadStartPacket::encode)
+                .decoder(PhotoDownloadStartPacket::decode)
+                .consumerMainThread(PhotoDownloadStartPacket::handle)
+                .add();
+        CHANNEL.messageBuilder(PhotoDownloadChunkPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(PhotoDownloadChunkPacket::encode)
+                .decoder(PhotoDownloadChunkPacket::decode)
+                .consumerMainThread(PhotoDownloadChunkPacket::handle)
                 .add();
         CHANNEL.messageBuilder(OpenBirdConfigPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(OpenBirdConfigPacket::encode)
@@ -36,6 +66,11 @@ public final class GuaniaoNetwork {
                 .encoder(SaveBirdConfigPacket::encode)
                 .decoder(SaveBirdConfigPacket::decode)
                 .consumerMainThread(SaveBirdConfigPacket::handle)
+                .add();
+        CHANNEL.messageBuilder(BirdRuntimeConfigPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BirdRuntimeConfigPacket::encode)
+                .decoder(BirdRuntimeConfigPacket::decode)
+                .consumerMainThread(BirdRuntimeConfigPacket::handle)
                 .add();
     }
 

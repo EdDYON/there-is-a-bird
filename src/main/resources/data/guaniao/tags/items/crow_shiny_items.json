@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:gold_nugget", "minecraft:iron_nugget", "minecraft:copper_ingot",
+    "minecraft:amethyst_shard", "minecraft:prismarine_crystals", "minecraft:quartz"
+  ]
+}

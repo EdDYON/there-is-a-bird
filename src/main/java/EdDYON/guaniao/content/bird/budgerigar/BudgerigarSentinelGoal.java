@@ -1,14 +1,19 @@
 package EdDYON.guaniao.content.bird.budgerigar;
 
+import EdDYON.guaniao.config.BirdConfigManager;
+import EdDYON.guaniao.config.BirdSpecies;
+import EdDYON.guaniao.content.bird.BirdScanBudget;
 import java.util.EnumSet;
 import java.util.List;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.FenceBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import EdDYON.guaniao.content.bird.flock.BirdFlockManager;
 
 public class BudgerigarSentinelGoal extends Goal {
     private final BudgerigarEntity budgerigar;
@@ -63,7 +68,9 @@ public class BudgerigarSentinelGoal extends Goal {
         }
         this.budgerigar.getNavigation().stop();
         this.budgerigar.setBehaviorState(BudgerigarBehaviorState.SENTINEL);
-        if (this.budgerigar.tickCount % 20 == 0) {
+        BirdSpecies species = BirdSpecies.from(this.budgerigar);
+        int interval = species == null ? 20 : BirdConfigManager.threatScanInterval(species);
+        if (this.budgerigar.tickCount % interval == 0) {
             this.checkThreats();
         }
     }
@@ -77,10 +84,14 @@ public class BudgerigarSentinelGoal extends Goal {
     }
 
     private List<BudgerigarEntity> nearbyFlock() {
-        return this.budgerigar.level().getEntitiesOfClass(BudgerigarEntity.class, this.budgerigar.getBoundingBox().inflate(BudgerigarDefinition.SOCIAL_RADIUS));
+        return BirdFlockManager.nearby(this.budgerigar, BudgerigarEntity.class, BudgerigarDefinition.SOCIAL_RADIUS);
     }
 
     private void checkThreats() {
+        if (!(this.budgerigar.level() instanceof ServerLevel serverLevel)
+                || !BirdScanBudget.tryAcquire(serverLevel, this.budgerigar)) {
+            return;
+        }
         List<Monster> monsters = this.budgerigar.level().getEntitiesOfClass(Monster.class, this.budgerigar.getBoundingBox().inflate(8.0D), Monster::isAlive);
         if (!monsters.isEmpty()) {
             this.budgerigar.alertNearbyBudgerigars(monsters.get(0).position(), 80);

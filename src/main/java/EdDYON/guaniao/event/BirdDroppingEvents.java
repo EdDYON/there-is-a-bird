@@ -3,7 +3,6 @@ package EdDYON.guaniao.event;
 import EdDYON.guaniao.config.BirdConfigManager;
 import EdDYON.guaniao.config.BirdSpecies;
 import EdDYON.guaniao.content.dropping.BirdDroppingProjectileEntity;
-import EdDYON.guaniao.content.dropping.BirdDroppingPrankHandler;
 import EdDYON.guaniao.content.dropping.BirdDroppingSplatEntity;
 import EdDYON.guaniao.content.dropping.BirdDroppingVariant;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
@@ -15,10 +14,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.entity.living.LivingEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid = "guaniao")
@@ -32,9 +28,7 @@ public final class BirdDroppingEvents {
     private BirdDroppingEvents() {
     }
 
-    @SubscribeEvent
-    public static void onLivingTick(LivingEvent.LivingTickEvent event) {
-        LivingEntity entity = event.getEntity();
+    public static void tickBird(LivingEntity entity) {
         if (!(entity.level() instanceof ServerLevel level) || !isBird(entity) || entity.tickCount < MIN_EXISTING_AGE_TICKS) {
             return;
         }
@@ -62,13 +56,6 @@ public final class BirdDroppingEvents {
             data.putInt(TAG_COOLDOWN, nextNaturalCooldown(entity));
         } else {
             data.putInt(TAG_COOLDOWN, randomBetween(entity.getRandom(), RETRY_MIN_TICKS, RETRY_MAX_TICKS));
-        }
-    }
-
-    @SubscribeEvent
-    public static void onVillagerTick(LivingEvent.LivingTickEvent event) {
-        if (event.getEntity() instanceof Villager villager) {
-            BirdDroppingPrankHandler.tickVillagerTradePenalty(villager);
         }
     }
 

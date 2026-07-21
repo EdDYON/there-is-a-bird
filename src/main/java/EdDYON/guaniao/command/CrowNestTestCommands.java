@@ -16,6 +16,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 
 /** Operator-only command for quickly exercising every bird-nest rummage profile. */
 @Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
@@ -25,6 +26,9 @@ public final class CrowNestTestCommands {
 
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
+        if (FMLEnvironment.production) {
+            return;
+        }
         event.getDispatcher().register(Commands.literal("guaniao_nest_test")
                 .requires(BirdConfigCommands::canEdit)
                 .executes(context -> fillTargetedNest(context.getSource())));

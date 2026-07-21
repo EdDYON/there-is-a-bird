@@ -11,6 +11,7 @@ import EdDYON.guaniao.content.bird.columbid.AbstractColumbidEntity;
 import EdDYON.guaniao.content.bird.crow.CrowEntity;
 import EdDYON.guaniao.content.bird.nightheron.NightHeronEntity;
 import EdDYON.guaniao.content.bird.seagull.SeagullEntity;
+import EdDYON.guaniao.content.bird.scale.BirdModelScale;
 import EdDYON.guaniao.content.bird.sparrow.SparrowEntity;
 import EdDYON.guaniao.network.GuaniaoNetwork;
 import EdDYON.guaniao.network.SaveBirdConfigPacket;
@@ -362,18 +363,42 @@ public class BirdConfigScreen extends Screen {
         if (species == null) {
             BirdGlobalConfig global = this.data.global;
             settings.add(SettingSpec.storageScope());
+            settings.add(SettingSpec.toggle("april_fools_mode", () -> global.aprilFoolsMode, value -> global.aprilFoolsMode = value));
             settings.add(SettingSpec.toggle("natural_spawning", () -> global.naturalSpawning, value -> global.naturalSpawning = value));
             settings.add(SettingSpec.toggle("colonial_mode", () -> global.colonialMode, value -> global.colonialMode = value));
             settings.add(SettingSpec.toggle("natural_crow_nests", () -> global.naturalCrowNests, value -> global.naturalCrowNests = value));
-            settings.add(SettingSpec.number("crow_nest_generation_multiplier", () -> global.crowNestGenerationMultiplier, value -> global.crowNestGenerationMultiplier = value, 0.0D, 10.0D, false));
+            settings.add(SettingSpec.number("crow_nest_generation_multiplier", () -> global.crowNestGenerationMultiplier, value -> global.crowNestGenerationMultiplier = value, 0.0D, 5.0D, false));
             settings.add(SettingSpec.toggle("crows_store_treasures", () -> global.crowsStoreTreasures, value -> global.crowsStoreTreasures = value));
             settings.add(SettingSpec.number("crow_nest_search_distance", () -> global.crowNestSearchDistance, value -> global.crowNestSearchDistance = (int)value, 16.0D, 128.0D, true));
             settings.add(SettingSpec.number("max_crow_nest_treasures", () -> global.maxCrowNestTreasures, value -> global.maxCrowNestTreasures = (int)value, 1.0D, 6.0D, true));
             settings.add(SettingSpec.toggle("crows_claim_player_nests", () -> global.crowsClaimPlayerNests, value -> global.crowsClaimPlayerNests = value));
+            settings.add(SettingSpec.toggle("pet_bird_commands", () -> global.enablePetBirdCommands, value -> global.enablePetBirdCommands = value));
+            settings.add(SettingSpec.toggle("seagull_stealing", () -> global.enableSeagullStealing, value -> global.enableSeagullStealing = value));
+            settings.add(SettingSpec.toggle("crow_item_safety", () -> global.crowItemSafety, value -> global.crowItemSafety = value));
+            settings.add(SettingSpec.toggle("birds_pass_through_leaves", () -> global.birdsPassThroughLeaves, value -> global.birdsPassThroughLeaves = value));
+            settings.add(SettingSpec.toggle("dropping_pressure_plate_pulse", () -> global.droppingPressurePlatePulseEnabled, value -> global.droppingPressurePlatePulseEnabled = value));
+            settings.add(SettingSpec.number("dropping_pressure_plate_pulse_ticks", () -> global.droppingPressurePlatePulseTicks, value -> global.droppingPressurePlatePulseTicks = (int)value, 5.0D, 100.0D, true));
+            settings.add(SettingSpec.toggle("photo_uploads", () -> global.photoUploadsEnabled, value -> global.photoUploadsEnabled = value));
+            settings.add(SettingSpec.toggle("photo_uploads_operator_only", () -> global.photoUploadsOperatorOnly, value -> global.photoUploadsOperatorOnly = value));
+            settings.add(SettingSpec.toggle("photo_uploads_whitelist_only", () -> global.photoUploadsWhitelistedOnly, value -> global.photoUploadsWhitelistedOnly = value));
+            settings.add(SettingSpec.number("max_photos_per_player", () -> global.maxPhotosPerPlayer, value -> global.maxPhotosPerPlayer = (int)value, 1.0D, 10000.0D, true));
+            settings.add(SettingSpec.number("max_photo_storage_player", () -> global.maxPhotoStorageMiBPerPlayer, value -> global.maxPhotoStorageMiBPerPlayer = (int)value, 1.0D, 4096.0D, true));
+            settings.add(SettingSpec.number("max_photos_per_world", () -> global.maxPhotosPerWorld, value -> global.maxPhotosPerWorld = (int)value, 1.0D, 100000.0D, true));
+            settings.add(SettingSpec.number("max_photo_storage_world", () -> global.maxPhotoStorageMiBPerWorld, value -> global.maxPhotoStorageMiBPerWorld = (int)value, 1.0D, 65536.0D, true));
+            settings.add(SettingSpec.number("photo_trash_retention_days", () -> global.photoTrashRetentionDays, value -> global.photoTrashRetentionDays = (int)value, 1.0D, 90.0D, true));
+            settings.add(SettingSpec.number("max_photo_downloads", () -> global.maxConcurrentPhotoDownloads, value -> global.maxConcurrentPhotoDownloads = (int)value, 1.0D, 128.0D, true));
+            settings.add(SettingSpec.number("photo_download_kib_tick", () -> global.photoDownloadKiBPerTick, value -> global.photoDownloadKiBPerTick = (int)value, 24.0D, 2048.0D, true));
             settings.add(SettingSpec.number("spawn_multiplier", () -> global.spawnMultiplier, value -> global.spawnMultiplier = value, 0.0D, 10.0D, false));
             settings.add(SettingSpec.number("dropping_multiplier", () -> global.droppingFrequencyMultiplier, value -> global.droppingFrequencyMultiplier = value, 0.0D, 10.0D, false));
             settings.add(SettingSpec.number("sound_multiplier", () -> global.soundVolumeMultiplier, value -> global.soundVolumeMultiplier = value, 0.0D, 4.0D, false));
             settings.add(SettingSpec.number("max_birds", () -> global.maxBirdsNearby, value -> global.maxBirdsNearby = (int)value, 0.0D, 256.0D, true));
+            settings.add(SettingSpec.number("max_wild_birds_region", () -> global.maxWildBirdsPerRegion, value -> global.maxWildBirdsPerRegion = (int)value, 0.0D, 1024.0D, true));
+            settings.add(SettingSpec.number("population_region_chunks", () -> global.populationRegionChunks, value -> global.populationRegionChunks = (int)value, 1.0D, 16.0D, true));
+            settings.add(SettingSpec.number("flock_refresh_ticks", () -> global.flockRefreshTicks, value -> global.flockRefreshTicks = (int)value, 5.0D, 200.0D, true));
+            settings.add(SettingSpec.number("habitat_cache_ticks", () -> global.habitatCacheTicks, value -> global.habitatCacheTicks = (int)value, 20.0D, 2400.0D, true));
+            settings.add(SettingSpec.number("seagull_steal_cooldown", () -> global.seagullPlayerCooldownTicks, value -> global.seagullPlayerCooldownTicks = (int)value, 0.0D, 72000.0D, true));
+            settings.add(SettingSpec.number("seagull_concurrent_targets", () -> global.maxConcurrentSeagullTargetsPerPlayer, value -> global.maxConcurrentSeagullTargetsPerPlayer = (int)value, 0.0D, 8.0D, true));
+            settings.add(SettingSpec.number("bird_scan_budget", () -> global.birdScanBudgetPerTick, value -> global.birdScanBudgetPerTick = (int)value, 1.0D, 128.0D, true));
             settings.add(SettingSpec.number("max_droppings", () -> global.maxGroundDroppingsNearby, value -> global.maxGroundDroppingsNearby = (int)value, 0.0D, 128.0D, true));
             return settings;
         }
@@ -386,6 +411,13 @@ public class BirdConfigScreen extends Screen {
         settings.add(SettingSpec.number("max_group", () -> bird.maxGroup, value -> bird.maxGroup = (int)value, 1.0D, 32.0D, true));
         settings.add(SettingSpec.number("dropping_multiplier", () -> bird.droppingFrequencyMultiplier, value -> bird.droppingFrequencyMultiplier = value, 0.0D, 10.0D, false));
         settings.add(SettingSpec.number("sound_multiplier", () -> bird.soundVolumeMultiplier, value -> bird.soundVolumeMultiplier = value, 0.0D, 4.0D, false));
+        settings.add(SettingSpec.number("max_wild_nearby", () -> bird.maxWildNearby, value -> bird.maxWildNearby = (int)value, 0.0D, 256.0D, true));
+        settings.add(SettingSpec.number("flock_radius", () -> bird.flockRadius, value -> bird.flockRadius = value, 2.0D, 48.0D, false));
+        settings.add(SettingSpec.number("flock_max_members", () -> bird.flockMaxMembers, value -> bird.flockMaxMembers = (int)value, 2.0D, 64.0D, true));
+        settings.add(SettingSpec.number("food_scan_interval", () -> bird.foodScanInterval, value -> bird.foodScanInterval = (int)value, 5.0D, 1200.0D, true));
+        settings.add(SettingSpec.number("threat_scan_interval", () -> bird.threatScanInterval, value -> bird.threatScanInterval = (int)value, 5.0D, 1200.0D, true));
+        settings.add(SettingSpec.number("owner_teleport_distance", () -> bird.ownerTeleportDistance, value -> bird.ownerTeleportDistance = value, 8.0D, 128.0D, false));
+        settings.add(SettingSpec.number("ambient_sound_cooldown", () -> bird.ambientSoundCooldownMultiplier, value -> bird.ambientSoundCooldownMultiplier = value, 0.25D, 8.0D, false));
         return settings;
     }
 
@@ -500,9 +532,9 @@ public class BirdConfigScreen extends Screen {
 
     private int previewScale(BirdSpecies species) {
         if (species == null) {
-            return 40;
+            return BirdModelScale.fitPreviewScale(40);
         }
-        return switch (species) {
+        int scale = switch (species) {
             case NIGHT_HERON -> 27;
             case SPARROW -> 54;
             case LONG_TAILED_TIT -> 51;
@@ -512,6 +544,7 @@ public class BirdConfigScreen extends Screen {
             case SPOTTED_DOVE, PIGEON -> 42;
             case CROW, SEAGULL -> 37;
         };
+        return BirdModelScale.fitPreviewScale(scale);
     }
 
     private Component fit(Component text, int maxWidth) {

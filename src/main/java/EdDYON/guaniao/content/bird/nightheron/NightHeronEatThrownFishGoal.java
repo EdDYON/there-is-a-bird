@@ -1,7 +1,11 @@
 package EdDYON.guaniao.content.bird.nightheron;
 
+import EdDYON.guaniao.config.BirdConfigManager;
+import EdDYON.guaniao.config.BirdSpecies;
+import EdDYON.guaniao.content.bird.BirdScanBudget;
 import java.util.Comparator;
 import java.util.EnumSet;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -10,6 +14,7 @@ public class NightHeronEatThrownFishGoal extends Goal {
     private final NightHeronEntity nightHeron;
     private ItemEntity targetFish;
     private int eatDelayTicks;
+    private int scanCooldown;
 
     public NightHeronEatThrownFishGoal(NightHeronEntity nightHeron) {
         this.nightHeron = nightHeron;
@@ -21,6 +26,11 @@ public class NightHeronEatThrownFishGoal extends Goal {
         if (!this.nightHeron.canEatThrownFish()) {
             return false;
         }
+        if (this.scanCooldown-- > 0) {
+            return false;
+        }
+        int interval = BirdConfigManager.foodScanInterval(BirdSpecies.NIGHT_HERON);
+        this.scanCooldown = interval + this.nightHeron.getRandom().nextInt(Math.max(1, interval / 2));
         this.targetFish = this.findNearestFish();
         return this.targetFish != null;
     }
@@ -83,6 +93,10 @@ public class NightHeronEatThrownFishGoal extends Goal {
     }
 
     private ItemEntity findNearestFish() {
+        if (!(this.nightHeron.level() instanceof ServerLevel serverLevel)
+                || !BirdScanBudget.tryAcquire(serverLevel, this.nightHeron)) {
+            return null;
+        }
         return this.nightHeron.level()
                 .getEntitiesOfClass(
                         ItemEntity.class,

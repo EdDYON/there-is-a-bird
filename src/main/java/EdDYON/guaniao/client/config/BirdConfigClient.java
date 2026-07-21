@@ -7,6 +7,15 @@ public final class BirdConfigClient {
     private BirdConfigClient() {
     }
 
+    public static boolean requestOpen() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null || minecraft.player.connection == null) {
+            return false;
+        }
+        minecraft.player.connection.sendCommand("guaniaoconfig");
+        return true;
+    }
+
     public static void open(BirdConfigData data) {
         Minecraft.getInstance().setScreen(new BirdConfigScreen(data));
     }

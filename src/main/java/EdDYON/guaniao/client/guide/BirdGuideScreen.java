@@ -1,6 +1,7 @@
 package EdDYON.guaniao.client.guide;
 
 import EdDYON.guaniao.GuaniaoMod;
+import EdDYON.guaniao.client.config.BirdConfigClient;
 import EdDYON.guaniao.client.gui.layout.GuiLayoutConfig;
 import EdDYON.guaniao.client.gui.layout.GuiLayoutLoader;
 import EdDYON.guaniao.client.gui.layout.GuiLayoutRect;
@@ -9,6 +10,7 @@ import EdDYON.guaniao.content.bird.columbid.AbstractColumbidEntity;
 import EdDYON.guaniao.content.bird.crow.CrowEntity;
 import EdDYON.guaniao.content.bird.nightheron.NightHeronEntity;
 import EdDYON.guaniao.content.bird.seagull.SeagullEntity;
+import EdDYON.guaniao.content.bird.scale.BirdModelScale;
 import EdDYON.guaniao.content.bird.sparrow.SparrowEntity;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
 import java.util.LinkedHashMap;
@@ -79,6 +81,7 @@ public class BirdGuideScreen extends Screen {
             "info_card",
             "preview_box",
             "pose_buttons",
+            "config_button",
             "close_button");
 
     private int selectedIndex;
@@ -147,6 +150,7 @@ public class BirdGuideScreen extends Screen {
         BirdGuideEntry entry = this.selectedEntry(this.selectedIndex);
         this.renderCenterDetails(graphics, entry);
         this.renderPreviewPanel(graphics, mouseX, mouseY);
+        this.renderConfigButton(graphics, mouseX, mouseY);
         this.renderCloseButton(graphics, mouseX, mouseY);
         if (LAYOUT_EDITING_ENABLED && (this.debugLayout || this.layoutEditMode)) {
             this.renderLayoutDebug(graphics);
@@ -184,6 +188,9 @@ public class BirdGuideScreen extends Screen {
         if (this.closeButtonRect().contains(mouseX, mouseY)) {
             this.onClose();
             return true;
+        }
+        if (this.configButtonRect().contains(mouseX, mouseY)) {
+            return BirdConfigClient.requestOpen();
         }
         int pose = this.poseButtonIndexAt(mouseX, mouseY);
         if (pose >= 0) {
@@ -511,10 +518,21 @@ public class BirdGuideScreen extends Screen {
         GuiLayoutRect rect = this.closeButtonRect();
         boolean hovered = rect.contains(mouseX, mouseY);
         if (hovered) {
-            this.drawAtlas(graphics, rect.x(), rect.y(), rect.w(), rect.h(), 1119, 803, 158, 56);
+            this.drawAtlas(graphics, rect.x(), rect.y(), rect.w(), rect.h(), 1119, 819, 158, 56);
         } else {
-            this.drawAtlas(graphics, rect.x(), rect.y(), rect.w(), rect.h(), 936, 803, 158, 56);
+            this.drawAtlas(graphics, rect.x(), rect.y(), rect.w(), rect.h(), 936, 819, 158, 56);
         }
+    }
+
+    private void renderConfigButton(GuiGraphics graphics, int mouseX, int mouseY) {
+        GuiLayoutRect rect = this.configButtonRect();
+        boolean hovered = rect.contains(mouseX, mouseY);
+        this.drawPixelButton(graphics, rect.x(), rect.y(), rect.w(), rect.h(), false, hovered);
+        this.drawCenteredFittingString(
+                graphics,
+                Component.translatable("gui.guaniao.bird_guide.config"),
+                rect.x(), rect.y(), rect.w(), rect.h(), TEXT_COLOR
+        );
     }
 
     private LivingEntity previewEntity() {
@@ -819,7 +837,7 @@ public class BirdGuideScreen extends Screen {
 
     private int previewRenderScale(GuiLayoutRect preview) {
         float baseScale = Math.min((float)preview.w() * 0.072F, (float)preview.h() * 0.18F);
-        return Math.max(34, Math.round(baseScale * this.birdScale));
+        return BirdModelScale.fitPreviewScale(Math.max(34, Math.round(baseScale * this.birdScale)));
     }
 
     private float basePreviewScale() {
@@ -1091,6 +1109,17 @@ public class BirdGuideScreen extends Screen {
         return new GuiLayoutRect(x, y, w, h);
     }
 
+    private GuiLayoutRect configButtonRect() {
+        GuiLayoutRect raw = this.layoutRect("config_button");
+        int minW = 48;
+        int minH = 20;
+        int w = Mth.clamp(raw.w(), minW, minW + 24);
+        int h = Mth.clamp(raw.h(), minH, minH + 6);
+        int x = Mth.clamp(raw.centerX() - w / 2, 0, Math.max(0, this.width - w));
+        int y = Mth.clamp(raw.centerY() - h / 2, 0, Math.max(0, this.height - h));
+        return new GuiLayoutRect(x, y, w, h);
+    }
+
     private GuiLayoutRect fallbackRect(String id) {
         return switch (id) {
             case "header" -> this.scaleBaseRect(64, 25, 480, 65);
@@ -1102,6 +1131,7 @@ public class BirdGuideScreen extends Screen {
             case "info_card" -> this.scaleBaseRect(456, 448, 480, 295);
             case "preview_box" -> this.scaleBaseRect(993, 159, 525, 434);
             case "pose_buttons" -> this.scaleBaseRect(985, 622, 528, 83);
+            case "config_button" -> this.scaleBaseRect(1155, 750, 180, 51);
             case "close_button" -> this.scaleBaseRect(1360, 750, 158, 51);
             default -> new GuiLayoutRect(0, 0, Math.max(1, this.width), Math.max(1, this.height));
         };
@@ -1221,7 +1251,11 @@ public class BirdGuideScreen extends Screen {
 
     private void renderLayoutDebug(GuiGraphics graphics) {
         for (String id : LAYOUT_RECT_IDS) {
-            GuiLayoutRect rect = "close_button".equals(id) ? this.closeButtonRect() : this.editorRect(id);
+            GuiLayoutRect rect = switch (id) {
+                case "close_button" -> this.closeButtonRect();
+                case "config_button" -> this.configButtonRect();
+                default -> this.editorRect(id);
+            };
             boolean active = id.equals(this.activeLayoutRectId);
             int color = active ? EDIT_ACTIVE : "main_panel".equals(id) ? 0xAAB7F0FF : 0xAA9DD6E8;
             this.drawThinBorder(graphics, rect.x(), rect.y(), rect.w(), rect.h(), color);

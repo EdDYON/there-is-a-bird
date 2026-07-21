@@ -22,8 +22,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.ThrowableItemProjectile;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.BasePressurePlateBlock;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraftforge.network.NetworkHooks;
@@ -128,6 +126,9 @@ public class BirdDroppingProjectileEntity extends ThrowableItemProjectile implem
             return;
         }
 
+        if (this.level() instanceof ServerLevel serverLevel) {
+            BirdDroppingPressurePlatePulse.tryTrigger(serverLevel, result.getBlockPos(), this);
+        }
         this.spawnBlockSplat(result);
         this.splat();
         this.discard();
@@ -142,12 +143,7 @@ public class BirdDroppingProjectileEntity extends ThrowableItemProjectile implem
             return;
         }
         BirdDroppingSplatEntity splat = BirdDroppingSplatEntity.onBlock(level, result.getLocation(), result.getDirection(), result.getBlockPos());
-        if (level.addFreshEntity(splat)) {
-            BlockState state = level.getBlockState(result.getBlockPos());
-            if (state.getBlock() instanceof BasePressurePlateBlock) {
-                state.entityInside(level, result.getBlockPos(), splat);
-            }
-        }
+        level.addFreshEntity(splat);
     }
 
     private void splat() {

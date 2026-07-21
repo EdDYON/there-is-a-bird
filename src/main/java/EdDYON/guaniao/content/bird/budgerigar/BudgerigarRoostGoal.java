@@ -1,5 +1,6 @@
 package EdDYON.guaniao.content.bird.budgerigar;
 
+import EdDYON.guaniao.content.bird.command.BirdCommandMode;
 import java.util.EnumSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.BlockTags;
@@ -21,7 +22,9 @@ public class BudgerigarRoostGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        if (!this.budgerigar.isRoostTime()
+        if ((this.budgerigar.isTame()
+                && !this.budgerigar.isBirdCommandMode(BirdCommandMode.FREE))
+                || !this.budgerigar.isRoostTime()
                 || this.budgerigar.isRestInterrupted()
                 || this.budgerigar.isEating()
                 || this.budgerigar.isDancing()
@@ -34,7 +37,8 @@ public class BudgerigarRoostGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
-        return this.budgerigar.isRoostTime()
+        return (!this.budgerigar.isTame() || this.budgerigar.isBirdCommandMode(BirdCommandMode.FREE))
+                && this.budgerigar.isRoostTime()
                 && !this.budgerigar.isRestInterrupted()
                 && !this.budgerigar.isEating()
                 && !this.budgerigar.isDancing()
@@ -77,8 +81,11 @@ public class BudgerigarRoostGoal extends Goal {
     @Override
     public void stop() {
         this.roostPos = null;
-        if (!this.budgerigar.isRoostTime() && this.budgerigar.isSleepingOrRoosting()) {
-            this.budgerigar.setBehaviorState(BudgerigarBehaviorState.IDLE);
+        if (this.budgerigar.isSleepingOrRoosting()
+                && (!this.budgerigar.isRoostTime() || this.budgerigar.isRestInterrupted())) {
+            this.budgerigar.setBehaviorState(this.budgerigar.isRestInterrupted()
+                    ? BudgerigarBehaviorState.ALERT
+                    : BudgerigarBehaviorState.IDLE);
         }
     }
 

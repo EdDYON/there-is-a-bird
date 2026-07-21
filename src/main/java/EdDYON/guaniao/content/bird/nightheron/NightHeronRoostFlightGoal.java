@@ -22,15 +22,15 @@ extends Goal {
     }
 
     public boolean canUse() {
-        if (!this.nightHeron.shouldRoost() || !this.nightHeron.onGround() || this.nightHeron.getTarget() != null || this.nightHeron.hasExternalFright() || this.nightHeron.getRandom().nextInt(this.roostFlightChance()) != 0) {
+        if (!this.nightHeron.shouldRoost() || !this.nightHeron.onGround() || this.nightHeron.getTarget() != null || this.nightHeron.hasExternalFright() || this.nightHeron.isRestInterrupted() || this.nightHeron.getRandom().nextInt(this.roostFlightChance()) != 0) {
             return false;
         }
         this.roostTarget = NightHeronLandingSelector.findRoostLanding(this.nightHeron, 8, 44);
-        return this.roostTarget != null && NightHeronLandingSelector.isRoostingSpot(this.nightHeron.level(), this.roostTarget) && this.roostTarget.getY() >= this.nightHeron.blockPosition().getY() + 1;
+        return this.roostTarget != null && NightHeronLandingSelector.isRoostingSpot(this.nightHeron.level(), this.roostTarget);
     }
 
     public boolean canContinueToUse() {
-        return this.nightHeron.isControlledFlightActive() && (this.remainingTicks > 0 || !this.nightHeron.onGround()) && this.roostTarget != null && !this.nightHeron.hasExternalFright();
+        return this.nightHeron.isControlledFlightActive() && (this.remainingTicks > 0 || !this.nightHeron.onGround()) && this.roostTarget != null && !this.nightHeron.hasExternalFright() && !this.nightHeron.isRestInterrupted();
     }
 
     public void start() {

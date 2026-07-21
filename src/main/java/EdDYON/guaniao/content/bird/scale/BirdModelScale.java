@@ -1,11 +1,13 @@
 package EdDYON.guaniao.content.bird.scale;
 
+import EdDYON.guaniao.config.BirdConfigManager;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.RandomSource;
 
 public final class BirdModelScale {
     public static final String NBT_KEY = "BirdModelScale";
     public static final float DEFAULT_INDIVIDUAL_SCALE = 1.0F;
+    public static final float APRIL_FOOLS_RENDER_MULTIPLIER = 4.7F;
 
     private BirdModelScale() {
     }
@@ -24,7 +26,15 @@ public final class BirdModelScale {
     }
 
     public static float renderScale(BirdModelScaleProfile profile, float individualScale) {
-        return profile.baseRenderScale() * sanitize(individualScale, profile);
+        float scale = profile.baseRenderScale() * sanitize(individualScale, profile);
+        return BirdConfigManager.aprilFoolsMode() ? scale * APRIL_FOOLS_RENDER_MULTIPLIER : scale;
+    }
+
+    public static int fitPreviewScale(int scale) {
+        if (!BirdConfigManager.aprilFoolsMode()) {
+            return scale;
+        }
+        return Math.max(1, Math.round(scale / APRIL_FOOLS_RENDER_MULTIPLIER));
     }
 
     public static float sanitize(float scale, BirdModelScaleProfile profile) {

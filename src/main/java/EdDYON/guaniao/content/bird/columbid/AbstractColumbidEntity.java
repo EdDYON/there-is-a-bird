@@ -1,8 +1,20 @@
 package EdDYON.guaniao.content.bird.columbid;
 
+import EdDYON.guaniao.config.BirdConfigManager;
+import EdDYON.guaniao.config.BirdSpecies;
 import EdDYON.guaniao.content.bird.BirdSoundVolume;
+import EdDYON.guaniao.content.bird.BirdFlockSoundLimiter;
 import EdDYON.guaniao.content.bird.BirdActivitySchedule;
 import EdDYON.guaniao.content.bird.BirdFoodSafety;
+import EdDYON.guaniao.content.bird.BirdTags;
+import EdDYON.guaniao.content.bird.BirdScanBudget;
+import EdDYON.guaniao.content.bird.command.BirdCommandInteraction;
+import EdDYON.guaniao.content.bird.command.BirdCommandMode;
+import EdDYON.guaniao.content.bird.command.BirdRoostGoal;
+import EdDYON.guaniao.content.bird.command.BirdStayGoal;
+import EdDYON.guaniao.content.bird.command.CommandableBird;
+import EdDYON.guaniao.content.bird.flock.FlockCompatibleBird;
+import EdDYON.guaniao.content.bird.flock.BirdFlockManager;
 import EdDYON.guaniao.content.bird.BirdGroundAnimation;
 import EdDYON.guaniao.content.bird.brain.BirdBrain;
 import EdDYON.guaniao.content.bird.brain.BirdIntent;
@@ -21,6 +33,7 @@ import EdDYON.guaniao.content.bath.BirdBathFeedingAnimatable;
 import EdDYON.guaniao.content.bath.BirdBathMountable;
 import EdDYON.guaniao.content.bath.BirdBathUseGoal;
 import EdDYON.guaniao.content.bird.sparrow.SparrowEntity;
+import EdDYON.guaniao.event.BirdColonySpawnRules;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +49,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.DifficultyInstance;
@@ -63,6 +77,7 @@ import net.minecraft.world.entity.animal.FlyingAnimal;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
@@ -87,9 +102,10 @@ import software.bernie.geckolib.core.animation.RawAnimation;
 import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
-public abstract class AbstractColumbidEntity extends TamableAnimal implements GeoEntity, FlyingAnimal, ScalableBirdModel, BirdFlightAware, BirdBathMountable, BirdBathFeedingAnimatable {
+public abstract class AbstractColumbidEntity extends TamableAnimal implements GeoEntity, FlyingAnimal, ScalableBirdModel, BirdFlightAware, BirdBathMountable, BirdBathFeedingAnimatable, CommandableBird, FlockCompatibleBird {
     private static final EntityDataAccessor<Integer> BEHAVIOR_STATE = SynchedEntityData.defineId(AbstractColumbidEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Float> MODEL_SCALE = SynchedEntityData.defineId(AbstractColumbidEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Integer> COMMAND_MODE = SynchedEntityData.defineId(AbstractColumbidEntity.class, EntityDataSerializers.INT);
     private static final double FLIGHT_SPEED = 0.34D;
     private static final double HIGH_FLIGHT_SPEED = 0.38D;
     private static final double ESCAPE_FLIGHT_SPEED = 0.44D;
@@ -156,13 +172,7 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
     }
 
     public static boolean isSeedFood(ItemStack stack) {
-        return BirdFoodSafety.isCleanFoodCandidate(stack)
-                && (stack.is(Items.WHEAT_SEEDS)
-                || stack.is(Items.BEETROOT_SEEDS)
-                || stack.is(Items.MELON_SEEDS)
-                || stack.is(Items.PUMPKIN_SEEDS)
-                || stack.is(Items.TORCHFLOWER_SEEDS)
-                || stack.is(Items.PITCHER_POD));
+        return BirdFoodSafety.matchesClean(BirdTags.PIGEON_FOODS, stack);
     }
 
     public static boolean isPreferredTamingSeed(ItemStack stack) {
@@ -180,7 +190,9 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
         if (!validGround || level.getRawBrightness(pos, 0) <= 8) {
             return false;
         }
-        int score = habitatScore(level, pos, urbanBias);
+        int score = level instanceof ServerLevel serverLevel
+                ? BirdColonySpawnRules.columbidHabitatScore(serverLevel, pos, urbanBias)
+                : habitatScore(level, pos, urbanBias);
         if (score >= (urbanBias ? 12 : 16)) {
             return true;
         }
@@ -223,6 +235,8 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
     protected void registerGoals() {
         this.goalSelector.addGoal(0, new FloatGoal((Mob)this));
         this.goalSelector.addGoal(1, new ColumbidEatSeedGoal(this));
+        this.goalSelector.addGoal(2, new BirdStayGoal<>(this));
+        this.goalSelector.addGoal(2, new BirdRoostGoal<>(this));
         this.goalSelector.addGoal(2, new ColumbidFollowOwnerGoal(this, 1.0D, 3.0F, 10.0F));
         this.goalSelector.addGoal(3, new ColumbidRoostGoal(this));
         this.goalSelector.addGoal(4, new ColumbidChaseSmallBirdGoal(this));
@@ -260,6 +274,7 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
         super.defineSynchedData();
         this.entityData.define(BEHAVIOR_STATE, ColumbidBehaviorState.IDLE.ordinal());
         this.entityData.define(MODEL_SCALE, BirdModelScale.DEFAULT_INDIVIDUAL_SCALE);
+        this.entityData.define(COMMAND_MODE, BirdCommandMode.FREE.ordinal());
     }
 
     @Override
@@ -334,8 +349,12 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
 
     @Override
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
+        InteractionResult commandResult = BirdCommandInteraction.tryHandle(this, this, player, hand);
+        if (commandResult.consumesAction()) {
+            return commandResult;
+        }
         ItemStack stack = player.getItemInHand(hand);
-        if (!isSeedFood(stack)) {
+        if (!this.isSeedFoodForThisBird(stack)) {
             return super.mobInteract(player, hand);
         }
         if (this.level().isClientSide) {
@@ -348,6 +367,7 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
         }
         this.birdBrain.onEat(0.18F);
         this.triggerEatingAnimation(28);
+        this.playInteractionSound();
         if (this.isTame()) {
             this.seedTrustTicks = Math.max(this.seedTrustTicks, 700);
             if (this.getHealth() < this.getMaxHealth()) {
@@ -358,6 +378,7 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
         }
         if (this.getRandom().nextFloat() < chance) {
             this.tame(player);
+            this.setBirdCommandMode(BirdCommandMode.FOLLOW);
             this.setPersistenceRequired();
             this.homePos = this.blockPosition();
             this.spawnTrustParticles(true);
@@ -381,8 +402,11 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
         boolean hurt = super.hurt(damageSource, amount);
         if (hurt && !this.level().isClientSide) {
             this.restInterruptionTicks = Math.max(this.restInterruptionTicks, 200);
-            this.birdBrain.onFrightened(0.45F);
             Entity source = damageSource.getEntity();
+            if (BirdConfigManager.aprilFoolsMode() && source instanceof Player) {
+                return true;
+            }
+            this.birdBrain.onFrightened(0.45F);
             if (source instanceof Player player && this.isOwnedBy(player)) {
                 this.getNavigation().stop();
                 this.setBehaviorStateFor(ColumbidBehaviorState.ALERT, 45);
@@ -395,7 +419,30 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
 
     @Override
     public boolean isFood(ItemStack stack) {
-        return isSeedFood(stack);
+        return this.isSeedFoodForThisBird(stack);
+    }
+
+    public boolean isSeedFoodForThisBird(ItemStack stack) {
+        return BirdFoodSafety.matchesClean(this.foodTag(), stack);
+    }
+
+    protected TagKey<Item> foodTag() {
+        return BirdTags.PIGEON_FOODS;
+    }
+
+    @Override
+    public BirdCommandMode getBirdCommandMode() {
+        return BirdCommandMode.byId(this.entityData.get(COMMAND_MODE));
+    }
+
+    @Override
+    public void setBirdCommandMode(BirdCommandMode mode) {
+        this.entityData.set(COMMAND_MODE, (mode == null ? BirdCommandMode.FREE : mode).ordinal());
+    }
+
+    @Override
+    public boolean isBirdEmergencyOverrideActive() {
+        return this.escapeFlight || this.getBehaviorState() == ColumbidBehaviorState.FLEEING;
     }
 
     @Override
@@ -437,6 +484,7 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
             compoundTag.putUUID("PairPartner", this.pairPartnerUUID);
         }
         compoundTag.putInt("SeedTrustTicks", this.seedTrustTicks);
+        compoundTag.putInt(CommandableBird.COMMAND_MODE_NBT_KEY, this.getBirdCommandMode().ordinal());
     }
 
     @Override
@@ -453,6 +501,11 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
         }
         this.pairPartnerUUID = compoundTag.hasUUID("PairPartner") ? compoundTag.getUUID("PairPartner") : null;
         this.seedTrustTicks = compoundTag.getInt("SeedTrustTicks");
+        if (compoundTag.contains(CommandableBird.COMMAND_MODE_NBT_KEY, 3)) {
+            this.setBirdCommandMode(BirdCommandMode.byId(compoundTag.getInt(CommandableBird.COMMAND_MODE_NBT_KEY)));
+        } else {
+            this.setBirdCommandMode(this.isTame() ? BirdCommandMode.FOLLOW : BirdCommandMode.FREE);
+        }
         this.clearFlightState();
     }
 
@@ -561,7 +614,7 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
         if (this.isTame()) {
             chance += 180;
         }
-        if (this.level().isRaining()) {
+        if (this.sensesIncomingBadWeather()) {
             chance += 260;
         }
         if (this.birdBrain.wantsForage()) {
@@ -632,6 +685,14 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
         return SoundEvents.PARROT_AMBIENT;
     }
 
+    protected SoundEvent getInteractionSound() {
+        return this.getAmbientSound();
+    }
+
+    protected void playInteractionSound() {
+        this.playSound(this.getInteractionSound(), 0.38F, 0.92F + this.getRandom().nextFloat() * 0.14F);
+    }
+
     protected SoundEvent getHurtSound(DamageSource damageSource) {
         return SoundEvents.PARROT_HURT;
     }
@@ -643,9 +704,16 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
     @Override
     public int getAmbientSoundInterval() {
         if (this.sensesIncomingBadWeather()) {
-            return 360;
+            return BirdFlockSoundLimiter.scaledAmbientInterval(this, 360);
         }
-        return this.level().isDay() ? 190 : 320;
+        return BirdFlockSoundLimiter.scaledAmbientInterval(this, this.level().isDay() ? 190 : 320);
+    }
+
+    @Override
+    public void playAmbientSound() {
+        if (BirdFlockSoundLimiter.allowAmbient(this)) {
+            super.playAmbientSound();
+        }
     }
 
     @Override
@@ -705,7 +773,7 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
 
     private void spawnCourtshipParticles(int count) {
         if (this.level() instanceof ServerLevel serverLevel) {
-            serverLevel.sendParticles(ParticleTypes.HEART, this.getX(), this.getY() + 0.7D, this.getZ(), count, 0.25D, 0.25D, 0.25D, 0.01D);
+            serverLevel.sendParticles(ParticleTypes.HAPPY_VILLAGER, this.getX(), this.getY() + 0.7D, this.getZ(), count, 0.25D, 0.25D, 0.25D, 0.01D);
         }
     }
 
@@ -740,6 +808,7 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
 
     private boolean canStartSeedGoal() {
         return this.foodCooldown <= 0
+                && (!this.isTame() || this.isBirdCommandMode(BirdCommandMode.FREE))
                 && !this.isControlledFlightActive()
                 && !this.isRoostTime()
                 && !this.isInWaterOrBubble()
@@ -749,6 +818,7 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
 
     private boolean canStartGroundSocialGoal() {
         return this.isActiveTime()
+                && (!this.isTame() || this.isBirdCommandMode(BirdCommandMode.FREE))
                 && this.onGround()
                 && !this.isControlledFlightActive()
                 && this.landingSettleTicks <= 0
@@ -1373,6 +1443,7 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
         private ItemEntity targetItem;
         private int repathTicks;
         private int peckTicks;
+        private int scanCooldown;
 
         ColumbidEatSeedGoal(AbstractColumbidEntity columbid) {
             this.columbid = columbid;
@@ -1384,6 +1455,12 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
             if (!this.columbid.canStartSeedGoal()) {
                 return false;
             }
+            if (this.scanCooldown-- > 0) {
+                return false;
+            }
+            BirdSpecies species = BirdSpecies.from(this.columbid);
+            int interval = species == null ? 20 : BirdConfigManager.foodScanInterval(species);
+            this.scanCooldown = interval + this.columbid.getRandom().nextInt(Math.max(1, interval / 2));
             this.targetItem = this.findSeed();
             return this.targetItem != null;
         }
@@ -1392,7 +1469,7 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
         public boolean canContinueToUse() {
             return this.targetItem != null
                     && this.targetItem.isAlive()
-                    && isSeedFood(this.targetItem.getItem())
+                    && this.columbid.isSeedFoodForThisBird(this.targetItem.getItem())
                     && this.columbid.canStartSeedGoal()
                     && this.columbid.distanceToSqr(this.targetItem) < 196.0D;
         }
@@ -1421,7 +1498,7 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
                 return;
             }
             ItemStack stack = this.targetItem.getItem();
-            if (isSeedFood(stack)) {
+            if (this.columbid.isSeedFoodForThisBird(stack)) {
                 boolean preferredSeed = isPreferredTamingSeed(stack);
                 stack.shrink(1);
                 if (stack.isEmpty()) {
@@ -1445,7 +1522,13 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
         }
 
         private ItemEntity findSeed() {
-            List<ItemEntity> items = this.columbid.level().getEntitiesOfClass(ItemEntity.class, this.columbid.getBoundingBox().inflate(10.0D, 3.0D, 10.0D), item -> item.isAlive() && isSeedFood(item.getItem()));
+            if (!(this.columbid.level() instanceof ServerLevel serverLevel)
+                    || !BirdScanBudget.tryAcquire(serverLevel, this.columbid)) {
+                return null;
+            }
+            List<ItemEntity> items = this.columbid.level().getEntitiesOfClass(ItemEntity.class,
+                    this.columbid.getBoundingBox().inflate(10.0D, 3.0D, 10.0D),
+                    item -> item.isAlive() && this.columbid.isSeedFoodForThisBird(item.getItem()));
             ItemEntity best = null;
             double bestScore = Double.NEGATIVE_INFINITY;
             for (ItemEntity item : items) {
@@ -1480,7 +1563,9 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
 
         @Override
         public boolean canUse() {
-            if (!this.columbid.isTame() || this.columbid.isControlledFlightActive()) {
+            if (!this.columbid.isTame()
+                    || !this.columbid.isBirdCommandMode(BirdCommandMode.FOLLOW)
+                    || this.columbid.isControlledFlightActive()) {
                 return false;
             }
             this.owner = this.columbid.getOwner();
@@ -1491,6 +1576,7 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
         public boolean canContinueToUse() {
             return this.owner != null
                     && this.owner.isAlive()
+                    && this.columbid.isBirdCommandMode(BirdCommandMode.FOLLOW)
                     && !this.columbid.isControlledFlightActive()
                     && this.columbid.distanceToSqr(this.owner) > (double)(this.stopDistance * this.stopDistance)
                     && !this.columbid.getNavigation().isDone();
@@ -1542,7 +1628,13 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
 
         @Override
         public boolean canUse() {
-            if (!this.columbid.isRoostTime() || this.columbid.isRestInterrupted() || this.columbid.isControlledFlightActive() || this.columbid.getRandom().nextInt(80) != 0) {
+            boolean weatherShelter = this.columbid.sensesIncomingBadWeather();
+            int chance = weatherShelter ? 28 : 80;
+            if ((this.columbid.isTame() && !this.columbid.isBirdCommandMode(BirdCommandMode.FREE))
+                    || (!this.columbid.isRoostTime() && !weatherShelter)
+                    || this.columbid.isRestInterrupted()
+                    || this.columbid.isControlledFlightActive()
+                    || this.columbid.getRandom().nextInt(chance) != 0) {
                 return false;
             }
             this.roostPos = this.findRoost();
@@ -1551,7 +1643,12 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
 
         @Override
         public boolean canContinueToUse() {
-            return this.roostTicks > 0 && this.roostPos != null && this.columbid.isRoostTime() && !this.columbid.isRestInterrupted() && !this.columbid.isInWaterOrBubble();
+            return this.roostTicks > 0
+                    && this.roostPos != null
+                    && (!this.columbid.isTame() || this.columbid.isBirdCommandMode(BirdCommandMode.FREE))
+                    && (this.columbid.isRoostTime() || this.columbid.sensesIncomingBadWeather())
+                    && !this.columbid.isRestInterrupted()
+                    && !this.columbid.isInWaterOrBubble();
         }
 
         @Override
@@ -1601,7 +1698,9 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
                 int z = origin.getZ() + this.columbid.getRandom().nextInt(19) - 9;
                 int y = origin.getY() + this.columbid.getRandom().nextInt(9) + 1;
                 mutable.set(x, y, z);
-                if (this.columbid.isSafeDryLanding(mutable) && this.isRoostBlock(this.columbid.level().getBlockState(mutable.below()))) {
+                if (this.columbid.isSafeDryLanding(mutable)
+                        && this.isRoostBlock(this.columbid.level().getBlockState(mutable.below()))
+                        && (!this.columbid.sensesIncomingBadWeather() || !this.columbid.level().canSeeSky(mutable))) {
                     return mutable.immutable();
                 }
             }
@@ -1657,7 +1756,8 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
                     return;
                 }
             }
-            List<AbstractColumbidEntity> nearby = this.columbid.level().getEntitiesOfClass(AbstractColumbidEntity.class, this.columbid.getBoundingBox().inflate(16.0D), other -> other.getClass() == this.columbid.getClass() && other != this.columbid && other.isAlive() && !other.isTame() && other.pairPartnerUUID == null);
+            List<AbstractColumbidEntity> nearby = BirdFlockManager.nearby(this.columbid, AbstractColumbidEntity.class, 16.0D)
+                    .stream().filter(other -> other != this.columbid && !other.isTame() && other.pairPartnerUUID == null).toList();
             if (nearby.isEmpty()) {
                 return;
             }
@@ -1702,7 +1802,8 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
                     return true;
                 }
             }
-            List<AbstractColumbidEntity> flock = this.columbid.level().getEntitiesOfClass(AbstractColumbidEntity.class, this.columbid.getBoundingBox().inflate(12.0D), other -> other.getClass() == this.columbid.getClass() && other != this.columbid && other.isAlive());
+            List<AbstractColumbidEntity> flock = BirdFlockManager.nearby(this.columbid, AbstractColumbidEntity.class, 12.0D)
+                    .stream().filter(other -> other != this.columbid).toList();
             if (flock.isEmpty()) {
                 return false;
             }
@@ -1902,14 +2003,20 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
         @Override
         public boolean canUse() {
             if (!this.columbid.supportsChasing()
+                    || this.columbid.isTame()
+                    || this.columbid.getHealth() < this.columbid.getMaxHealth() * 0.5F
                     || this.columbid.chaseCooldown > 0
                     || !this.columbid.canStartGroundSocialGoal()
                     || this.columbid.getRandom().nextInt(420) != 0) {
                 return false;
             }
+            if (!(this.columbid.level() instanceof ServerLevel serverLevel)
+                    || !BirdScanBudget.tryAcquire(serverLevel, this.columbid)) {
+                return false;
+            }
             List<LivingEntity> candidates = this.columbid.level().getEntitiesOfClass(LivingEntity.class, this.columbid.getBoundingBox().inflate(8.0D, 3.0D, 8.0D), entity -> {
-                if (entity instanceof SparrowEntity) {
-                    return true;
+                if (entity instanceof SparrowEntity sparrow) {
+                    return !sparrow.isTame() && sparrow.isAlive();
                 }
                 if (entity instanceof AbstractColumbidEntity other) {
                     return other.getClass() == this.columbid.getClass()
@@ -1939,9 +2046,9 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
 
         @Override
         public void start() {
-            this.chaseTicks = 40 + this.columbid.getRandom().nextInt(61);
+            this.chaseTicks = 30 + this.columbid.getRandom().nextInt(31);
             this.repathTicks = 0;
-            this.columbid.chaseCooldown = 700 + this.columbid.getRandom().nextInt(600);
+            this.columbid.chaseCooldown = 1200 + this.columbid.getRandom().nextInt(1201);
             this.columbid.setBehaviorState(ColumbidBehaviorState.CHASING);
         }
 
@@ -1980,7 +2087,8 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
 
         @Override
         public boolean canUse() {
-            if (!this.columbid.canStartGroundSocialGoal()
+            if ((this.columbid.isTame() && !this.columbid.isBirdCommandMode(BirdCommandMode.FREE))
+                    || !this.columbid.canStartGroundSocialGoal()
                     || !this.columbid.getNavigation().isDone()
                     || this.columbid.flightCooldown > 0
                     || this.columbid.getBehaviorState() == ColumbidBehaviorState.FORAGING
@@ -2004,8 +2112,9 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
             if (direction.lengthSqr() <= 1.0E-4D) {
                 direction = this.columbid.randomHorizontalDirection();
             }
-            Vec3 target = this.columbid.findFlightLandingTarget(direction, 52, 96, true);
-            if (target == null) {
+            boolean badWeather = this.columbid.sensesIncomingBadWeather();
+            Vec3 target = this.columbid.findFlightLandingTarget(direction, badWeather ? 18 : 52, badWeather ? 38 : 96, true);
+            if (target == null && !badWeather) {
                 target = this.columbid.findFlightLandingTarget(direction, 28, 54, true);
             }
             if (target != null) {

@@ -2,6 +2,8 @@ package EdDYON.guaniao.content.bird.nightheron;
 
 import java.util.EnumSet;
 import java.util.List;
+import EdDYON.guaniao.config.BirdConfigManager;
+import EdDYON.guaniao.content.bird.flock.BirdFlockManager;
 import EdDYON.guaniao.content.bird.nightheron.NightHeronBehaviorState;
 import EdDYON.guaniao.content.bird.nightheron.NightHeronEntity;
 import EdDYON.guaniao.content.bird.nightheron.NightHeronFlightController;
@@ -161,6 +163,9 @@ extends Goal {
     }
 
     private Player findNearestRelevantPlayer() {
+        if (BirdConfigManager.aprilFoolsMode()) {
+            return null;
+        }
         Player player = this.nightHeron.level().getNearestPlayer((Entity)this.nightHeron, 17.0);
         return player != null && !player.isSpectator() ? player : null;
     }
@@ -247,9 +252,11 @@ extends Goal {
     }
 
     private void notifyNearbyNightHerons(boolean severe) {
-        List<NightHeronEntity> neighbors = this.nightHeron.level().getEntitiesOfClass(NightHeronEntity.class, this.nightHeron.getBoundingBox().inflate(12.0), other -> other != this.nightHeron);
+        List<NightHeronEntity> neighbors = BirdFlockManager.nearby(this.nightHeron, NightHeronEntity.class, 12.0D);
         for (NightHeronEntity neighbor : neighbors) {
-            neighbor.receiveFlockFright(this.nightHeron.position(), severe);
+            if (neighbor != this.nightHeron) {
+                neighbor.receiveFlockFright(this.nightHeron.position(), severe);
+            }
         }
     }
 

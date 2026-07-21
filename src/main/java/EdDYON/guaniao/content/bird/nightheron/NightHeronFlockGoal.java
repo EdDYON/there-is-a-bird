@@ -11,6 +11,7 @@ import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.util.LandRandomPos;
 import net.minecraft.world.phys.Vec3;
+import EdDYON.guaniao.content.bird.flock.BirdFlockManager;
 
 public class NightHeronFlockGoal
 extends Goal {
@@ -79,7 +80,7 @@ extends Goal {
     }
 
     private List<NightHeronEntity> nearbyNightHerons() {
-        return this.nightHeron.level().getEntitiesOfClass(NightHeronEntity.class, this.nightHeron.getBoundingBox().inflate(8.0), other -> other != this.nightHeron && other.isAlive());
+        return BirdFlockManager.nearby(this.nightHeron, NightHeronEntity.class, 8.0).stream()
+                .filter(other -> other != this.nightHeron).toList();
     }
 }
-

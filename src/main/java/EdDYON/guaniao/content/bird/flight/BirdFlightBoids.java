@@ -1,5 +1,6 @@
 package EdDYON.guaniao.content.bird.flight;
 
+import EdDYON.guaniao.content.bird.flock.BirdFlockManager;
 import java.util.List;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.phys.Vec3;
@@ -9,12 +10,11 @@ public final class BirdFlightBoids {
     }
 
     public static Vec3 sameTypeHeading(PathfinderMob bird, double radius, double separationRadius, double cohesionWeight, double alignmentWeight, double separationWeight, double randomnessWeight) {
-        List<PathfinderMob> nearby = bird.level().getEntitiesOfClass(PathfinderMob.class, bird.getBoundingBox().inflate(radius), other ->
-                other != bird
-                        && other.isAlive()
-                        && other.getType() == bird.getType()
+        List<PathfinderMob> nearby = BirdFlockManager.nearby(bird, PathfinderMob.class, radius).stream()
+                .filter(other -> other != bird
                         && other instanceof BirdFlightAware aware
-                        && aware.isBirdFlightActive());
+                        && aware.isBirdFlightActive())
+                .toList();
         return headingFrom(bird, nearby, separationRadius, cohesionWeight, alignmentWeight, separationWeight, randomnessWeight);
     }
 

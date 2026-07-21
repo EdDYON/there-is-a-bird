@@ -38,14 +38,16 @@ public final class BirdAdvancementEvents {
         }
         int staggeredTick = player.tickCount + player.getId();
         if (staggeredTick % 40 == 0) {
-            if (hasFiveNearbyBirdSpecies(player)) {
+            if (!BirdAdvancements.isDone(player, BirdAdvancements.BIRD_CONFERENCE) && hasFiveNearbyBirdSpecies(player)) {
                 BirdAdvancements.grant(player, BirdAdvancements.BIRD_CONFERENCE);
             }
-            if (hasLongTailedTitLine(player)) {
+            if (!BirdAdvancements.isDone(player, BirdAdvancements.FLUFFY_LINE) && hasLongTailedTitLine(player)) {
                 BirdAdvancements.grant(player, BirdAdvancements.FLUFFY_LINE);
             }
         }
-        if (staggeredTick % 10 == 0 && isHoldingBirdGuide(player)) {
+        if (staggeredTick % 10 == 0
+                && !BirdAdvancements.isDone(player, BirdAdvancements.HIGH_EYE)
+                && isHoldingBirdGuide(player)) {
             CrowEntity crow = findLookedAtCrow(player);
             if (crow != null && isHighPerchedCrow(crow)) {
                 BirdAdvancements.grant(player, BirdAdvancements.HIGH_EYE);

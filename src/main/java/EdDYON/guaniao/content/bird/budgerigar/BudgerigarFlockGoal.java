@@ -4,6 +4,7 @@ import java.util.EnumSet;
 import java.util.List;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.phys.Vec3;
+import EdDYON.guaniao.content.bird.flock.BirdFlockManager;
 
 public class BudgerigarFlockGoal extends Goal {
     private final BudgerigarEntity budgerigar;
@@ -90,6 +91,6 @@ public class BudgerigarFlockGoal extends Goal {
     }
 
     private List<BudgerigarEntity> nearbyFlock() {
-        return this.budgerigar.level().getEntitiesOfClass(BudgerigarEntity.class, this.budgerigar.getBoundingBox().inflate(BudgerigarDefinition.SOCIAL_RADIUS));
+        return BirdFlockManager.nearby(this.budgerigar, BudgerigarEntity.class, BudgerigarDefinition.SOCIAL_RADIUS);
     }
 }

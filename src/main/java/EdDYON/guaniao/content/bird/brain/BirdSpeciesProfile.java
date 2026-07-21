@@ -1,5 +1,6 @@
 package EdDYON.guaniao.content.bird.brain;
 
+import EdDYON.guaniao.config.BirdConfigManager;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PathfinderMob;
@@ -73,7 +74,7 @@ public abstract class BirdSpeciesProfile {
         BirdPersonality personality = brain.personality();
         float risk = 0.0F;
 
-        if (senses.nearestPlayer() != null) {
+        if (!BirdConfigManager.aprilFoolsMode() && senses.nearestPlayer() != null) {
             double radius = Math.max(1.0D, this.playerSenseRadius());
             float closeness = (float)(1.0D - Mth.clamp(senses.nearestPlayerDistance() / radius, 0.0D, 1.0D));
             risk += closeness * 0.62F;
@@ -126,6 +127,10 @@ public abstract class BirdSpeciesProfile {
 
     public boolean isTemptingPlayer(Player player) {
         return false;
+    }
+
+    public boolean isTemptingPlayer(PathfinderMob bird, Player player) {
+        return this.isTemptingPlayer(player);
     }
 
     public LivingEntity findNearestPrey(PathfinderMob bird) {

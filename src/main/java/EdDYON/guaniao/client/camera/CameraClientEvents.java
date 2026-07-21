@@ -2,6 +2,7 @@ package EdDYON.guaniao.client.camera;
 
 import EdDYON.guaniao.GuaniaoMod;
 import EdDYON.guaniao.registry.GuaniaoItems;
+import EdDYON.guaniao.config.BirdConfigManager;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
@@ -41,6 +42,7 @@ public final class CameraClientEvents {
     @SubscribeEvent
     public static void onRenderTick(TickEvent.RenderTickEvent event) {
         if (event.phase == TickEvent.Phase.END) {
+            PhotographTextureCache.pumpUploads();
             CameraClientCapture.onRenderTickEnd();
         }
     }
@@ -103,6 +105,7 @@ public final class CameraClientEvents {
     public static void onClientLogout(ClientPlayerNetworkEvent.LoggingOut event) {
         CameraClientCapture.closeViewfinder();
         PhotographTextureCache.clear();
+        BirdConfigManager.loadOrCreateDefaults();
     }
 
     private static boolean holdsCamera(LocalPlayer player) {

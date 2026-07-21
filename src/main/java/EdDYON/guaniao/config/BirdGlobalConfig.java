@@ -6,6 +6,15 @@ public class BirdGlobalConfig {
     public boolean naturalCrowNests = true;
     public boolean crowsStoreTreasures = true;
     public boolean crowsClaimPlayerNests = true;
+    public boolean enablePetBirdCommands = true;
+    public boolean enableSeagullStealing = true;
+    public boolean crowItemSafety = true;
+    public boolean birdsPassThroughLeaves = true;
+    public boolean aprilFoolsMode;
+    public boolean droppingPressurePlatePulseEnabled = true;
+    public boolean photoUploadsEnabled = true;
+    public boolean photoUploadsOperatorOnly;
+    public boolean photoUploadsWhitelistedOnly;
     public double spawnMultiplier = 1.0D;
     public double crowNestGenerationMultiplier = 1.0D;
     public double droppingFrequencyMultiplier = 1.0D;
@@ -14,6 +23,21 @@ public class BirdGlobalConfig {
     public int maxGroundDroppingsNearby = 8;
     public int crowNestSearchDistance = 96;
     public int maxCrowNestTreasures = 6;
+    public int maxWildBirdsPerRegion = 48;
+    public int populationRegionChunks = 4;
+    public int flockRefreshTicks = 20;
+    public int habitatCacheTicks = 200;
+    public int seagullPlayerCooldownTicks = 3600;
+    public int maxConcurrentSeagullTargetsPerPlayer = 1;
+    public int birdScanBudgetPerTick = 12;
+    public int droppingPressurePlatePulseTicks = 20;
+    public int maxPhotosPerPlayer = 256;
+    public int maxPhotoStorageMiBPerPlayer = 24;
+    public int maxPhotosPerWorld = 4096;
+    public int maxPhotoStorageMiBPerWorld = 384;
+    public int photoTrashRetentionDays = 7;
+    public int maxConcurrentPhotoDownloads = 16;
+    public int photoDownloadKiBPerTick = 256;
 
     public BirdGlobalConfig copy() {
         BirdGlobalConfig copy = new BirdGlobalConfig();
@@ -22,6 +46,15 @@ public class BirdGlobalConfig {
         copy.naturalCrowNests = this.naturalCrowNests;
         copy.crowsStoreTreasures = this.crowsStoreTreasures;
         copy.crowsClaimPlayerNests = this.crowsClaimPlayerNests;
+        copy.enablePetBirdCommands = this.enablePetBirdCommands;
+        copy.enableSeagullStealing = this.enableSeagullStealing;
+        copy.crowItemSafety = this.crowItemSafety;
+        copy.birdsPassThroughLeaves = this.birdsPassThroughLeaves;
+        copy.aprilFoolsMode = this.aprilFoolsMode;
+        copy.droppingPressurePlatePulseEnabled = this.droppingPressurePlatePulseEnabled;
+        copy.photoUploadsEnabled = this.photoUploadsEnabled;
+        copy.photoUploadsOperatorOnly = this.photoUploadsOperatorOnly;
+        copy.photoUploadsWhitelistedOnly = this.photoUploadsWhitelistedOnly;
         copy.spawnMultiplier = this.spawnMultiplier;
         copy.crowNestGenerationMultiplier = this.crowNestGenerationMultiplier;
         copy.droppingFrequencyMultiplier = this.droppingFrequencyMultiplier;
@@ -30,6 +63,21 @@ public class BirdGlobalConfig {
         copy.maxGroundDroppingsNearby = this.maxGroundDroppingsNearby;
         copy.crowNestSearchDistance = this.crowNestSearchDistance;
         copy.maxCrowNestTreasures = this.maxCrowNestTreasures;
+        copy.maxWildBirdsPerRegion = this.maxWildBirdsPerRegion;
+        copy.populationRegionChunks = this.populationRegionChunks;
+        copy.flockRefreshTicks = this.flockRefreshTicks;
+        copy.habitatCacheTicks = this.habitatCacheTicks;
+        copy.seagullPlayerCooldownTicks = this.seagullPlayerCooldownTicks;
+        copy.maxConcurrentSeagullTargetsPerPlayer = this.maxConcurrentSeagullTargetsPerPlayer;
+        copy.birdScanBudgetPerTick = this.birdScanBudgetPerTick;
+        copy.droppingPressurePlatePulseTicks = this.droppingPressurePlatePulseTicks;
+        copy.maxPhotosPerPlayer = this.maxPhotosPerPlayer;
+        copy.maxPhotoStorageMiBPerPlayer = this.maxPhotoStorageMiBPerPlayer;
+        copy.maxPhotosPerWorld = this.maxPhotosPerWorld;
+        copy.maxPhotoStorageMiBPerWorld = this.maxPhotoStorageMiBPerWorld;
+        copy.photoTrashRetentionDays = this.photoTrashRetentionDays;
+        copy.maxConcurrentPhotoDownloads = this.maxConcurrentPhotoDownloads;
+        copy.photoDownloadKiBPerTick = this.photoDownloadKiBPerTick;
         return copy;
     }
 }

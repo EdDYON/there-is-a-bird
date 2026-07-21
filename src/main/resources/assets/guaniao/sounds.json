@@ -37,6 +37,37 @@
       "guaniao:entity/night_heron/attack"
     ]
   },
+  "entity.crow.ambient": {
+    "subtitle": "subtitles.guaniao.entity.crow.ambient",
+    "sounds": [
+      "guaniao:entity/crow/ambient_01",
+      "guaniao:entity/crow/ambient_02",
+      "guaniao:entity/crow/ambient_03",
+      "guaniao:entity/crow/ambient_04",
+      "guaniao:entity/crow/ambient_05",
+      "guaniao:entity/crow/ambient_06",
+      "guaniao:entity/crow/ambient_07",
+      "guaniao:entity/crow/ambient_08"
+    ]
+  },
+  "entity.crow.hurt": {
+    "subtitle": "subtitles.guaniao.entity.crow.hurt",
+    "sounds": [
+      "guaniao:entity/crow/hurt"
+    ]
+  },
+  "entity.seagull.ambient": {
+    "subtitle": "subtitles.guaniao.entity.seagull.ambient",
+    "sounds": [
+      "guaniao:entity/seagull/ambient_01",
+      "guaniao:entity/seagull/ambient_02",
+      "guaniao:entity/seagull/ambient_03",
+      "guaniao:entity/seagull/ambient_04",
+      "guaniao:entity/seagull/ambient_05",
+      "guaniao:entity/seagull/ambient_06",
+      "guaniao:entity/seagull/ambient_07"
+    ]
+  },
   "entity.sparrow.ambient": {
     "subtitle": "subtitles.guaniao.entity.sparrow.ambient",
     "sounds": [
@@ -122,12 +153,9 @@
   "entity.spotted_dove.ambient": {
     "subtitle": "subtitles.guaniao.entity.spotted_dove.ambient",
     "sounds": [
-      "guaniao:entity/spotted_dove/idle",
-      "guaniao:entity/spotted_dove/idle2",
-      {
-        "name": "guaniao:entity/spotted_dove/mate",
-        "weight": 2
-      }
+      "guaniao:entity/spotted_dove/ambient_01",
+      "guaniao:entity/spotted_dove/ambient_02",
+      "guaniao:entity/spotted_dove/ambient_03"
     ]
   },
   "entity.spotted_dove.hurt": {
@@ -147,7 +175,10 @@
   "entity.spotted_dove.mate": {
     "subtitle": "subtitles.guaniao.entity.spotted_dove.mate",
     "sounds": [
-      "guaniao:entity/spotted_dove/mate"
+      {
+        "name": "guaniao:entity/spotted_dove/mate_loop",
+        "stream": true
+      }
     ]
   },
   "entity.pigeon.ambient": {
@@ -160,13 +191,20 @@
   "entity.long_tailed_tit.ambient": {
     "subtitle": "subtitles.guaniao.entity.long_tailed_tit.ambient",
     "sounds": [
-      "guaniao:entity/sparrow/idle",
-      "guaniao:entity/sparrow/idle2",
-      "guaniao:entity/sparrow/idle3",
-      "guaniao:entity/sparrow/idle4",
-      "guaniao:entity/sparrow/idle5",
-      "guaniao:entity/sparrow/idle6",
-      "guaniao:entity/sparrow/idle7"
+      "guaniao:entity/long_tailed_tit/ambient_01",
+      "guaniao:entity/long_tailed_tit/ambient_02",
+      "guaniao:entity/long_tailed_tit/ambient_03",
+      "guaniao:entity/long_tailed_tit/ambient_04",
+      "guaniao:entity/long_tailed_tit/ambient_05",
+      "guaniao:entity/long_tailed_tit/ambient_06",
+      "guaniao:entity/long_tailed_tit/ambient_07",
+      "guaniao:entity/long_tailed_tit/ambient_08",
+      "guaniao:entity/long_tailed_tit/ambient_09",
+      {
+        "name": "guaniao:entity/long_tailed_tit/ambient_long",
+        "weight": 1,
+        "stream": true
+      }
     ]
   },
   "entity.long_tailed_tit.hurt": {
@@ -186,13 +224,9 @@
   "entity.cockatiel.ambient": {
     "subtitle": "subtitles.guaniao.entity.cockatiel.ambient",
     "sounds": [
-      "guaniao:entity/budgerigar/idle1",
-      "guaniao:entity/budgerigar/idle2",
-      "guaniao:entity/budgerigar/idle3",
-      "guaniao:entity/budgerigar/idle4",
-      "guaniao:entity/budgerigar/idle5",
-      "guaniao:entity/budgerigar/idle6",
-      "guaniao:entity/budgerigar/idle7"
+      "guaniao:entity/cockatiel/ambient_01",
+      "guaniao:entity/cockatiel/ambient_02",
+      "guaniao:entity/cockatiel/ambient_03"
     ]
   },
   "entity.cockatiel.hurt": {
@@ -212,25 +246,28 @@
   "entity.macaw.ambient": {
     "subtitle": "subtitles.guaniao.entity.macaw.ambient",
     "sounds": [
-      "guaniao:entity/budgerigar/idle8",
-      "guaniao:entity/budgerigar/idle9",
-      "guaniao:entity/budgerigar/idle10",
-      "guaniao:entity/budgerigar/idle11",
-      "guaniao:entity/budgerigar/idle12"
+      "guaniao:entity/macaw/ambient_01",
+      "guaniao:entity/macaw/ambient_02",
+      "guaniao:entity/macaw/ambient_03",
+      "guaniao:entity/macaw/ambient_04",
+      "guaniao:entity/macaw/ambient_05",
+      "guaniao:entity/macaw/ambient_06"
     ]
   },
   "entity.macaw.hurt": {
     "subtitle": "subtitles.guaniao.entity.macaw.hurt",
     "sounds": [
-      "guaniao:entity/budgerigar/hurt3",
-      "guaniao:entity/budgerigar/hurt4",
-      "guaniao:entity/budgerigar/hurt5"
+      "guaniao:entity/macaw/hurt"
     ]
   },
   "entity.macaw.death": {
     "subtitle": "subtitles.guaniao.entity.macaw.death",
     "sounds": [
-      "guaniao:entity/budgerigar/death"
+      {
+        "name": "guaniao:entity/macaw/ambient_06",
+        "volume": 0.8,
+        "pitch": 0.72
+      }
     ]
   }
 }

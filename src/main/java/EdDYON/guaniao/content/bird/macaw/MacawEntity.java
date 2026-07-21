@@ -3,17 +3,20 @@ package EdDYON.guaniao.content.bird.macaw;
 import EdDYON.guaniao.config.BirdSpecies;
 import EdDYON.guaniao.content.bird.BirdActivitySchedule;
 import EdDYON.guaniao.content.bird.BirdGroundAnimation;
+import EdDYON.guaniao.content.bird.BirdTags;
+import EdDYON.guaniao.content.bird.BirdFlockSoundLimiter;
 import EdDYON.guaniao.content.bird.budgerigar.BudgerigarBehaviorState;
 import EdDYON.guaniao.content.bird.budgerigar.BudgerigarEntity;
 import EdDYON.guaniao.content.bird.scale.BirdModelScale;
+import EdDYON.guaniao.content.bird.scale.BirdModelScaleProfile;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
 import EdDYON.guaniao.registry.GuaniaoSoundEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.AgeableMob;
@@ -24,6 +27,7 @@ import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Blocks;
@@ -107,7 +111,22 @@ public class MacawEntity extends BudgerigarEntity {
     }
 
     @Override
+    public BirdModelScaleProfile modelScaleProfile() {
+        return BirdModelScaleProfile.MACAW;
+    }
+
+    @Override
+    protected TagKey<Item> foodTag() {
+        return BirdTags.MACAW_FOODS;
+    }
+
+    @Override
     protected SoundEvent getAmbientSound() {
+        return GuaniaoSoundEvents.MACAW_AMBIENT.get();
+    }
+
+    @Override
+    protected SoundEvent getInteractionSound() {
         return GuaniaoSoundEvents.MACAW_AMBIENT.get();
     }
 
@@ -128,7 +147,7 @@ public class MacawEntity extends BudgerigarEntity {
 
     @Override
     public int getAmbientSoundInterval() {
-        return 150;
+        return BirdFlockSoundLimiter.scaledAmbientInterval(this, 150);
     }
 
     @Override
@@ -259,7 +278,7 @@ public class MacawEntity extends BudgerigarEntity {
         }
         Player player = this.level().getNearestPlayer(this, 12.0D);
         if (player != null) {
-            this.playSound(SoundEvents.PARROT_AMBIENT, 0.68F, 0.88F + this.getRandom().nextFloat() * 0.24F);
+            this.playSound(this.getAmbientSound(), 0.68F, 0.88F + this.getRandom().nextFloat() * 0.24F);
         }
     }
 

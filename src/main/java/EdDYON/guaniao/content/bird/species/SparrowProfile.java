@@ -4,12 +4,14 @@ import EdDYON.guaniao.content.bird.BirdActivitySchedule;
 import EdDYON.guaniao.content.bird.brain.BirdBrain;
 import EdDYON.guaniao.content.bird.brain.BirdSenses;
 import EdDYON.guaniao.content.bird.brain.BirdSpeciesProfile;
+import EdDYON.guaniao.content.bird.BirdFoodSafety;
+import EdDYON.guaniao.content.bird.BirdTags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Items;
+import EdDYON.guaniao.content.bird.sparrow.SparrowEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.Blocks;
@@ -78,18 +80,14 @@ public final class SparrowProfile extends BirdSpeciesProfile {
 
     @Override
     public boolean isTemptingPlayer(Player player) {
-        return player.getMainHandItem().is(Items.WHEAT_SEEDS)
-                || player.getMainHandItem().is(Items.MELON_SEEDS)
-                || player.getMainHandItem().is(Items.PUMPKIN_SEEDS)
-                || player.getMainHandItem().is(Items.BEETROOT_SEEDS)
-                || player.getMainHandItem().is(Items.TORCHFLOWER_SEEDS)
-                || player.getMainHandItem().is(Items.PITCHER_POD)
-                || player.getOffhandItem().is(Items.WHEAT_SEEDS)
-                || player.getOffhandItem().is(Items.MELON_SEEDS)
-                || player.getOffhandItem().is(Items.PUMPKIN_SEEDS)
-                || player.getOffhandItem().is(Items.BEETROOT_SEEDS)
-                || player.getOffhandItem().is(Items.TORCHFLOWER_SEEDS)
-                || player.getOffhandItem().is(Items.PITCHER_POD);
+        return BirdFoodSafety.matchesClean(BirdTags.SPARROW_FOODS, player.getMainHandItem())
+                || BirdFoodSafety.matchesClean(BirdTags.SPARROW_FOODS, player.getOffhandItem());
+    }
+
+    @Override
+    public boolean isTemptingPlayer(PathfinderMob bird, Player player) {
+        return bird instanceof SparrowEntity sparrow
+                && (sparrow.isFood(player.getMainHandItem()) || sparrow.isFood(player.getOffhandItem()));
     }
 
     @Override

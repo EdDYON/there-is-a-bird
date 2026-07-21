@@ -57,6 +57,11 @@ public final class BirdAdvancements {
         return advancement != null && player.getAdvancements().award(advancement, CRITERION);
     }
 
+    public static boolean isDone(ServerPlayer player, ResourceLocation advancementId) {
+        Advancement advancement = player.server.getAdvancements().getAdvancement(advancementId);
+        return advancement != null && player.getAdvancements().getOrStartProgress(advancement).isDone();
+    }
+
     private static int countOwnedLoadedBirds(ServerPlayer player) {
         int count = 0;
         for (ServerLevel level : player.server.getAllLevels()) {

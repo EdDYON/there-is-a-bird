@@ -85,6 +85,7 @@ public class PhotographEntity extends HangingEntity {
         super.readAdditionalSaveData(tag);
         ItemStack item = ItemStack.of(tag.getCompound("Item"));
         if (!item.isEmpty()) {
+            LegacyPhotoMigration.migrateNow(this.level(), item);
             this.setItem(item);
         }
         this.setDirection(Direction.from3DDataValue(tag.getByte("Facing")));

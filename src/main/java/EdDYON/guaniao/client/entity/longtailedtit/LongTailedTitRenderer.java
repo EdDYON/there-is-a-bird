@@ -8,7 +8,7 @@ import software.bernie.geckolib.renderer.GeoEntityRenderer;
 public class LongTailedTitRenderer extends GeoEntityRenderer<LongTailedTitEntity> {
     public LongTailedTitRenderer(EntityRendererProvider.Context context) {
         super(context, new LongTailedTitModel());
-        this.shadowRadius = 0.15F;
+        this.shadowRadius = 0.16F;
     }
 
     @Override

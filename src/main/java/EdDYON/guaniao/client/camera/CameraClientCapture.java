@@ -1,8 +1,7 @@
 package EdDYON.guaniao.client.camera;
 
 import EdDYON.guaniao.content.camera.PhotographData;
-import EdDYON.guaniao.network.GuaniaoNetwork;
-import EdDYON.guaniao.network.PhotographTakenPacket;
+import EdDYON.guaniao.content.camera.PhotoImageCodec;
 import EdDYON.guaniao.registry.GuaniaoItems;
 import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.CameraType;
@@ -168,8 +167,8 @@ public final class CameraClientCapture {
 
         try (NativeImage image = Screenshot.takeScreenshot(minecraft.getMainRenderTarget())) {
             int[] pixels = cropSquare(image, PhotographData.IMAGE_SIZE);
-            GuaniaoNetwork.CHANNEL.sendToServer(new PhotographTakenPacket(hand, pixels));
-            minecraft.player.displayClientMessage(Component.translatable("item.guaniao.nikon_d750.captured"), true);
+            byte[] jpeg = PhotoImageCodec.encodeJpeg(pixels, PhotographData.IMAGE_SIZE, PhotographData.IMAGE_SIZE);
+            PhotoClientRepository.upload(hand, jpeg);
         } catch (Exception exception) {
             minecraft.player.displayClientMessage(Component.translatable("item.guaniao.nikon_d750.capture_failed"), true);
         }

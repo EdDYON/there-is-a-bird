@@ -3,7 +3,7 @@ package EdDYON.guaniao.content.bird;
 public enum BirdActivitySchedule {
     DIURNAL(23000L, 12500L),
     COASTAL_DIURNAL(22000L, 13500L),
-    NOCTURNAL_CREPUSCULAR(11000L, 3000L);
+    NOCTURNAL_CREPUSCULAR(11000L, 1500L);
 
     private static final long DAY_LENGTH = 24000L;
     private final long activeStart;

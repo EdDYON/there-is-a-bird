@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "guaniao:small_bird_cage",
+    "guaniao:medium_bird_cage",
+    "guaniao:large_bird_cage",
+    "guaniao:wooden_bird_bath",
+    "guaniao:wooden_bird_bath_2",
+    "guaniao:crow_nest"
+  ]
+}

@@ -4,11 +4,9 @@ import EdDYON.guaniao.GuaniaoMod;
 import EdDYON.guaniao.config.BirdConfigManager;
 import EdDYON.guaniao.config.BirdSpecies;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.level.biome.MobSpawnSettings;
-import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.entity.living.MobSpawnEvent;
 import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.eventbus.api.Event;
@@ -27,37 +25,33 @@ public final class BirdSpawnConfigEvents {
         if (event.getMobCategory() != MobCategory.CREATURE) {
             return;
         }
-
-        boolean canAddBirds = BirdConfigManager.maxBirdsNearby() > 0 && !isAtNearbyCap(event);
+        ServerLevel level = event.getLevel() instanceof ServerLevel serverLevel ? serverLevel : null;
+        boolean globalCapacity = level == null || isBelowGlobalCaps(level, event.getPos().getX(), event.getPos().getZ());
         for (MobSpawnSettings.SpawnerData original : new ArrayList<>(event.getSpawnerDataList())) {
             BirdSpecies species = BirdSpecies.from(original.type);
             if (species == null) {
                 continue;
             }
             event.removeSpawnerData(original);
-            if (!canAddBirds) {
-                continue;
-            }
             double multiplier = BirdConfigManager.spawnMultiplier(species);
-            if (multiplier <= 0.0D) {
+            if (!globalCapacity || multiplier <= 0.0D) {
                 continue;
             }
             int weight = Math.max(1, (int)Math.round(original.getWeight().asInt() * multiplier));
+            if (level != null && BirdPopulationTracker.speciesAt(level, event.getPos().getX(), event.getPos().getZ(), species)
+                    >= BirdConfigManager.maxWildNearby(species)) {
+                weight = Math.max(1, weight / 4);
+            }
             int minGroup = BirdConfigManager.minGroup(species);
             int maxGroup = BirdConfigManager.maxGroup(species);
-            if (event.getLevel() instanceof ServerLevel level) {
+            if (level != null) {
                 BirdColonySpawnRules.GroupSize colonyGroup = BirdColonySpawnRules.groupAt(level, event.getPos(), species);
                 if (colonyGroup != null) {
                     minGroup = colonyGroup.min();
                     maxGroup = colonyGroup.max();
                 }
             }
-            event.addSpawnerData(new MobSpawnSettings.SpawnerData(
-                    original.type,
-                    weight,
-                    minGroup,
-                    maxGroup
-            ));
+            event.addSpawnerData(new MobSpawnSettings.SpawnerData(original.type, weight, minGroup, maxGroup));
         }
     }
 
@@ -74,33 +68,27 @@ public final class BirdSpawnConfigEvents {
             event.setResult(Event.Result.DENY);
             return;
         }
+        if (!event.getLevel().canSeeSky(event.getPos())) {
+            event.setResult(Event.Result.DENY);
+            return;
+        }
         if (event.getLevel() instanceof ServerLevel level) {
-            if (!level.canSeeSky(event.getPos())) {
-                event.setResult(Event.Result.DENY);
-                return;
-            }
-            if (nearbyBirdCount(level, event.getPos().getX(), event.getPos().getY(), event.getPos().getZ()) >= BirdConfigManager.maxBirdsNearby()) {
+            if (!isBelowGlobalCaps(level, event.getPos().getX(), event.getPos().getZ())) {
                 event.setResult(Event.Result.DENY);
             }
         }
     }
 
-    private static boolean isAtNearbyCap(LevelEvent.PotentialSpawns event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) {
-            return false;
-        }
-        return nearbyBirdCount(level, event.getPos().getX(), event.getPos().getY(), event.getPos().getZ()) >= BirdConfigManager.maxBirdsNearby();
+    private static boolean isBelowGlobalCaps(ServerLevel level, double x, double z) {
+        int count = BirdPopulationTracker.totalAt(level, x, z);
+        return BirdConfigManager.maxBirdsNearby() > 0
+                && count < BirdConfigManager.maxBirdsNearby()
+                && (BirdConfigManager.maxWildBirdsPerRegion() <= 0
+                || count < BirdConfigManager.maxWildBirdsPerRegion());
     }
 
+    /** Compatibility entry point used by flyby spawning. */
     public static int nearbyBirdCount(ServerLevel level, double x, double y, double z) {
-        AABB area = new AABB(
-                x - BirdConfigManager.BIRD_CAP_HORIZONTAL_RADIUS,
-                y - BirdConfigManager.BIRD_CAP_VERTICAL_RADIUS,
-                z - BirdConfigManager.BIRD_CAP_HORIZONTAL_RADIUS,
-                x + BirdConfigManager.BIRD_CAP_HORIZONTAL_RADIUS,
-                y + BirdConfigManager.BIRD_CAP_VERTICAL_RADIUS,
-                z + BirdConfigManager.BIRD_CAP_HORIZONTAL_RADIUS
-        );
-        return level.getEntitiesOfClass(Mob.class, area, mob -> BirdSpecies.from(mob) != null).size();
+        return BirdPopulationTracker.totalAt(level, x, z);
     }
 }

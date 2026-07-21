@@ -1,6 +1,10 @@
 package EdDYON.guaniao.content.bird.cockatiel;
 
+import EdDYON.guaniao.config.BirdConfigManager;
+import EdDYON.guaniao.config.BirdSpecies;
 import EdDYON.guaniao.content.bird.BirdGroundAnimation;
+import EdDYON.guaniao.content.bird.BirdScanBudget;
+import EdDYON.guaniao.content.bird.BirdTags;
 import EdDYON.guaniao.content.bird.budgerigar.BudgerigarBehaviorState;
 import EdDYON.guaniao.content.bird.budgerigar.BudgerigarEntity;
 import EdDYON.guaniao.content.bird.scale.BirdModelScale;
@@ -9,18 +13,24 @@ import EdDYON.guaniao.registry.GuaniaoEntityTypes;
 import EdDYON.guaniao.registry.GuaniaoSoundEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.TamableAnimal;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -33,8 +43,11 @@ import software.bernie.geckolib.core.animation.RawAnimation;
 import software.bernie.geckolib.core.object.PlayState;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
+import java.util.UUID;
 
 public class CockatielEntity extends BudgerigarEntity {
+    private static final EntityDataAccessor<Integer> CREST_STATE = SynchedEntityData.defineId(CockatielEntity.class, EntityDataSerializers.INT);
     private static final RawAnimation IDLE_ANIMATION = RawAnimation.begin().thenLoop("animation.idle");
     private static final RawAnimation DANCE_ANIMATION = RawAnimation.begin().thenPlay("animation.idle_diff_1").thenLoop("animation.idle");
     private static final RawAnimation PREEN_ANIMATION = RawAnimation.begin().thenPlay("animation.idle_diff_2").thenLoop("animation.idle");
@@ -49,9 +62,17 @@ public class CockatielEntity extends BudgerigarEntity {
     private long happyDanceUntilTick;
     private boolean wasEating;
     private int macawAvoidanceCooldown;
+    @Nullable
+    private UUID avoidedMacawUuid;
 
     public CockatielEntity(EntityType<? extends CockatielEntity> entityType, Level level) {
         super(entityType, level);
+    }
+
+    @Override
+    protected void defineSynchedData() {
+        super.defineSynchedData();
+        this.entityData.define(CREST_STATE, CockatielCrestState.RELAXED.ordinal());
     }
 
     @Override
@@ -60,25 +81,86 @@ public class CockatielEntity extends BudgerigarEntity {
         if (this.macawAvoidanceCooldown > 0) {
             --this.macawAvoidanceCooldown;
         }
-        if (!this.level().isClientSide && !this.isTame() && !this.isFlying()
-                && this.macawAvoidanceCooldown <= 0 && this.tickCount % 20 == 0) {
-            EdDYON.guaniao.content.bird.macaw.MacawEntity macaw = this.level().getNearestEntity(
-                    this.level().getEntitiesOfClass(EdDYON.guaniao.content.bird.macaw.MacawEntity.class, this.getBoundingBox().inflate(5.0D)),
+        if (!this.level().isClientSide) {
+            this.tickCrestState();
+            this.tickMacawAvoidance();
+        }
+    }
+
+    public CockatielCrestState getCrestState() {
+        return CockatielCrestState.byId(this.entityData.get(CREST_STATE));
+    }
+
+    @Override
+    protected TagKey<Item> foodTag() {
+        return BirdTags.COCKATIEL_FOODS;
+    }
+
+    private void tickCrestState() {
+        if (this.tickCount % 5 != 0) {
+            return;
+        }
+        BudgerigarBehaviorState state = this.getBehaviorState();
+        CockatielCrestState crest = switch (state) {
+            case FLEEING -> CockatielCrestState.AFRAID;
+            case ALERT, SENTINEL -> CockatielCrestState.ALERT;
+            case CURIOUS -> CockatielCrestState.CURIOUS;
+            case DANCING, EATING -> CockatielCrestState.HAPPY;
+            default -> CockatielCrestState.RELAXED;
+        };
+        this.entityData.set(CREST_STATE, crest.ordinal());
+    }
+
+    private void tickMacawAvoidance() {
+        EdDYON.guaniao.content.bird.macaw.MacawEntity macaw = this.findTrackedMacaw();
+        if (macaw != null && this.distanceToSqr(macaw) > 56.25D) {
+            this.avoidedMacawUuid = null;
+            macaw = null;
+        }
+        int threatInterval = BirdConfigManager.threatScanInterval(BirdSpecies.COCKATIEL);
+        if (macaw == null && this.tickCount % threatInterval == 0
+                && this.level() instanceof ServerLevel serverLevel
+                && BirdScanBudget.tryAcquire(serverLevel, this)) {
+            macaw = this.level().getNearestEntity(
+                    this.level().getEntitiesOfClass(EdDYON.guaniao.content.bird.macaw.MacawEntity.class,
+                            this.getBoundingBox().inflate(5.0D), this::shouldAvoid),
                     net.minecraft.world.entity.ai.targeting.TargetingConditions.forNonCombat(),
                     this, this.getX(), this.getY(), this.getZ());
             if (macaw != null) {
-                Vec3 away = this.position().subtract(macaw.position()).multiply(1.0D, 0.0D, 1.0D);
-                if (away.lengthSqr() < 1.0E-4D) {
-                    away = new Vec3(1.0D, 0.0D, 0.0D);
-                }
-                away = away.normalize().scale(6.0D);
-                int x = (int) Math.floor(this.getX() + away.x);
-                int z = (int) Math.floor(this.getZ() + away.z);
-                int y = this.level().getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, x, z);
-                this.startFlybyFlight(new Vec3(x + 0.5D, y, z + 0.5D));
-                this.macawAvoidanceCooldown = 160;
+                this.avoidedMacawUuid = macaw.getUUID();
             }
         }
+        if (macaw == null || this.isFlying() || this.macawAvoidanceCooldown > 0) {
+            return;
+        }
+        Vec3 away = this.position().subtract(macaw.position()).multiply(1.0D, 0.0D, 1.0D);
+        if (away.lengthSqr() < 1.0E-4D) {
+            away = new Vec3(1.0D, 0.0D, 0.0D);
+        }
+        away = away.normalize().scale(6.0D);
+        int x = (int)Math.floor(this.getX() + away.x);
+        int z = (int)Math.floor(this.getZ() + away.z);
+        int y = this.level().getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, x, z);
+        this.startFlybyFlight(new Vec3(x + 0.5D, y, z + 0.5D));
+        this.macawAvoidanceCooldown = 160;
+    }
+
+    @Nullable
+    private EdDYON.guaniao.content.bird.macaw.MacawEntity findTrackedMacaw() {
+        if (this.avoidedMacawUuid == null || !(this.level() instanceof ServerLevel serverLevel)) {
+            return null;
+        }
+        Entity entity = serverLevel.getEntity(this.avoidedMacawUuid);
+        if (entity instanceof EdDYON.guaniao.content.bird.macaw.MacawEntity macaw && this.shouldAvoid(macaw)) {
+            return macaw;
+        }
+        this.avoidedMacawUuid = null;
+        return null;
+    }
+
+    private boolean shouldAvoid(EdDYON.guaniao.content.bird.macaw.MacawEntity macaw) {
+        return macaw.isAlive() && !(this.isTame() && macaw.isTame()
+                && Objects.equals(this.getOwnerUUID(), macaw.getOwnerUUID()));
     }
 
     public static AttributeSupplier.Builder createCockatielAttributes() {
@@ -125,6 +207,11 @@ public class CockatielEntity extends BudgerigarEntity {
 
     @Override
     protected SoundEvent getAmbientSound() {
+        return GuaniaoSoundEvents.COCKATIEL_AMBIENT.get();
+    }
+
+    @Override
+    protected SoundEvent getInteractionSound() {
         return GuaniaoSoundEvents.COCKATIEL_AMBIENT.get();
     }
 

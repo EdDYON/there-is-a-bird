@@ -1,5 +1,6 @@
 package EdDYON.guaniao.content.bird.nightheron;
 
+import EdDYON.guaniao.content.bird.flock.BirdFlockManager;
 import EdDYON.guaniao.content.bird.nightheron.NightHeronEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -122,7 +123,9 @@ public final class NightHeronLandingSelector {
         if (below.is(BlockTags.LEAVES) || below.is(BlockTags.LOGS)) {
             return true;
         }
-        return NightHeronLandingSelector.roostCoverScore(level, pos) >= 2.0 && (NightHeronEntity.isWaterEdge((LevelReader)level, pos) || NightHeronEntity.isNearWater((LevelReader)level, pos, 6));
+        return NightHeronEntity.isWaterEdge((LevelReader)level, pos)
+                || NightHeronLandingSelector.roostCoverScore(level, pos) >= 2.0
+                && NightHeronEntity.isNearWater((LevelReader)level, pos, 6);
     }
 
     public static boolean hasRoostCoverNear(Level level, BlockPos pos, int radius) {
@@ -171,7 +174,8 @@ public final class NightHeronLandingSelector {
     }
 
     private static double nearbyRoostingNightHeronScore(NightHeronEntity nightHeron, BlockPos pos) {
-        return nightHeron.level().getEntitiesOfClass(NightHeronEntity.class, nightHeron.getBoundingBox().inflate(12.0), other -> other != nightHeron && other.isAlive() && !other.getBehaviorState().isAirborne()).stream().mapToDouble(other -> {
+        return BirdFlockManager.nearby(nightHeron, NightHeronEntity.class, 12.0D).stream()
+                .filter(other -> other != nightHeron && !other.getBehaviorState().isAirborne()).mapToDouble(other -> {
             double distance = Vec3.atCenterOf((Vec3i)pos).distanceTo(other.position());
             if (distance < 2.25) {
                 return -6.0;
@@ -183,4 +187,3 @@ public final class NightHeronLandingSelector {
         }).sum();
     }
 }
-

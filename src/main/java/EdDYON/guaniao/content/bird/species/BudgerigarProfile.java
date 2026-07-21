@@ -81,6 +81,13 @@ public final class BudgerigarProfile extends BirdSpeciesProfile {
     }
 
     @Override
+    public boolean isTemptingPlayer(PathfinderMob bird, Player player) {
+        return bird instanceof BudgerigarEntity budgerigar
+                && (budgerigar.isEdibleFoodForThisBird(player.getMainHandItem())
+                || budgerigar.isEdibleFoodForThisBird(player.getOffhandItem()));
+    }
+
+    @Override
     public boolean isNearWater(PathfinderMob bird) {
         return false;
     }

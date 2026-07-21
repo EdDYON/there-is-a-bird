@@ -13,6 +13,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -27,6 +28,12 @@ import org.jetbrains.annotations.Nullable;
 public class PhotographItem extends Item {
     public PhotographItem(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    public void inventoryTick(ItemStack stack, Level level, Entity entity, int slot, boolean selected) {
+        super.inventoryTick(stack, level, entity, slot, selected);
+        LegacyPhotoMigration.queue(level, stack);
     }
 
     @Override
@@ -60,8 +67,10 @@ public class PhotographItem extends Item {
 
         BlockPos placePos = context.getClickedPos().relative(face);
         if (!level.isClientSide) {
+            LegacyPhotoMigration.migrateNow(level, stack);
             ItemStack photo = stack.copy();
             photo.setCount(1);
+            LegacyPhotoMigration.queue(level, photo);
             PhotographEntity entity = new PhotographEntity(level, placePos, face, photo);
             if (!entity.survives()) {
                 return InteractionResult.FAIL;

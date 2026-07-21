@@ -1,5 +1,6 @@
 package EdDYON.guaniao.content.bird;
 
+import EdDYON.guaniao.config.BirdConfigManager;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.goal.Goal;
@@ -52,7 +53,7 @@ public class CleanBirdTemptGoal extends Goal {
         if (this.player == null) {
             return false;
         }
-        if (this.canScare && this.mob.distanceToSqr(this.player) < 36.0D) {
+        if (this.canScare && !BirdConfigManager.aprilFoolsMode() && this.mob.distanceToSqr(this.player) < 36.0D) {
             if (this.player.distanceToSqr(this.playerX, this.playerY, this.playerZ) > 0.01D) {
                 return false;
             }

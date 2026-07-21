@@ -1,6 +1,7 @@
 package EdDYON.guaniao.content.bird.crow;
 
 import EdDYON.guaniao.content.bird.BirdSoundVolume;
+import EdDYON.guaniao.content.bird.BirdFlockSoundLimiter;
 import EdDYON.guaniao.content.bath.BirdBathAttraction;
 import EdDYON.guaniao.content.bath.BirdBathContentType;
 import EdDYON.guaniao.content.bath.BirdBathFeedingAnimatable;
@@ -9,6 +10,16 @@ import EdDYON.guaniao.content.bath.BirdBathUseGoal;
 import EdDYON.guaniao.content.advancement.BirdAdvancements;
 import EdDYON.guaniao.content.bird.BirdActivitySchedule;
 import EdDYON.guaniao.content.bird.BirdFoodSafety;
+import EdDYON.guaniao.content.bird.BirdItemSafety;
+import EdDYON.guaniao.content.bird.BirdSleepWakeable;
+import EdDYON.guaniao.content.bird.BirdTags;
+import EdDYON.guaniao.content.bird.command.BirdCommandInteraction;
+import EdDYON.guaniao.content.bird.command.BirdCommandMode;
+import EdDYON.guaniao.content.bird.command.BirdRoostGoal;
+import EdDYON.guaniao.content.bird.command.BirdStayGoal;
+import EdDYON.guaniao.content.bird.command.CommandableBird;
+import EdDYON.guaniao.content.bird.flock.FlockCompatibleBird;
+import EdDYON.guaniao.content.bird.flock.BirdFlockManager;
 import EdDYON.guaniao.content.bird.BirdGroundAnimation;
 import EdDYON.guaniao.content.bird.PollutedFoodReactionUtil;
 import EdDYON.guaniao.content.bird.flight.BirdFlightAware;
@@ -23,6 +34,7 @@ import EdDYON.guaniao.content.nest.CrowNestBlockEntity;
 import EdDYON.guaniao.content.nest.CrowNestTreasure;
 import EdDYON.guaniao.config.BirdConfigManager;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
+import EdDYON.guaniao.registry.GuaniaoSoundEvents;
 import java.util.EnumSet;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
@@ -81,12 +93,13 @@ import software.bernie.geckolib.core.animation.RawAnimation;
 import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
-public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal, ScalableBirdModel, BirdFlightAware, BirdBathMountable, BirdBathFeedingAnimatable {
+public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal, ScalableBirdModel, BirdFlightAware, BirdBathMountable, BirdBathFeedingAnimatable, CommandableBird, FlockCompatibleBird, BirdSleepWakeable {
     private static final EntityDataAccessor<Integer> BEHAVIOR_STATE = SynchedEntityData.defineId(CrowEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Float> MODEL_SCALE = SynchedEntityData.defineId(CrowEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Boolean> FLYING_ANIMATION_ACTIVE = SynchedEntityData.defineId(CrowEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<ItemStack> HELD_FOOD = SynchedEntityData.defineId(CrowEntity.class, EntityDataSerializers.ITEM_STACK);
     private static final EntityDataAccessor<Integer> HELD_FOOD_POSE_SEED = SynchedEntityData.defineId(CrowEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> COMMAND_MODE = SynchedEntityData.defineId(CrowEntity.class, EntityDataSerializers.INT);
     private static final BirdFlightProfile FLIGHT_PROFILE = BirdFlightProfile.CROW;
     private static final int EAT_ANIMATION_TICKS = 82;
     private static final int EAT_BITE_DELAY_TICKS = 18;
@@ -119,6 +132,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
     private static final RawAnimation SLEEP_2_ANIMATION = RawAnimation.begin().thenLoop("animation.sleep2");
 
     private final AnimatableInstanceCache animationCache = GeckoLibUtil.createInstanceCache((GeoAnimatable)this);
+    private final CrowPerceptionCache perceptionCache = new CrowPerceptionCache();
     private CrowBehaviorState behaviorState = CrowBehaviorState.IDLE;
     private GuidePreviewAnimation guidePreviewAnimation = GuidePreviewAnimation.NONE;
     private RawAnimation currentIdleAnimation = IDLE_ANIMATION;
@@ -135,6 +149,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
     private int airborneGraceTicks;
     private int shinyCooldown;
     private int groupAlertCooldown;
+    private int restInterruptionTicks;
     private int pollutedFoodReactionTicks;
     private boolean escapeFlightActive;
     private boolean landingFlight;
@@ -187,6 +202,8 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
     protected void registerGoals() {
         this.goalSelector.addGoal(0, new FloatGoal(this));
         this.goalSelector.addGoal(1, new CrowFleeGoal(this));
+        this.goalSelector.addGoal(2, new BirdStayGoal<>(this));
+        this.goalSelector.addGoal(2, new BirdRoostGoal<>(this));
         this.goalSelector.addGoal(2, new CrowEatDroppedFoodGoal(this));
         this.goalSelector.addGoal(2, new CrowDepositTreasureGoal(this));
         this.goalSelector.addGoal(3, new BirdBathUseGoal(this, 1.02D, 12.0D, 42,
@@ -199,7 +216,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
                         this.setBehaviorState(CrowBehaviorState.IDLE);
                     }
                 }));
-        this.goalSelector.addGoal(4, new CrowSleepGoal(this));
+        this.goalSelector.addGoal(1, new CrowSleepGoal(this));
         this.goalSelector.addGoal(5, new CrowInvestigateShinyGoal(this));
         this.goalSelector.addGoal(6, new CrowFollowOwnerGoal(this, 1.0D, 3.2F, 11.0F));
         this.goalSelector.addGoal(7, new CrowWatchPlayerGoal(this));
@@ -230,6 +247,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         this.entityData.define(FLYING_ANIMATION_ACTIVE, false);
         this.entityData.define(HELD_FOOD, ItemStack.EMPTY);
         this.entityData.define(HELD_FOOD_POSE_SEED, 0);
+        this.entityData.define(COMMAND_MODE, BirdCommandMode.FREE.ordinal());
     }
 
     @Override
@@ -265,6 +283,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
             compoundTag.putBoolean(NBT_CARRYING_HELD_ITEM, this.carryingHeldItem);
         }
         BirdModelScale.save(compoundTag, this.getIndividualModelScale(), this.modelScaleProfile());
+        compoundTag.putInt(CommandableBird.COMMAND_MODE_NBT_KEY, this.getBirdCommandMode().ordinal());
     }
 
     @Override
@@ -289,6 +308,11 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         } else {
             this.clearHeldFoodForRendering();
         }
+        if (compoundTag.contains(CommandableBird.COMMAND_MODE_NBT_KEY, 3)) {
+            this.setBirdCommandMode(BirdCommandMode.byId(compoundTag.getInt(CommandableBird.COMMAND_MODE_NBT_KEY)));
+        } else {
+            this.setBirdCommandMode(this.isTame() ? BirdCommandMode.FOLLOW : BirdCommandMode.FREE);
+        }
     }
 
     @Override
@@ -308,11 +332,16 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         this.tickWaterEscape();
         this.tickFlight();
         this.tickBehaviorFallback();
+        this.tickCommandedRest();
         this.tickGroundMovementFacing();
     }
 
     @Override
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
+        InteractionResult commandResult = BirdCommandInteraction.tryHandle(this, this, player, hand);
+        if (commandResult.consumesAction()) {
+            return commandResult;
+        }
         ItemStack stack = player.getItemInHand(hand);
         if (!stack.isEmpty() && isCrowFood(stack)) {
             if (!this.level().isClientSide) {
@@ -327,6 +356,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
                     this.dropHeldItem();
                 }
                 this.startEatingFood(eaten, true);
+                this.playSound(GuaniaoSoundEvents.CROW_AMBIENT.get(), 0.45F, 0.92F + this.getRandom().nextFloat() * 0.16F);
                 this.calmTicks = Math.max(this.calmTicks, 2400 + this.getRandom().nextInt(3600));
                 if (feedingRememberedAggressor) {
                     this.angerMemoryTicks = Math.max(0, this.angerMemoryTicks - 2200);
@@ -356,6 +386,21 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
     }
 
     @Override
+    public BirdCommandMode getBirdCommandMode() {
+        return BirdCommandMode.byId(this.entityData.get(COMMAND_MODE));
+    }
+
+    @Override
+    public void setBirdCommandMode(BirdCommandMode mode) {
+        this.entityData.set(COMMAND_MODE, (mode == null ? BirdCommandMode.FREE : mode).ordinal());
+    }
+
+    @Override
+    public boolean isBirdEmergencyOverrideActive() {
+        return this.escapeFlightActive || this.getBehaviorState() == CrowBehaviorState.FLEEING;
+    }
+
+    @Override
     public boolean isOrderedToSit() {
         return false;
     }
@@ -369,6 +414,13 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
             }
             Entity attacker = source.getEntity();
             Vec3 sourcePos = attacker == null ? this.position() : attacker.position();
+            this.restInterruptionTicks = Math.max(this.restInterruptionTicks, 240);
+            if (this.isBirdSleeping()) {
+                this.wakeFromLoudSound(sourcePos);
+            }
+            if (BirdConfigManager.aprilFoolsMode() && attacker instanceof Player) {
+                return true;
+            }
             this.rememberAggressor(attacker);
             this.frightenFrom(sourcePos, attacker instanceof Player ? 90 : 60);
             this.alertNearbyCrows(attacker, sourcePos);
@@ -505,6 +557,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
 
     boolean canStartForagingGoal() {
         return this.foodCooldown <= 0
+                && (!this.isTame() || this.isBirdCommandMode(BirdCommandMode.FREE))
                 && this.pollutedFoodReactionTicks <= 0
                 && !this.hasHeldItem()
                 && !this.isEating()
@@ -522,6 +575,25 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
 
     boolean isActiveTime() {
         return BirdActivitySchedule.DIURNAL.isActiveTime(this.level().getDayTime());
+    }
+
+    @Override
+    public boolean isBirdSleeping() {
+        return this.getBehaviorState() == CrowBehaviorState.SLEEPING;
+    }
+
+    @Override
+    public void wakeFromLoudSound(Vec3 soundPosition) {
+        if (this.level().isClientSide || !this.isBirdSleeping()) {
+            return;
+        }
+        this.restInterruptionTicks = Math.max(this.restInterruptionTicks, 240);
+        this.behaviorStateLockTicks = 0;
+        this.getNavigation().stop();
+        this.setBehaviorStateFor(CrowBehaviorState.ALERT, 45 + this.getRandom().nextInt(25));
+        if (soundPosition != null) {
+            this.getLookControl().setLookAt(soundPosition.x, soundPosition.y, soundPosition.z, 35.0F, this.getMaxHeadXRot());
+        }
     }
 
     void startEatingFood(ItemStack foodStack, boolean trustedFood) {
@@ -751,60 +823,23 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
     }
 
     public static boolean isCrowFood(ItemStack stack) {
-        return BirdFoodSafety.isCleanFoodCandidate(stack) && matchesCrowDiet(stack);
+        return BirdFoodSafety.matchesClean(BirdTags.CROW_FOODS, stack);
     }
 
-    private static boolean isCrowDroppedFoodCandidate(ItemStack stack) {
-        return matchesCrowDiet(stack);
+    static boolean isCrowDroppedFoodCandidate(ItemStack stack) {
+        return BirdFoodSafety.matchesClean(BirdTags.CROW_FOODS, stack)
+                && (!BirdConfigManager.crowItemSafetyEnabled()
+                || BirdItemSafety.isSafeDisposableItem(stack));
     }
 
     private static boolean matchesCrowDiet(ItemStack stack) {
-        return !stack.isEmpty()
-                && (stack.is(Items.ROTTEN_FLESH)
-                || stack.is(Items.SPIDER_EYE)
-                || stack.is(Items.BEEF)
-                || stack.is(Items.PORKCHOP)
-                || stack.is(Items.CHICKEN)
-                || stack.is(Items.MUTTON)
-                || stack.is(Items.RABBIT)
-                || stack.is(Items.COD)
-                || stack.is(Items.SALMON)
-                || stack.is(Items.TROPICAL_FISH)
-                || stack.is(Items.PUFFERFISH)
-                || stack.is(Items.SWEET_BERRIES)
-                || stack.is(Items.GLOW_BERRIES)
-                || stack.is(Items.WHEAT_SEEDS)
-                || stack.is(Items.MELON_SEEDS)
-                || stack.is(Items.PUMPKIN_SEEDS)
-                || stack.is(Items.BEETROOT_SEEDS)
-                || stack.is(Items.TORCHFLOWER_SEEDS)
-                || stack.is(Items.PITCHER_POD)
-                || stack.is(Items.WHEAT)
-                || stack.is(Items.BREAD)
-                || stack.is(Items.COOKED_BEEF)
-                || stack.is(Items.COOKED_PORKCHOP)
-                || stack.is(Items.COOKED_CHICKEN)
-                || stack.is(Items.COOKED_MUTTON)
-                || stack.is(Items.COOKED_RABBIT)
-                || stack.is(Items.COOKED_COD)
-                || stack.is(Items.COOKED_SALMON)
-                || stack.is(Items.APPLE)
-                || stack.is(Items.BEETROOT));
+        return !stack.isEmpty() && stack.is(BirdTags.CROW_FOODS);
     }
 
     static boolean isLowValueShiny(ItemStack stack) {
-        return !stack.isEmpty()
-                && !stack.hasCustomHoverName()
-                && !stack.hasTag()
-                && (stack.is(Items.GOLD_NUGGET)
-                || stack.is(Items.IRON_NUGGET)
-                || stack.is(Items.COPPER_INGOT)
-                || stack.is(Items.AMETHYST_SHARD)
-                || stack.is(Items.REDSTONE)
-                || stack.is(Items.LAPIS_LAZULI)
-                || stack.is(Items.GLOWSTONE_DUST)
-                || stack.is(Items.GLASS_BOTTLE)
-                || stack.is(Items.CLOCK));
+        return BirdConfigManager.crowItemSafetyEnabled()
+                ? BirdItemSafety.isCrowShiny(stack)
+                : !stack.isEmpty() && stack.is(BirdTags.CROW_SHINY_ITEMS);
     }
 
     private static boolean isThreateningHeldItem(ItemStack stack) {
@@ -858,10 +893,10 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
                 return InteractionHand.OFF_HAND;
             }
         }
-        if (isCrowFood(main)) {
+        if (isSafeStealableFood(main)) {
             return InteractionHand.MAIN_HAND;
         }
-        if (isCrowFood(offhand)) {
+        if (isSafeStealableFood(offhand)) {
             return InteractionHand.OFF_HAND;
         }
         if (isLowValueShiny(main)) {
@@ -882,7 +917,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
             return false;
         }
         ItemStack stack = player.getItemInHand(hand);
-        if (stack.isEmpty() || (!isCrowFood(stack) && !isLowValueShiny(stack))) {
+        if (stack.getCount() <= 1 || (!isSafeStealableFood(stack) && !isLowValueShiny(stack))) {
             return false;
         }
         ItemStack stolen = stack.copy();
@@ -899,6 +934,12 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
             this.startCarryAwayFlight(player.position());
         }
         return true;
+    }
+
+    private static boolean isSafeStealableFood(ItemStack stack) {
+        return stack.getCount() > 1
+                && (!BirdConfigManager.crowItemSafetyEnabled() || BirdItemSafety.isSafeDisposableItem(stack))
+                && isCrowFood(stack);
     }
 
     private void rememberAggressor(Entity attacker) {
@@ -929,7 +970,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
             return;
         }
         this.groupAlertCooldown = 120;
-        for (CrowEntity crow : this.level().getEntitiesOfClass(CrowEntity.class, this.getBoundingBox().inflate(16.0D))) {
+        for (CrowEntity crow : BirdFlockManager.nearby(this, CrowEntity.class, 16.0D)) {
             if (crow != this) {
                 crow.receiveGroupAlert(attacker, sourcePos, 3 + crow.getRandom().nextInt(4));
             }
@@ -967,13 +1008,14 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         }
         if (!this.isTame() && this.affinity >= TAME_AFFINITY_THRESHOLD && !this.isRememberingPlayer(player)) {
             this.tame(player);
+            this.setBirdCommandMode(BirdCommandMode.FOLLOW);
         } else if (this.isTame() && this.getOwnerUUID() == null) {
             this.setOwnerUUID(player.getUUID());
         }
     }
 
     private void shareFriendlyFeeding(Player player, int amount) {
-        for (CrowEntity crow : this.level().getEntitiesOfClass(CrowEntity.class, this.getBoundingBox().inflate(12.0D))) {
+        for (CrowEntity crow : BirdFlockManager.nearby(this, CrowEntity.class, 12.0D)) {
             if (crow != this) {
                 crow.receiveFriendlyFeeding(player, amount);
             }
@@ -1005,7 +1047,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         if (target == null) {
             return;
         }
-        for (CrowEntity crow : this.level().getEntitiesOfClass(CrowEntity.class, this.getBoundingBox().inflate(10.0D, 4.0D, 10.0D))) {
+        for (CrowEntity crow : BirdFlockManager.nearby(this, CrowEntity.class, 10.0D)) {
             if (crow != this) {
                 crow.receiveForagingSignal(target, shiny);
             }
@@ -1035,7 +1077,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
     }
 
     private void notifyNearbyCrowsOfPickup(Vec3 sourcePos, boolean food) {
-        for (CrowEntity crow : this.level().getEntitiesOfClass(CrowEntity.class, this.getBoundingBox().inflate(9.0D, 4.0D, 9.0D))) {
+        for (CrowEntity crow : BirdFlockManager.nearby(this, CrowEntity.class, 9.0D)) {
             if (crow != this) {
                 crow.receivePickupSignal(this, sourcePos, food);
             }
@@ -1061,7 +1103,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
     private Player nearestWatchingPlayer(Vec3 watchedPos, double range) {
         Player best = null;
         double bestDistance = range * range;
-        for (Player player : this.level().getEntitiesOfClass(Player.class, this.getBoundingBox().inflate(range + 2.0D), player -> player.isAlive() && !player.isSpectator())) {
+        for (Player player : this.perceptionCache.players(this)) {
             double distance = player.distanceToSqr(watchedPos.x, watchedPos.y, watchedPos.z);
             if (distance < bestDistance && this.isPlayerLookingAt(player, watchedPos, PLAYER_LOOKING_DOT)) {
                 best = player;
@@ -1130,6 +1172,9 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         }
         if (this.groupAlertCooldown > 0) {
             --this.groupAlertCooldown;
+        }
+        if (this.restInterruptionTicks > 0) {
+            --this.restInterruptionTicks;
         }
         if (this.airborneGraceTicks <= 0 && !this.isFlightInProgress() && this.onGround()) {
             this.setFlyingAnimationActive(false);
@@ -1277,6 +1322,31 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
                 || state == CrowBehaviorState.ALERT
                 || state == CrowBehaviorState.FOLLOWING_OWNER
                 || state.isAirborne()) {
+            this.setBehaviorState(CrowBehaviorState.IDLE);
+        }
+    }
+
+    private void tickCommandedRest() {
+        if (!this.isTame()) {
+            return;
+        }
+        BirdCommandMode mode = this.getBirdCommandMode();
+        boolean maySleepInPlace = mode == BirdCommandMode.FOLLOW
+                || mode == BirdCommandMode.STAY
+                || mode == BirdCommandMode.ROOST;
+        if (this.isActiveTime() || this.restInterruptionTicks > 0 || !maySleepInPlace) {
+            if (this.isBirdSleeping()) {
+                this.setBehaviorState(CrowBehaviorState.IDLE);
+            }
+            return;
+        }
+        if (this.onGround()
+                && this.getNavigation().isDone()
+                && !this.isEating()
+                && !this.isFlightInProgress()
+                && !this.getBehaviorState().isEscape()) {
+            this.setBehaviorState(CrowBehaviorState.SLEEPING);
+        } else if (this.isBirdSleeping()) {
             this.setBehaviorState(CrowBehaviorState.IDLE);
         }
     }
@@ -1617,12 +1687,12 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
 
     @Override
     protected SoundEvent getAmbientSound() {
-        return SoundEvents.PARROT_AMBIENT;
+        return GuaniaoSoundEvents.CROW_AMBIENT.get();
     }
 
     @Override
     protected SoundEvent getHurtSound(DamageSource damageSource) {
-        return SoundEvents.PARROT_HURT;
+        return GuaniaoSoundEvents.CROW_HURT.get();
     }
 
     @Override
@@ -1632,7 +1702,14 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
 
     @Override
     public int getAmbientSoundInterval() {
-        return 210;
+        return BirdFlockSoundLimiter.scaledAmbientInterval(this, 210);
+    }
+
+    @Override
+    public void playAmbientSound() {
+        if (BirdFlockSoundLimiter.allowAmbient(this)) {
+            super.playAmbientSound();
+        }
     }
 
     @Override
@@ -1752,6 +1829,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         private boolean canCarryToNest() {
             ItemStack carried = this.crow.getHeldFoodForRendering();
             return !this.crow.level().isClientSide
+                    && (!this.crow.isTame() || this.crow.isBirdCommandMode(BirdCommandMode.FREE))
                     && BirdConfigManager.crowsStoreTreasures()
                     && this.crow.isActiveTime()
                     && this.crow.isCarryingHeldItem()
@@ -1804,6 +1882,9 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
 
     private static final class CrowSleepGoal extends Goal {
         private final CrowEntity crow;
+        private Vec3 sleepTarget;
+        private int nextSearchTick;
+        private int travelTicks;
 
         private CrowSleepGoal(CrowEntity crow) {
             this.crow = crow;
@@ -1812,37 +1893,79 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
 
         @Override
         public boolean canUse() {
+            if (!this.canSleepNow() || !this.crow.onGround()) {
+                return false;
+            }
+            BlockPos currentPos = this.crow.blockPosition();
+            if (this.crow.scoreCrowPerch(currentPos, currentPos) > 24
+                    && BirdFlightTargeting.isSafeDryLanding(this.crow, currentPos)) {
+                this.sleepTarget = Vec3.atBottomCenterOf(currentPos).add(0.0D, 0.05D, 0.0D);
+                return true;
+            }
+            if (this.crow.tickCount < this.nextSearchTick) {
+                return false;
+            }
+            this.nextSearchTick = this.crow.tickCount + 80 + this.crow.getRandom().nextInt(40);
+            this.sleepTarget = this.crow.findPreferredPerchTarget(currentPos, 9, 10);
+            if (this.sleepTarget == null && BirdFlightTargeting.isSafeDryLanding(this.crow, currentPos)) {
+                this.sleepTarget = Vec3.atBottomCenterOf(currentPos);
+            }
+            return this.sleepTarget != null;
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            return this.sleepTarget != null && this.travelTicks < 240 && this.canSleepNow();
+        }
+
+        @Override
+        public void start() {
+            this.travelTicks = 0;
+            this.moveOrSleep();
+        }
+
+        @Override
+        public void tick() {
+            if (!this.crow.isBirdSleeping()) {
+                ++this.travelTicks;
+            }
+            this.moveOrSleep();
+        }
+
+        @Override
+        public void stop() {
+            this.sleepTarget = null;
+            this.travelTicks = 0;
+            if (this.crow.getBehaviorState() == CrowBehaviorState.SLEEPING) {
+                this.crow.setBehaviorState(CrowBehaviorState.IDLE);
+            }
+        }
+
+        private boolean canSleepNow() {
             return !this.crow.isActiveTime()
-                    && this.crow.onGround()
+                    && (!this.crow.isTame()
+                    || this.crow.isBirdCommandMode(BirdCommandMode.FREE)
+                    || this.crow.isBirdCommandMode(BirdCommandMode.STAY))
+                    && this.crow.restInterruptionTicks <= 0
                     && !this.crow.isInWaterOrBubble()
                     && !this.crow.isEating()
                     && !this.crow.isFlightInProgress()
                     && !this.crow.getBehaviorState().isEscape();
         }
 
-        @Override
-        public boolean canContinueToUse() {
-            return this.canUse();
-        }
-
-        @Override
-        public void start() {
-            this.setSleepingState();
-        }
-
-        @Override
-        public void tick() {
-            this.setSleepingState();
-        }
-
-        @Override
-        public void stop() {
-            if (this.crow.getBehaviorState() == CrowBehaviorState.SLEEPING) {
-                this.crow.setBehaviorState(CrowBehaviorState.IDLE);
+        private void moveOrSleep() {
+            if (this.sleepTarget == null) {
+                return;
             }
-        }
-
-        private void setSleepingState() {
+            if (this.crow.distanceToSqr(this.sleepTarget) > 1.75D || !this.crow.onGround()) {
+                if (this.crow.isBirdSleeping()) {
+                    this.crow.setBehaviorState(CrowBehaviorState.IDLE);
+                }
+                if (this.crow.tickCount % 20 == 0 || this.crow.getNavigation().isDone()) {
+                    this.crow.getNavigation().moveTo(this.sleepTarget.x, this.sleepTarget.y, this.sleepTarget.z, 0.9D);
+                }
+                return;
+            }
             this.crow.getNavigation().stop();
             Vec3 movement = this.crow.getDeltaMovement();
             this.crow.setDeltaMovement(0.0D, movement.y, 0.0D);
@@ -1970,16 +2093,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         }
 
         private ItemEntity findNearestFood() {
-            ItemEntity best = null;
-            double bestDistance = 12.0D * 12.0D;
-            for (ItemEntity item : this.crow.level().getEntitiesOfClass(ItemEntity.class, this.crow.getBoundingBox().inflate(12.0D, 4.0D, 12.0D), entity -> entity.isAlive() && isCrowDroppedFoodCandidate(entity.getItem()))) {
-                double distance = this.crow.distanceToSqr(item);
-                if (distance < bestDistance) {
-                    best = item;
-                    bestDistance = distance;
-                }
-            }
-            return best;
+            return this.crow.perceptionCache.nearestFood(this.crow);
         }
     }
 
@@ -2061,16 +2175,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         }
 
         private ItemEntity findNearestShiny() {
-            ItemEntity best = null;
-            double bestDistance = 10.0D * 10.0D;
-            for (ItemEntity item : this.crow.level().getEntitiesOfClass(ItemEntity.class, this.crow.getBoundingBox().inflate(10.0D, 4.0D, 10.0D), entity -> entity.isAlive() && CrowNestTreasure.isShiny(entity.getItem()))) {
-                double distance = this.crow.distanceToSqr(item);
-                if (distance < bestDistance) {
-                    best = item;
-                    bestDistance = distance;
-                }
-            }
-            return best;
+            return this.crow.perceptionCache.nearestShiny(this.crow);
         }
     }
 
@@ -2112,7 +2217,8 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         public void tick() {
             double distanceSqr = this.crow.distanceToSqr(this.target);
             boolean trustedPlayer = this.crow.isTrustedPlayer(this.target);
-            boolean holdingThreat = this.crow.isHoldingThreateningItem(this.target);
+            boolean ignoresPlayerThreat = BirdConfigManager.aprilFoolsMode();
+            boolean holdingThreat = !ignoresPlayerThreat && this.crow.isHoldingThreateningItem(this.target);
             boolean holdingFood = this.crow.isHoldingCrowFood(this.target);
             boolean holdingShiny = this.crow.isHoldingLowValueShiny(this.target);
             this.crow.getLookControl().setLookAt(this.target, 35.0F, this.crow.getMaxHeadXRot());
@@ -2177,6 +2283,11 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
                 }
                 return;
             }
+            if (ignoresPlayerThreat) {
+                this.crow.getNavigation().stop();
+                this.crow.setBehaviorStateFor(CrowBehaviorState.WATCHING, 18);
+                return;
+            }
             if (distanceSqr <= 4.0D * 4.0D && !trustedPlayer && this.crow.flightCooldown <= 0) {
                 this.crow.frightenFrom(this.target.position(), this.crow.calmTicks > 0 ? 40 : 70);
                 return;
@@ -2218,16 +2329,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         }
 
         private Player findNearestPlayer() {
-            Player best = null;
-            double bestDistance = 12.0D * 12.0D;
-            for (Player player : this.crow.level().getEntitiesOfClass(Player.class, this.crow.getBoundingBox().inflate(12.0D), player -> player.isAlive() && !player.isSpectator())) {
-                double distance = this.crow.distanceToSqr(player);
-                if (distance < bestDistance) {
-                    best = player;
-                    bestDistance = distance;
-                }
-            }
-            return best;
+            return this.crow.perceptionCache.nearestPlayer(this.crow, 12.0D);
         }
     }
 
@@ -2243,7 +2345,10 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
 
         @Override
         public boolean canUse() {
-            if (this.crow.isEating() || this.crow.isFlightInProgress() || this.crow.angerMemoryTicks <= 0) {
+            if (BirdConfigManager.aprilFoolsMode()
+                    || this.crow.isEating()
+                    || this.crow.isFlightInProgress()
+                    || this.crow.angerMemoryTicks <= 0) {
                 return false;
             }
             this.remembered = this.crow.rememberedPlayer();
@@ -2254,7 +2359,8 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
 
         @Override
         public boolean canContinueToUse() {
-            return this.remembered != null
+            return !BirdConfigManager.aprilFoolsMode()
+                    && this.remembered != null
                     && this.remembered.isAlive()
                     && this.crow.angerMemoryTicks > 0
                     && !this.crow.isEating()
@@ -2374,6 +2480,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
             if (!this.crow.isTame()
                     || owner == null
                     || !owner.isAlive()
+                    || !this.crow.isBirdCommandMode(BirdCommandMode.FOLLOW)
                     || this.crow.isEating()
                     || this.crow.getBehaviorState() == CrowBehaviorState.SLEEPING) {
                 return false;
@@ -2396,6 +2503,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         @Override
         public boolean canUse() {
             return this.crow.flightCooldown <= 0
+                    && (!this.crow.isTame() || this.crow.isBirdCommandMode(BirdCommandMode.FREE))
                     && this.crow.onGround()
                     && this.crow.isActiveTime()
                     && this.crow.getNavigation().isDone()

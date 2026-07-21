@@ -3,6 +3,7 @@ package EdDYON.guaniao.network;
 import EdDYON.guaniao.config.BirdConfigData;
 import EdDYON.guaniao.config.BirdConfigManager;
 import EdDYON.guaniao.event.BirdDroppingEvents;
+import EdDYON.guaniao.event.BirdPopulationTracker;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -33,10 +34,19 @@ public final class SaveBirdConfigPacket {
                     && (player.server == null || !player.server.isSingleplayerOwner(player.getGameProfile())))) {
                 return;
             }
-            BirdConfigManager.replaceAndSave(packet.data, player.server);
-            BirdDroppingEvents.refreshLoadedBirdCooldowns(player.server);
-            player.displayClientMessage(Component.translatable("message.guaniao.bird_config.saved"), false);
-            GuaniaoNetwork.sendToPlayer(new OpenBirdConfigPacket(BirdConfigManager.snapshot()), player);
+            if (BirdConfigManager.replaceAndSave(packet.data, player.server)) {
+                BirdDroppingEvents.refreshLoadedBirdCooldowns(player.server);
+                BirdPopulationTracker.rebuild(player.server);
+                player.displayClientMessage(Component.translatable("message.guaniao.bird_config.saved"), false);
+                GuaniaoNetwork.sendToPlayer(new OpenBirdConfigPacket(BirdConfigManager.snapshot()), player);
+                for (ServerPlayer online : player.server.getPlayerList().getPlayers()) {
+                    GuaniaoNetwork.sendToPlayer(new BirdRuntimeConfigPacket(
+                            BirdConfigManager.birdsPassThroughLeaves(),
+                            BirdConfigManager.aprilFoolsMode()), online);
+                }
+            } else {
+                player.displayClientMessage(Component.translatable("message.guaniao.bird_config.save_failed"), false);
+            }
         });
         context.setPacketHandled(true);
     }

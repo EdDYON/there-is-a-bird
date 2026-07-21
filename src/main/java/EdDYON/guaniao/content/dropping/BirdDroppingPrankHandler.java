@@ -2,12 +2,18 @@ package EdDYON.guaniao.content.dropping;
 
 import EdDYON.guaniao.GuaniaoMod;
 import EdDYON.guaniao.registry.GuaniaoSoundEvents;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.UUID;
+import java.util.WeakHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -43,6 +49,7 @@ public final class BirdDroppingPrankHandler {
     private static final int VILLAGER_TRADE_PENALTY_MAX = 12;
     private static final int GOLEM_MEMORY_TICKS = 20 * 60;
     private static final float LUCKY_HIT_CHANCE = 0.05F;
+    private static final Map<ServerLevel, Map<UUID, Long>> TRACKED_VILLAGERS = new WeakHashMap<>();
 
     private BirdDroppingPrankHandler() {
     }
@@ -169,6 +176,46 @@ public final class BirdDroppingPrankHandler {
         data.remove(VILLAGER_TRADE_PENALTY_UNTIL);
     }
 
+    public static void trackVillager(Villager villager) {
+        if (!(villager.level() instanceof ServerLevel level)) {
+            return;
+        }
+        CompoundTag data = villager.getPersistentData();
+        if (data.contains(VILLAGER_TRADE_PENALTY_UNTIL) && data.contains(VILLAGER_TRADE_PENALTY)) {
+            TRACKED_VILLAGERS.computeIfAbsent(level, ignored -> new HashMap<>())
+                    .put(villager.getUUID(), data.getLong(VILLAGER_TRADE_PENALTY_UNTIL));
+        }
+    }
+
+    public static void tickTrackedVillagers(MinecraftServer server) {
+        for (ServerLevel level : server.getAllLevels()) {
+            Map<UUID, Long> tracked = TRACKED_VILLAGERS.get(level);
+            if (tracked == null || tracked.isEmpty()) {
+                continue;
+            }
+            long now = level.getGameTime();
+            Iterator<Map.Entry<UUID, Long>> iterator = tracked.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<UUID, Long> entry = iterator.next();
+                if (now < entry.getValue()) {
+                    continue;
+                }
+                Entity entity = level.getEntity(entry.getKey());
+                if (entity instanceof Villager villager) {
+                    tickVillagerTradePenalty(villager);
+                }
+                iterator.remove();
+            }
+            if (tracked.isEmpty()) {
+                TRACKED_VILLAGERS.remove(level);
+            }
+        }
+    }
+
+    public static void forgetLevel(ServerLevel level) {
+        TRACKED_VILLAGERS.remove(level);
+    }
+
     public static boolean handleCakeHit(BirdDroppingProjectileEntity projectile, BlockPos pos) {
         if (!(projectile.level() instanceof ServerLevel level)) {
             return false;
@@ -209,6 +256,7 @@ public final class BirdDroppingPrankHandler {
         if (adjustVillagerTradePrices(villager, penalty)) {
             data.putInt(VILLAGER_TRADE_PENALTY, penalty);
             data.putLong(VILLAGER_TRADE_PENALTY_UNTIL, level.getGameTime() + VILLAGER_TRADE_PENALTY_TICKS);
+            trackVillager(villager);
         } else {
             data.remove(VILLAGER_TRADE_PENALTY);
             data.remove(VILLAGER_TRADE_PENALTY_UNTIL);

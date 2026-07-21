@@ -7,6 +7,7 @@ import EdDYON.guaniao.content.bird.BirdActivitySchedule;
 import EdDYON.guaniao.content.bird.budgerigar.BudgerigarEntity;
 import EdDYON.guaniao.content.bird.columbid.AbstractColumbidEntity;
 import EdDYON.guaniao.content.bird.nightheron.NightHeronEntity;
+import EdDYON.guaniao.content.bird.seagull.SeagullEntity;
 import EdDYON.guaniao.content.bird.sparrow.SparrowEntity;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.WeakHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
@@ -37,11 +39,11 @@ import net.minecraft.world.level.block.FenceBlock;
 import net.minecraft.world.level.block.FenceGateBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -53,6 +55,7 @@ public final class BirdFlybySpawnEvents {
     private static final TagKey<Biome> SPOTTED_DOVE_HABITAT = biomeTag("spotted_dove_habitat");
     private static final TagKey<Biome> PIGEON_HABITAT = biomeTag("pigeon_habitat");
     private static final Map<UUID, Integer> PLAYER_COOLDOWNS = new HashMap<>();
+    private static final Map<ServerLevel, Long> DIMENSION_ATTEMPTS = new WeakHashMap<>();
     private static final double VIEW_CHECK_RADIUS_SQR = 96.0D * 96.0D;
     private static final double MIN_HIDDEN_SPAWN_DISTANCE_SQR = 18.0D * 18.0D;
     private static final double VISIBLE_VIEW_DOT = 0.38D;
@@ -82,6 +85,12 @@ public final class BirdFlybySpawnEvents {
         if (random.nextInt(120) != 0) {
             return;
         }
+        long now = level.getGameTime();
+        Long lastAttempt = DIMENSION_ATTEMPTS.get(level);
+        if (lastAttempt != null && now - lastAttempt < 20L) {
+            return;
+        }
+        DIMENSION_ATTEMPTS.put(level, now);
         if (trySpawnFlyby(level, player, random)) {
             PLAYER_COOLDOWNS.put(playerId, 450 + random.nextInt(451));
         } else {
@@ -91,7 +100,16 @@ public final class BirdFlybySpawnEvents {
 
     @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        PLAYER_COOLDOWNS.remove(event.getEntity().getUUID());
+        UUID playerId = event.getEntity().getUUID();
+        PLAYER_COOLDOWNS.remove(playerId);
+        SeagullEntity.clearTheftTargetsFor(playerId);
+    }
+
+    @SubscribeEvent
+    public static void onLevelUnload(LevelEvent.Unload event) {
+        if (event.getLevel() instanceof ServerLevel level) {
+            DIMENSION_ATTEMPTS.remove(level);
+        }
     }
 
     private static boolean trySpawnFlyby(ServerLevel level, ServerPlayer player, RandomSource random) {
@@ -108,7 +126,7 @@ public final class BirdFlybySpawnEvents {
             return false;
         }
         int globalAllowed = BirdConfigManager.maxBirdsNearby()
-                - BirdSpawnConfigEvents.nearbyBirdCount(level, player.getX(), player.getY(), player.getZ());
+                - BirdPopulationTracker.totalAt(level, player.getX(), player.getZ());
         if (globalAllowed <= 0) {
             return false;
         }
@@ -403,14 +421,7 @@ public final class BirdFlybySpawnEvents {
     }
 
     private static int nearbyCount(ServerLevel level, ServerPlayer player, BirdKind kind) {
-        AABB area = player.getBoundingBox().inflate(72.0D, 36.0D, 72.0D);
-        return switch (kind) {
-            case NIGHT_HERON -> level.getEntitiesOfClass(NightHeronEntity.class, area).size();
-            case SPARROW -> level.getEntitiesOfClass(SparrowEntity.class, area).size();
-            case BUDGERIGAR -> level.getEntitiesOfClass(BudgerigarEntity.class, area).size();
-            case SPOTTED_DOVE -> level.getEntitiesOfClass(EdDYON.guaniao.content.bird.columbid.SpottedDoveEntity.class, area).size();
-            case PIGEON -> level.getEntitiesOfClass(EdDYON.guaniao.content.bird.columbid.PigeonEntity.class, area).size();
-        };
+        return BirdPopulationTracker.speciesAt(level, player.getX(), player.getZ(), kind.species());
     }
 
     private static boolean isHiddenFromNearbyPlayers(ServerLevel level, Vec3 spawnPos) {

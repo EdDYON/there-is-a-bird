@@ -1,5 +1,6 @@
 package EdDYON.guaniao.content.bird.budgerigar;
 
+import EdDYON.guaniao.content.bird.command.BirdCommandMode;
 import java.util.EnumSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.ai.goal.Goal;
@@ -15,6 +16,8 @@ public class BudgerigarMusicDanceGoal extends Goal {
     @Override
     public boolean canUse() {
         return this.budgerigar.nearbyMusicTicks() > 0
+                && (!this.budgerigar.isTame()
+                || this.budgerigar.isBirdCommandMode(BirdCommandMode.FREE))
                 && !this.budgerigar.isEating()
                 && !this.budgerigar.getBehaviorState().isEscape();
     }

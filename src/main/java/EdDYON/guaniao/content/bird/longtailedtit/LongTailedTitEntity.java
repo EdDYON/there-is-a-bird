@@ -1,19 +1,27 @@
 package EdDYON.guaniao.content.bird.longtailedtit;
 
+import EdDYON.guaniao.config.BirdConfigManager;
+import EdDYON.guaniao.config.BirdSpecies;
 import EdDYON.guaniao.content.bird.BirdActivitySchedule;
 import EdDYON.guaniao.content.bird.CleanBirdTemptGoal;
 import EdDYON.guaniao.content.bird.BirdFoodSafety;
+import EdDYON.guaniao.content.bird.BirdTags;
+import EdDYON.guaniao.content.bird.BirdScanBudget;
+import EdDYON.guaniao.content.bird.command.BirdCommandMode;
+import EdDYON.guaniao.content.bird.flock.BirdFlockManager;
 import EdDYON.guaniao.content.bird.BirdGroundAnimation;
 import EdDYON.guaniao.content.advancement.BirdAdvancements;
 import EdDYON.guaniao.content.bird.sparrow.SparrowBehaviorState;
 import EdDYON.guaniao.content.bird.sparrow.SparrowEntity;
 import EdDYON.guaniao.content.bird.crow.CrowEntity;
+import EdDYON.guaniao.content.bird.scale.BirdModelScaleProfile;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
 import EdDYON.guaniao.registry.GuaniaoSoundEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -22,12 +30,12 @@ import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.ai.goal.BreedGoal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -47,24 +55,6 @@ import java.util.EnumSet;
 import java.util.List;
 
 public class LongTailedTitEntity extends SparrowEntity {
-    private static final Ingredient TRUST_FOODS = Ingredient.of((ItemLike[]) new ItemLike[]{
-            Items.WHEAT_SEEDS,
-            Items.MELON_SEEDS,
-            Items.PUMPKIN_SEEDS,
-            Items.BEETROOT_SEEDS,
-            Items.TORCHFLOWER_SEEDS,
-            Items.PITCHER_POD,
-            Items.SWEET_BERRIES,
-            Items.GLOW_BERRIES,
-            Items.SPIDER_EYE,
-            Items.APPLE
-    });
-    private static final Ingredient EXTRA_TRUST_FOODS = Ingredient.of(
-            Items.SWEET_BERRIES,
-            Items.GLOW_BERRIES,
-            Items.SPIDER_EYE,
-            Items.APPLE
-    );
     private static final RawAnimation IDLE_ANIMATION = RawAnimation.begin().thenLoop("idle");
     private static final RawAnimation IDLE_ONE_ANIMATION = RawAnimation.begin().thenPlay("idle_diff_1").thenLoop("idle");
     private static final RawAnimation IDLE_TWO_ANIMATION = RawAnimation.begin().thenPlay("idle_diff_2").thenLoop("idle");
@@ -95,7 +85,8 @@ public class LongTailedTitEntity extends SparrowEntity {
     @Override
     protected void registerGoals() {
         super.registerGoals();
-        this.goalSelector.addGoal(3, new CleanBirdTemptGoal(this, 0.92D, EXTRA_TRUST_FOODS, false));
+        this.goalSelector.addGoal(3, new CleanBirdTemptGoal(this, 0.92D, Ingredient.of(this.foodTag()), false));
+        this.goalSelector.addGoal(4, new BreedGoal(this, 0.8D));
         this.goalSelector.addGoal(6, new RoostLineGoal(this));
         this.goalSelector.addGoal(8, new TightFlockGoal(this));
     }
@@ -127,6 +118,7 @@ public class LongTailedTitEntity extends SparrowEntity {
         }
         if (trustFood && !this.level().isClientSide && result.consumesAction()) {
             this.shareTrustWithFlock();
+            this.playSound(GuaniaoSoundEvents.LONG_TAILED_TIT_AMBIENT.get(), 0.34F, 0.96F + this.getRandom().nextFloat() * 0.16F);
         }
         return result;
     }
@@ -148,6 +140,7 @@ public class LongTailedTitEntity extends SparrowEntity {
                 this.level().broadcastEntityEvent(this, (byte) 7);
             } else if (this.getRandom().nextInt(3) == 0) {
                 this.tame(player);
+                this.setBirdCommandMode(BirdCommandMode.FOLLOW);
                 this.getNavigation().stop();
                 BirdAdvancements.awardTamedBird(player, this);
                 this.level().broadcastEntityEvent(this, (byte) 7);
@@ -171,11 +164,47 @@ public class LongTailedTitEntity extends SparrowEntity {
     }
 
     private static boolean isTrustFood(ItemStack stack) {
-        return BirdFoodSafety.matchesClean(TRUST_FOODS, stack);
+        return BirdFoodSafety.matchesClean(BirdTags.LONG_TAILED_TIT_FOODS, stack);
     }
 
     private static boolean isExtraTrustFood(ItemStack stack) {
-        return BirdFoodSafety.matchesClean(EXTRA_TRUST_FOODS, stack);
+        return BirdFoodSafety.matchesClean(BirdTags.LONG_TAILED_TIT_FOODS, stack)
+                && !stack.is(BirdTags.SPARROW_FOODS);
+    }
+
+    @Override
+    protected TagKey<Item> foodTag() {
+        return BirdTags.LONG_TAILED_TIT_FOODS;
+    }
+
+    @Override
+    protected boolean usesSparrowTemptGoal() {
+        return false;
+    }
+
+    @Override
+    protected boolean usesSparrowBreedGoal() {
+        return false;
+    }
+
+    @Override
+    protected boolean usesSparrowBreadcrumbGoal() {
+        return false;
+    }
+
+    @Override
+    protected boolean usesSparrowPerchGoal() {
+        return false;
+    }
+
+    @Override
+    protected boolean usesSparrowFlockGoal() {
+        return false;
+    }
+
+    @Override
+    protected boolean usesSparrowSettlementHome() {
+        return false;
     }
 
     @Override
@@ -191,6 +220,11 @@ public class LongTailedTitEntity extends SparrowEntity {
     @Override
     protected SoundEvent getDeathSound() {
         return GuaniaoSoundEvents.LONG_TAILED_TIT_DEATH.get();
+    }
+
+    @Override
+    public BirdModelScaleProfile modelScaleProfile() {
+        return BirdModelScaleProfile.LONG_TAILED_TIT;
     }
 
     @Nullable
@@ -284,7 +318,10 @@ public class LongTailedTitEntity extends SparrowEntity {
     }
 
     private void tickLargeBirdResponse() {
-        if (this.threatScanCooldown > 0 || this.isTame() || this.tickCount % 10 != 0) {
+        int interval = BirdConfigManager.threatScanInterval(BirdSpecies.LONG_TAILED_TIT);
+        if (this.threatScanCooldown > 0 || this.isTame() || this.tickCount % interval != 0
+                || !(this.level() instanceof ServerLevel serverLevel)
+                || !BirdScanBudget.tryAcquire(serverLevel, this)) {
             return;
         }
         CrowEntity threat = this.level().getNearestEntity(
@@ -301,7 +338,7 @@ public class LongTailedTitEntity extends SparrowEntity {
     }
 
     private List<LongTailedTitEntity> nearbyFlock(double radius) {
-        return this.level().getEntitiesOfClass(LongTailedTitEntity.class, this.getBoundingBox().inflate(radius), tit -> tit.isAlive());
+        return BirdFlockManager.nearby(this, LongTailedTitEntity.class, radius);
     }
 
     private boolean isRestTime() {

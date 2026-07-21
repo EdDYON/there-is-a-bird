@@ -33,11 +33,11 @@ public class BirdBathRenderer extends GeoBlockRenderer<BirdBathBlockEntity> {
 
     @Override
     public boolean shouldRenderOffScreen(BirdBathBlockEntity blockEntity) {
-        return true;
+        return false;
     }
 
     @Override
     public int getViewDistance() {
-        return 128;
+        return 48;
     }
 }

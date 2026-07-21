@@ -4,6 +4,8 @@ import EdDYON.guaniao.content.bird.BirdActivitySchedule;
 import EdDYON.guaniao.content.bird.brain.BirdBrain;
 import EdDYON.guaniao.content.bird.brain.BirdSenses;
 import EdDYON.guaniao.content.bird.brain.BirdSpeciesProfile;
+import EdDYON.guaniao.content.bird.BirdFoodSafety;
+import EdDYON.guaniao.content.bird.BirdTags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.LivingEntity;
@@ -65,7 +67,15 @@ public final class SpottedDoveProfile extends BirdSpeciesProfile {
 
     @Override
     public boolean isTemptingPlayer(Player player) {
-        return AbstractColumbidEntity.isSeedFood(player.getMainHandItem()) || AbstractColumbidEntity.isSeedFood(player.getOffhandItem());
+        return BirdFoodSafety.matchesClean(BirdTags.SPOTTED_DOVE_FOODS, player.getMainHandItem())
+                || BirdFoodSafety.matchesClean(BirdTags.SPOTTED_DOVE_FOODS, player.getOffhandItem());
+    }
+
+    @Override
+    public boolean isTemptingPlayer(PathfinderMob bird, Player player) {
+        return bird instanceof AbstractColumbidEntity columbid
+                && (columbid.isSeedFoodForThisBird(player.getMainHandItem())
+                || columbid.isSeedFoodForThisBird(player.getOffhandItem()));
     }
 
     @Override

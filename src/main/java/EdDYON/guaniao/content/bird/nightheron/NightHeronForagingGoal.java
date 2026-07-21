@@ -1,11 +1,10 @@
 package EdDYON.guaniao.content.bird.nightheron;
 
-import java.util.Comparator;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Optional;
 import EdDYON.guaniao.content.bird.nightheron.NightHeronBehaviorState;
 import EdDYON.guaniao.content.bird.nightheron.NightHeronEntity;
+import EdDYON.guaniao.content.bird.BirdTags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Position;
@@ -90,12 +89,16 @@ extends Goal {
     }
 
     private Optional<LivingEntity> findPrey() {
-        List<LivingEntity> nearby = this.nightHeron.level().getEntitiesOfClass(LivingEntity.class, this.nightHeron.getBoundingBox().inflate(7.0), entity -> entity.isAlive() && this.isPrey((LivingEntity)entity));
-        return nearby.stream().min(Comparator.comparingDouble(arg_0 -> ((NightHeronEntity)this.nightHeron).distanceToSqr(arg_0)));
+        LivingEntity prey = this.nightHeron.birdBrain().senses().nearestPrey();
+        if (prey == null || !prey.isAlive() || !this.isPrey(prey)
+                || this.nightHeron.distanceToSqr(prey) > 49.0D) {
+            return Optional.empty();
+        }
+        return Optional.of(prey);
     }
 
     private boolean isPrey(LivingEntity entity) {
-        return entity instanceof AbstractFish || entity.getType() == EntityType.FROG || entity.getType() == EntityType.TADPOLE;
+        return entity.getType().is(BirdTags.NIGHT_HERON_PREY);
     }
 
     private void stalkPrey(LivingEntity prey) {
