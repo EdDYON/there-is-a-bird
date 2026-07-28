@@ -1,5 +1,6 @@
 package EdDYON.guaniao.content.feed;
 
+import EdDYON.guaniao.content.bird.sparrow.BreadcrumbSearchCache;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import EdDYON.guaniao.registry.GuaniaoItems;
@@ -88,8 +89,17 @@ public class BreadcrumbPileBlock extends Block {
     public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
         super.onPlace(state, level, pos, oldState, movedByPiston);
         if (!level.isClientSide) {
+            BreadcrumbSearchCache.invalidate((ServerLevel)level);
             level.scheduleTick(pos, this, TICK_INTERVAL);
         }
+    }
+
+    @Override
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+        if (!level.isClientSide && !newState.is(this)) {
+            BreadcrumbSearchCache.invalidate((ServerLevel)level);
+        }
+        super.onRemove(state, level, pos, newState, movedByPiston);
     }
 
     @Override

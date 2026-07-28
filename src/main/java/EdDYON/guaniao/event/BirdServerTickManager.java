@@ -3,8 +3,10 @@ package EdDYON.guaniao.event;
 import EdDYON.guaniao.GuaniaoMod;
 import EdDYON.guaniao.config.BirdSpecies;
 import EdDYON.guaniao.content.dropping.BirdDroppingPrankHandler;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.WeakHashMap;
@@ -58,6 +60,7 @@ public final class BirdServerTickManager {
             if (birds == null) {
                 continue;
             }
+            List<Mob> birdsToDiscard = new ArrayList<>();
             Iterator<Mob> iterator = birds.values().iterator();
             while (iterator.hasNext()) {
                 Mob bird = iterator.next();
@@ -66,7 +69,12 @@ public final class BirdServerTickManager {
                     continue;
                 }
                 BirdDroppingEvents.tickBird(bird);
-                BirdPopulationTracker.tickBird(bird);
+                if (BirdPopulationTracker.tickBird(bird)) {
+                    birdsToDiscard.add(bird);
+                }
+            }
+            for (Mob bird : birdsToDiscard) {
+                bird.discard();
             }
         }
         BirdDroppingPrankHandler.tickTrackedVillagers(event.getServer());

@@ -26,6 +26,7 @@ crash-reports
 *.log
 *.hprof
 *.heapdump
+javac.*.args
 
 # local restore/decompile/tooling scratch
 .backup*

@@ -34,14 +34,11 @@ public final class BirdSpawnConfigEvents {
             }
             event.removeSpawnerData(original);
             double multiplier = BirdConfigManager.spawnMultiplier(species);
-            if (!globalCapacity || multiplier <= 0.0D) {
+            if (!globalCapacity || multiplier <= 0.0D || level != null
+                    && !isBelowSpeciesCap(level, event.getPos().getX(), event.getPos().getZ(), species)) {
                 continue;
             }
             int weight = Math.max(1, (int)Math.round(original.getWeight().asInt() * multiplier));
-            if (level != null && BirdPopulationTracker.speciesAt(level, event.getPos().getX(), event.getPos().getZ(), species)
-                    >= BirdConfigManager.maxWildNearby(species)) {
-                weight = Math.max(1, weight / 4);
-            }
             int minGroup = BirdConfigManager.minGroup(species);
             int maxGroup = BirdConfigManager.maxGroup(species);
             if (level != null) {
@@ -73,18 +70,25 @@ public final class BirdSpawnConfigEvents {
             return;
         }
         if (event.getLevel() instanceof ServerLevel level) {
-            if (!isBelowGlobalCaps(level, event.getPos().getX(), event.getPos().getZ())) {
+            if (!isBelowGlobalCaps(level, event.getPos().getX(), event.getPos().getZ())
+                    || !isBelowSpeciesCap(level, event.getPos().getX(), event.getPos().getZ(), species)) {
                 event.setResult(Event.Result.DENY);
             }
         }
     }
 
     private static boolean isBelowGlobalCaps(ServerLevel level, double x, double z) {
-        int count = BirdPopulationTracker.totalAt(level, x, z);
+        int nearbyCount = BirdPopulationTracker.totalAt(level, x, z);
+        int regionalCount = BirdPopulationTracker.totalInRegionAt(level, x, z);
         return BirdConfigManager.maxBirdsNearby() > 0
-                && count < BirdConfigManager.maxBirdsNearby()
+                && nearbyCount < BirdConfigManager.maxBirdsNearby()
                 && (BirdConfigManager.maxWildBirdsPerRegion() <= 0
-                || count < BirdConfigManager.maxWildBirdsPerRegion());
+                || regionalCount < BirdConfigManager.maxWildBirdsPerRegion());
+    }
+
+    private static boolean isBelowSpeciesCap(ServerLevel level, double x, double z, BirdSpecies species) {
+        int limit = BirdConfigManager.maxWildNearby(species);
+        return limit > 0 && BirdPopulationTracker.speciesAt(level, x, z, species) < limit;
     }
 
     /** Compatibility entry point used by flyby spawning. */

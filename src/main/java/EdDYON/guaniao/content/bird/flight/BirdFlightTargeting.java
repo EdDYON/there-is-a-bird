@@ -1,5 +1,6 @@
 package EdDYON.guaniao.content.bird.flight;
 
+import EdDYON.guaniao.config.BirdConfigManager;
 import EdDYON.guaniao.registry.GuaniaoBlockTags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -24,6 +25,9 @@ public final class BirdFlightTargeting {
     private static final double FORWARD_FALLBACK_RADIANS = 0.62D;
     private static final double WIDE_FALLBACK_RADIANS = 1.35D;
     private static final double FLIGHT_PATH_SAMPLE_SPACING = 0.75D;
+    private static final int MAX_AIR_TARGET_ATTEMPTS = 8;
+    private static final int MAX_RECOVERY_PATH_CHECKS = 8;
+    private static final int MAX_HORIZONTAL_RECOVERY_PATH_CHECKS = 6;
 
     private BirdFlightTargeting() {
     }
@@ -56,10 +60,10 @@ public final class BirdFlightTargeting {
         Vec3 preferred = normalizeHorizontal(preferredDirection, bird.getDeltaMovement());
         Vec3 baseDirection = fleeing ? preferred : normalizeHorizontal(viewDirection.scale(0.78D).add(preferred.scale(0.22D)), viewDirection);
         RandomSource random = bird.getRandom();
-        for (int attempt = 0; attempt < 24; ++attempt) {
+        for (int attempt = 0; attempt < MAX_AIR_TARGET_ATTEMPTS; ++attempt) {
             double turnLimit = fleeing
-                    ? (attempt < 14 ? 0.78D : 1.12D)
-                    : (attempt < 14 ? FORWARD_CONE_RADIANS : (attempt < 20 ? FORWARD_FALLBACK_RADIANS : WIDE_FALLBACK_RADIANS));
+                    ? (attempt < 5 ? 0.78D : 1.12D)
+                    : (attempt < 4 ? FORWARD_CONE_RADIANS : (attempt < 7 ? FORWARD_FALLBACK_RADIANS : WIDE_FALLBACK_RADIANS));
             Vec3 direction = rotateHorizontal(baseDirection, randomSigned(random, turnLimit));
             double distance = profile.minAirTargetDistance() + Math.sqrt(random.nextDouble()) * (profile.maxAirTargetDistance() - profile.minAirTargetDistance());
             Vec3 horizontalTarget = bird.position().add(direction.scale(distance));
@@ -78,6 +82,8 @@ public final class BirdFlightTargeting {
             targetY = Mth.clamp(targetY, level.getMinBuildHeight() + 3.0D, level.getMaxBuildHeight() - 3.0D);
             BlockPos airPos = BlockPos.containing(horizontalTarget.x, targetY, horizontalTarget.z);
             Vec3 airTarget = new Vec3(blockX + 0.5D, targetY, blockZ + 0.5D);
+            // Flight safety is correctness-critical and must not compete with optional habitat/perception scans.
+            // The local attempt caps bound the work without turning a depleted shared budget into a failed escape.
             if (isOpenAir(bird, airPos) && hasClearFlightPath(bird, airTarget)) {
                 return airTarget;
             }
@@ -109,25 +115,36 @@ public final class BirdFlightTargeting {
 
     /** Chooses a short, visible climb or reverse corridor after blocked flight. */
     public static Vec3 findRecoveryTarget(PathfinderMob bird, Vec3 blockedDirection, int maxClimb, int maxHorizontalDistance) {
-        int blockX = Mth.floor(bird.getX());
-        int blockZ = Mth.floor(bird.getZ());
-        for (int climb = Math.max(2, maxClimb); climb >= 2; --climb) {
-            BlockPos airPos = new BlockPos(blockX, Mth.floor(bird.getY() + (double)climb), blockZ);
-            Vec3 target = Vec3.atBottomCenterOf(airPos);
-            if (isOpenAir(bird, airPos) && hasClearFlightPath(bird, target)) {
-                return target;
-            }
-        }
-
         Vec3 reverse = normalizeHorizontal(blockedDirection.scale(-1.0D), bird.getDeltaMovement());
         double[] angles = {0.0D, 0.45D, -0.45D, 0.9D, -0.9D, 1.35D, -1.35D};
+        int pathChecks = 0;
+        horizontalSearch:
         for (double angle : angles) {
             Vec3 direction = rotateHorizontal(reverse, angle);
             for (int distance = Math.max(3, maxHorizontalDistance); distance >= 3; --distance) {
                 Vec3 point = bird.position().add(direction.scale(distance));
                 BlockPos airPos = BlockPos.containing(point);
                 Vec3 target = Vec3.atBottomCenterOf(airPos);
-                if (isOpenAir(bird, airPos) && hasClearFlightPath(bird, target)) {
+                if (isOpenAir(bird, airPos)) {
+                    if (pathChecks >= MAX_HORIZONTAL_RECOVERY_PATH_CHECKS) {
+                        break horizontalSearch;
+                    }
+                    ++pathChecks;
+                    if (hasClearFlightPath(bird, target)) {
+                        return target;
+                    }
+                }
+            }
+        }
+
+        int blockX = Mth.floor(bird.getX());
+        int blockZ = Mth.floor(bird.getZ());
+        for (int climb = Math.max(2, maxClimb); climb >= 2 && pathChecks < MAX_RECOVERY_PATH_CHECKS; --climb) {
+            BlockPos airPos = new BlockPos(blockX, Mth.floor(bird.getY() + (double)climb), blockZ);
+            Vec3 target = Vec3.atBottomCenterOf(airPos);
+            if (isOpenAir(bird, airPos)) {
+                ++pathChecks;
+                if (hasClearFlightPath(bird, target)) {
                     return target;
                 }
             }
@@ -222,7 +239,8 @@ public final class BirdFlightTargeting {
         }
         BlockState feet = level.getBlockState(pos);
         BlockState head = level.getBlockState(pos.above());
-        if (!feet.getCollisionShape((BlockGetter)level, pos).isEmpty() || !head.getCollisionShape((BlockGetter)level, pos.above()).isEmpty()) {
+        if (hasBlockingFlightCollision(entity, level, pos, feet)
+                || hasBlockingFlightCollision(entity, level, pos.above(), head)) {
             return false;
         }
         AABB box = entity.getBoundingBox().move(Vec3.atBottomCenterOf(pos).subtract(entity.position())).inflate(-0.04D, -0.02D, -0.04D);
@@ -231,6 +249,16 @@ public final class BirdFlightTargeting {
                 && !level.getFluidState(pos).is(FluidTags.LAVA)
                 && !level.getFluidState(pos.above()).is(FluidTags.WATER)
                 && !level.getFluidState(pos.above()).is(FluidTags.LAVA);
+    }
+
+    private static boolean hasBlockingFlightCollision(Entity entity, Level level, BlockPos pos, BlockState state) {
+        if (state.is(BlockTags.LEAVES)
+                && BirdConfigManager.birdsPassThroughLeaves()
+                && entity instanceof BirdFlightAware bird
+                && (bird.isBirdFlightActive() || bird.shouldPassThroughLeaves())) {
+            return false;
+        }
+        return !state.getCollisionShape((BlockGetter)level, pos).isEmpty();
     }
 
     public static boolean isSafeDryLanding(PathfinderMob bird, BlockPos pos) {

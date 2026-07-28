@@ -153,6 +153,18 @@ public abstract class BirdSpeciesProfile {
         return false;
     }
 
+    public int habitatScanCost() {
+        return 0;
+    }
+
+    public BirdHabitatSnapshot scanHabitat(PathfinderMob bird) {
+        return new BirdHabitatSnapshot(
+                this.isNearWater(bird),
+                this.isWaterEdge(bird),
+                this.isNearCover(bird),
+                this.isNearRoost(bird));
+    }
+
     protected float clamp(float value) {
         return Mth.clamp(value, 0.0F, 1.0F);
     }

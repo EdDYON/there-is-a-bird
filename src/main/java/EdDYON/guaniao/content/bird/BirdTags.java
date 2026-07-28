@@ -26,8 +26,10 @@ public final class BirdTags {
 
     public static final TagKey<Item> SEAGULL_STEALABLE_FOODS = item("seagull_stealable_foods");
     public static final TagKey<Item> CROW_SHINY_ITEMS = item("crow_shiny_items");
+    public static final TagKey<Item> CROW_TREASURE_ITEMS = item("crow_treasure_items");
     public static final TagKey<Item> CROW_PROTECTED_ITEMS = item("crow_protected_items");
     public static final TagKey<Item> BIRD_TOXIC_FOODS = item("bird_toxic_foods");
+    public static final TagKey<Item> FORGE_ORES = TagKey.create(Registries.ITEM, new ResourceLocation("forge", "ores"));
 
     public static final TagKey<Block> BIRD_PERCHES = block("bird_perches");
     public static final TagKey<EntityType<?>> NIGHT_HERON_PREY = entityType("night_heron_prey");

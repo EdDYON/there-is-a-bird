@@ -54,6 +54,7 @@ extends Goal {
     }
 
     private boolean isNearRoostCover() {
-        return NightHeronLandingSelector.isRoostingSpot(this.nightHeron.level(), this.nightHeron.blockPosition()) || NightHeronLandingSelector.hasRoostCoverNear(this.nightHeron.level(), this.nightHeron.blockPosition(), 5);
+        return NightHeronLandingSelector.isRoostingSpot(this.nightHeron.level(), this.nightHeron.blockPosition())
+                || NightHeronLandingSelector.hasRoostCoverNear(this.nightHeron, 5);
     }
 }

@@ -40,7 +40,8 @@ public class BlockStateBaseMixin {
         if (!BirdConfigManager.birdsPassThroughLeaves()) {
             return;
         }
-        boolean activelyFlying = bird.isBirdFlightActive() && (!entity.onGround() || entity.isNoGravity());
+        boolean activelyFlying = bird.shouldPassThroughLeaves()
+                || (bird.isBirdFlightActive() && (!entity.onGround() || entity.isNoGravity()));
         if (!activelyFlying && entityContext.isAbove(guaniao$LEAVES_PERCH_SHAPE, pos, true)) {
             cir.setReturnValue(guaniao$LEAVES_PERCH_SHAPE);
             return;

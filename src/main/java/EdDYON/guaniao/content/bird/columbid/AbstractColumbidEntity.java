@@ -111,6 +111,7 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
     private static final double ESCAPE_FLIGHT_SPEED = 0.44D;
     private static final int AUTONOMOUS_FLIGHT_MIN_TICKS = 520;
     private static final int AUTONOMOUS_FLIGHT_RANDOM_TICKS = 300;
+    private static final int MAX_LANDING_TICKS = 200;
     private static final BirdFlightProfile FLIGHT_PROFILE = BirdFlightProfile.COLUMBID;
     protected static final RawAnimation IDLE_ANIMATION = RawAnimation.begin().thenLoop("idle");
     protected static final RawAnimation IDLE_DIFF_1_ANIMATION = RawAnimation.begin().thenPlay("idle_diff_1").thenLoop("idle");
@@ -941,6 +942,10 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
         this.getNavigation().stop();
         this.setNoGravity(true);
         ++this.timeFlying;
+        if (this.timeFlying > this.flightDuration + MAX_LANDING_TICKS) {
+            this.finishControlledFlight(false);
+            return;
+        }
         --this.flightTicks;
         Vec3 toLanding = this.flightTarget.subtract(this.position());
         double landingDistance = toLanding.length();
@@ -1038,6 +1043,10 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
         if (this.flightTicks <= 0) {
             if (!this.onGround()) {
                 ++this.flightLandingTicks;
+                if (this.flightLandingTicks > MAX_LANDING_TICKS) {
+                    this.finishControlledFlight(false);
+                    return;
+                }
                 this.flightTicks = 1;
                 if (this.flightLandingTicks == 1 || this.flightLandingTicks % 24 == 0 || this.flightTarget == null) {
                     Vec3 landing = this.findNearestDryLandingTarget(this.flightLandingTicks > 80 ? 24 : 14);
@@ -1104,7 +1113,7 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
             this.landingSettleTicks = Math.max(this.landingSettleTicks, 18);
             this.setDeltaMovement(Vec3.ZERO);
         } else {
-            this.setDeltaMovement(movement.x * 0.35D, Math.max(movement.y * 0.3D, -0.04D), movement.z * 0.35D);
+            this.setDeltaMovement(movement.x * 0.35D, Math.min(movement.y * 0.3D, -0.04D), movement.z * 0.35D);
         }
         if (this.getBehaviorState().isAirborne()) {
             this.setBehaviorStateFor(ColumbidBehaviorState.ALERT, 24);
@@ -1317,10 +1326,13 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
                 0);
     }
 
-    private boolean shouldPlayWalkAnimation() {
+    private boolean shouldPlayWalkAnimation(boolean animationMoving) {
         ColumbidBehaviorState state = this.getBehaviorState();
         if (!BirdGroundAnimation.canPlayWalk(this)) {
             return false;
+        }
+        if (animationMoving) {
+            return true;
         }
         if (state.isAirborne()
                 || state == ColumbidBehaviorState.EATING
@@ -1336,7 +1348,7 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
                 || state == ColumbidBehaviorState.CHASING) {
             return true;
         }
-        return BirdGroundAnimation.hasWalkMotion(this);
+        return BirdGroundAnimation.hasWalkMotion(this, animationMoving);
     }
 
     private IdleAnimationChoice chooseIdleAnimation() {
@@ -1380,7 +1392,7 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
             }
             return animationState.setAndContinue(FLY_FLAPPING_LOOP_ANIMATION);
         }
-        if (this.shouldPlayWalkAnimation()) {
+        if (this.shouldPlayWalkAnimation(animationState.isMoving())) {
             return animationState.setAndContinue(WALK_ANIMATION);
         }
         return animationState.setAndContinue(this.pickIdleAnimation());

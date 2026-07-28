@@ -62,10 +62,13 @@ public class BirdSenses {
             this.nearestPreyDistance = this.nearestPrey == null ? Double.MAX_VALUE : Math.sqrt(bird.distanceToSqr(this.nearestPrey));
         }
 
-        this.nearWater = profile.isNearWater(bird);
-        this.waterEdge = profile.isWaterEdge(bird);
-        this.nearCover = profile.isNearCover(bird);
-        this.nearRoost = profile.isNearRoost(bird);
+        BirdHabitatSnapshot habitat = BirdHabitatCache.sample(bird, profile);
+        if (habitat != null) {
+            this.nearWater = habitat.nearWater();
+            this.waterEdge = habitat.waterEdge();
+            this.nearCover = habitat.nearCover();
+            this.nearRoost = habitat.nearRoost();
+        }
         this.activeTime = profile.isActiveTime(this);
         this.roostTime = profile.isRoostTime(this);
 

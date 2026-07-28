@@ -9,6 +9,12 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 public final class BirdFlightController {
+    private static final float FLIGHT_YAW_TURN_RATE = 12.0F;
+    private static final float FLIGHT_BODY_TURN_RATE = 10.0F;
+    private static final float FLIGHT_HEAD_TURN_RATE = 14.0F;
+    private static final float FLIGHT_HEAD_LIMIT = 28.0F;
+    private static final float FLIGHT_PITCH_TURN_RATE = 5.0F;
+    private static final float GROUND_YAW_TURN_RATE = 18.0F;
     private static final Map<Mob, FlightProgress> FLIGHT_PROGRESS = Collections.synchronizedMap(new WeakHashMap<>());
 
     private BirdFlightController() {
@@ -80,35 +86,47 @@ public final class BirdFlightController {
         if (horizontalLength <= 1.0E-4D) {
             return;
         }
-        float yaw = (float)(Mth.atan2(movement.z, movement.x) * 57.29577951308232D) - 90.0F;
-        float pitch = Mth.clamp((float)(-(Math.atan2(movement.y, horizontalLength) * 57.29577951308232D)), -maxPitchDegrees, maxPitchDegrees);
+        float targetYaw = (float)(Mth.atan2(movement.z, movement.x) * 57.29577951308232D) - 90.0F;
+        float targetPitch = Mth.clamp((float)(-(Math.atan2(movement.y, horizontalLength) * 57.29577951308232D)), -maxPitchDegrees, maxPitchDegrees);
+        float yaw = approachAngle(bird.getYRot(), targetYaw, FLIGHT_YAW_TURN_RATE);
+        float bodyYaw = approachAngle(bird.yBodyRot, yaw, FLIGHT_BODY_TURN_RATE);
+        float headYaw = approachAngle(bird.getYHeadRot(), yaw, FLIGHT_HEAD_TURN_RATE);
+        headYaw = bodyYaw + Mth.clamp(Mth.wrapDegrees(headYaw - bodyYaw), -FLIGHT_HEAD_LIMIT, FLIGHT_HEAD_LIMIT);
+        float pitch = approachLinear(bird.getXRot(), targetPitch, FLIGHT_PITCH_TURN_RATE);
         bird.setYRot(yaw);
-        bird.setYHeadRot(yaw);
-        bird.yBodyRot = yaw;
-        bird.yBodyRotO = yaw;
-        bird.yHeadRot = yaw;
-        bird.yHeadRotO = yaw;
+        bird.yBodyRot = bodyYaw;
+        bird.setYHeadRot(headYaw);
         bird.setXRot(pitch);
-        bird.xRotO = pitch;
     }
 
     public static boolean faceGroundMovement(Mob bird, Vec3 movement, double minHorizontalSpeedSqr) {
         if (movement.horizontalDistanceSqr() <= minHorizontalSpeedSqr) {
             return false;
         }
-        float yaw = (float)(Mth.atan2(movement.z, movement.x) * 57.29577951308232D) - 90.0F;
+        float targetYaw = (float)(Mth.atan2(movement.z, movement.x) * 57.29577951308232D) - 90.0F;
+        float yaw = approachAngle(bird.getYRot(), targetYaw, GROUND_YAW_TURN_RATE);
+        float bodyYaw = approachAngle(bird.yBodyRot, yaw, GROUND_YAW_TURN_RATE);
+        float headYaw = approachAngle(bird.getYHeadRot(), yaw, GROUND_YAW_TURN_RATE);
+        headYaw = bodyYaw + Mth.clamp(Mth.wrapDegrees(headYaw - bodyYaw), -FLIGHT_HEAD_LIMIT, FLIGHT_HEAD_LIMIT);
         bird.setYRot(yaw);
-        bird.setYHeadRot(yaw);
-        bird.yBodyRot = yaw;
-        bird.yBodyRotO = yaw;
-        bird.yHeadRot = yaw;
-        bird.yHeadRotO = yaw;
-        bird.setXRot(0.0F);
-        bird.xRotO = 0.0F;
+        bird.yBodyRot = bodyYaw;
+        bird.setYHeadRot(headYaw);
+        bird.setXRot(approachLinear(bird.getXRot(), 0.0F, FLIGHT_PITCH_TURN_RATE));
         return true;
     }
 
-    public static boolean shouldPlayFlyAnimation(BirdFlightAware bird, boolean airborneState, boolean onGround, boolean noGravity, Vec3 movement, int airborneGraceTicks) {
+    private static float approachAngle(float current, float target, float maxChange) {
+        return current + Mth.clamp(Mth.wrapDegrees(target - current), -maxChange, maxChange);
+    }
+
+    private static float approachLinear(float current, float target, float maxChange) {
+        return current + Mth.clamp(target - current, -maxChange, maxChange);
+    }
+
+    public static <T extends Mob & BirdFlightAware> boolean shouldPlayFlyAnimation(T bird, boolean airborneState, boolean onGround, boolean noGravity, Vec3 movement, int airborneGraceTicks) {
+        if (bird.isPassenger()) {
+            return false;
+        }
         if (bird.isBirdFlightActive() || airborneState) {
             return true;
         }
@@ -121,10 +139,19 @@ public final class BirdFlightController {
         if (noGravity || bird.isBirdLanding() || bird.isBirdEscaping()) {
             return true;
         }
+        if (isNearGroundForAnimation(bird, 0.7D)) {
+            return false;
+        }
         if (movement.y > -0.85D) {
             return true;
         }
         return movement.horizontalDistanceSqr() > 0.001D;
+    }
+
+    private static boolean isNearGroundForAnimation(Mob bird, double distance) {
+        return !bird.level().noCollision(
+                bird,
+                bird.getBoundingBox().expandTowards(0.0D, -Math.max(0.0D, distance), 0.0D).deflate(0.02D, 0.0D, 0.02D));
     }
 
     private static final class FlightProgress {

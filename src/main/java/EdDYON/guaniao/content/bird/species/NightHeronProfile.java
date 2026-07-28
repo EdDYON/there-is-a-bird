@@ -2,6 +2,7 @@ package EdDYON.guaniao.content.bird.species;
 
 import EdDYON.guaniao.content.bird.BirdActivitySchedule;
 import EdDYON.guaniao.content.bird.brain.BirdBrain;
+import EdDYON.guaniao.content.bird.brain.BirdHabitatSnapshot;
 import EdDYON.guaniao.content.bird.brain.BirdSenses;
 import EdDYON.guaniao.content.bird.brain.BirdSpeciesProfile;
 import EdDYON.guaniao.content.bird.BirdTags;
@@ -119,6 +120,19 @@ public final class NightHeronProfile extends BirdSpeciesProfile {
     @Override
     public boolean isNearRoost(PathfinderMob bird) {
         return this.isNearCover(bird);
+    }
+
+    @Override
+    public int habitatScanCost() {
+        return 3;
+    }
+
+    @Override
+    public BirdHabitatSnapshot scanHabitat(PathfinderMob bird) {
+        boolean nearWater = this.scanForWater(bird, 6);
+        boolean waterEdge = nearWater && this.scanForWater(bird, 3) && this.scanForDryGround(bird, 2);
+        boolean nearCover = this.isNearCover(bird);
+        return new BirdHabitatSnapshot(nearWater, waterEdge, nearCover, nearCover);
     }
 
     @Override

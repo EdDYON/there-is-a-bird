@@ -178,13 +178,13 @@ public class MacawEntity extends BudgerigarEntity {
         if (state == BudgerigarBehaviorState.EATING) {
             return animationState.setAndContinue(EAT_ANIMATION);
         }
-        if (this.isFlying()) {
+        if (this.shouldPlayFlyAnimation()) {
             return animationState.setAndContinue(FLY_ANIMATION);
         }
         if (state == BudgerigarBehaviorState.SLEEPING || state == BudgerigarBehaviorState.ROOSTING) {
             return animationState.setAndContinue(SLEEP_ANIMATION);
         }
-        if (shouldWalk(state)) {
+        if (shouldWalk(state, animationState.isMoving())) {
             return animationState.setAndContinue(WALK_ANIMATION);
         }
         if (state == BudgerigarBehaviorState.DANCING) {
@@ -196,11 +196,11 @@ public class MacawEntity extends BudgerigarEntity {
         return animationState.setAndContinue(this.pickIdleAnimation());
     }
 
-    private boolean shouldWalk(BudgerigarBehaviorState state) {
+    private boolean shouldWalk(BudgerigarBehaviorState state, boolean animationMoving) {
         if (!BirdGroundAnimation.canPlayWalk(this)) {
             return false;
         }
-        return BirdGroundAnimation.hasWalkMotion(this)
+        return BirdGroundAnimation.hasWalkMotion(this, animationMoving)
                 || state == BudgerigarBehaviorState.WALKING
                 || state == BudgerigarBehaviorState.FOLLOWING
                 || state == BudgerigarBehaviorState.FORAGING;

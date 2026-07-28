@@ -10,6 +10,7 @@ import EdDYON.guaniao.content.bird.BirdScanBudget;
 import EdDYON.guaniao.content.bird.command.BirdCommandMode;
 import EdDYON.guaniao.content.bird.flock.BirdFlockManager;
 import EdDYON.guaniao.content.bird.BirdGroundAnimation;
+import EdDYON.guaniao.content.bird.flight.BirdFlightController;
 import EdDYON.guaniao.content.advancement.BirdAdvancements;
 import EdDYON.guaniao.content.bird.sparrow.SparrowBehaviorState;
 import EdDYON.guaniao.content.bird.sparrow.SparrowEntity;
@@ -262,12 +263,18 @@ public class LongTailedTitEntity extends SparrowEntity {
         if (preview != null) {
             return state.setAndContinue(preview);
         }
-        if (this.isBirdFlightActive() || !this.onGround()) {
+        SparrowBehaviorState behavior = this.getBehaviorState();
+        if (BirdFlightController.shouldPlayFlyAnimation(
+                this,
+                behavior.isAirborne(),
+                this.onGround(),
+                this.isNoGravity(),
+                this.getDeltaMovement(),
+                0)) {
             return state.setAndContinue(FLY_ANIMATION);
         }
-        SparrowBehaviorState behavior = this.getBehaviorState();
-        if (BirdGroundAnimation.hasWalkMotion(this)
-                && behavior != SparrowBehaviorState.PECKING
+        if (BirdGroundAnimation.hasWalkMotion(this, state.isMoving())
+                && !behavior.isAirborne()
                 && behavior != SparrowBehaviorState.ROOSTING
                 && behavior != SparrowBehaviorState.PERCHING) {
             return state.setAndContinue(WALK_ANIMATION);

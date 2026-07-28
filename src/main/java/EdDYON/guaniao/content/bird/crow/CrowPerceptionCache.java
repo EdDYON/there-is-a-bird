@@ -11,7 +11,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 
-/** One bounded perception snapshot shared by the crow's food, shiny and player goals. */
+/** One bounded perception snapshot shared by the crow's food, treasure and player goals. */
 final class CrowPerceptionCache {
     private long nextRefreshTick;
     private List<Integer> itemIds = List.of();
@@ -24,7 +24,7 @@ final class CrowPerceptionCache {
 
     ItemEntity nearestShiny(CrowEntity crow) {
         this.ensureFresh(crow);
-        return this.nearestItem(crow, 10.0D, false);
+        return this.nearestItem(crow, 14.0D, false);
     }
 
     Player nearestPlayer(CrowEntity crow, double range) {
@@ -68,7 +68,7 @@ final class CrowPerceptionCache {
             }
             boolean matches = food
                     ? CrowEntity.isCrowDroppedFoodCandidate(item.getItem())
-                    : CrowNestTreasure.isShiny(item.getItem());
+                    : CrowNestTreasure.isAccepted(item.getItem());
             double distance = crow.distanceToSqr(item);
             if (matches && distance < bestDistance) {
                 best = item;
@@ -93,7 +93,7 @@ final class CrowPerceptionCache {
                 BirdConfigManager.foodScanInterval(BirdSpecies.CROW),
                 BirdConfigManager.threatScanInterval(BirdSpecies.CROW))));
         this.nextRefreshTick = now + interval;
-        this.itemIds = serverLevel.getEntitiesOfClass(ItemEntity.class, crow.getBoundingBox().inflate(12.0D, 5.0D, 12.0D), ItemEntity::isAlive)
+        this.itemIds = serverLevel.getEntitiesOfClass(ItemEntity.class, crow.getBoundingBox().inflate(14.0D, 5.0D, 14.0D), ItemEntity::isAlive)
                 .stream().map(Entity::getId).toList();
         this.playerIds = serverLevel.getEntitiesOfClass(Player.class, crow.getBoundingBox().inflate(14.0D),
                         player -> player.isAlive() && !player.isSpectator())

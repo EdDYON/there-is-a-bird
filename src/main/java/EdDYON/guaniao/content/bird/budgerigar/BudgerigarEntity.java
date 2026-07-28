@@ -112,6 +112,8 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
     private static final int AMBIENT_AIR_CRUISE_RANDOM_TICKS = 120;
     private static final int ESCAPE_AIR_CRUISE_MIN_TICKS = 80;
     private static final int ESCAPE_AIR_CRUISE_RANDOM_TICKS = 70;
+    private static final int MAX_CONTROLLED_FLIGHT_TICKS = 520;
+    private static final int MAX_LANDING_RETRIES = 2;
     private static final BirdFlightProfile FLIGHT_PROFILE = BirdFlightProfile.BUDGERIGAR;
     private static final RawAnimation IDLE_ANIMATION = RawAnimation.begin().thenLoop("idle");
     private static final RawAnimation PREEN_ANIMATION = RawAnimation.begin().thenPlay("idle_diff_1").thenLoop("idle");
@@ -140,6 +142,7 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
     private int timeFlying;
     private int flightCooldown;
     private int hoverRetargetTicks;
+    private int landingRetryCount;
     private int pendingFrightTicks;
     private int pendingFrightDuration;
     private int idleAnimationTicks;
@@ -565,16 +568,7 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
 
     @Override
     public boolean isFlying() {
-        if (this.isPassenger()) {
-            return false;
-        }
-        BudgerigarBehaviorState state = this.getBehaviorState();
-        return this.flightTicks > 0
-                || this.landingFlight
-                || !this.onGround()
-                || this.isNoGravity()
-                || state == BudgerigarBehaviorState.FLYING
-                || (state == BudgerigarBehaviorState.FLEEING && !this.onGround());
+        return this.shouldPlayFlyAnimation();
     }
 
     boolean isFlightInProgress() {
@@ -615,6 +609,7 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
         }
         this.escapeFlightActive = false;
         this.landingFlight = false;
+        this.landingRetryCount = 0;
         this.flightTarget = selectedTarget;
         this.flightTicks = 150 + this.getRandom().nextInt(91);
         this.timeFlying = 0;
@@ -803,6 +798,7 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
         }
         this.escapeFlightActive = fleeing;
         this.landingFlight = false;
+        this.landingRetryCount = 0;
         this.flightTarget = selectedTarget;
         this.flightTicks = fleeing
                 ? ESCAPE_AIR_CRUISE_MIN_TICKS + this.getRandom().nextInt(ESCAPE_AIR_CRUISE_RANDOM_TICKS)
@@ -1030,6 +1026,7 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
         this.getNavigation().stop();
         this.landingFlight = false;
         this.escapeFlightActive = false;
+        this.landingRetryCount = 0;
         this.flightTarget = this.findAirCruiseTarget(false);
         this.flightTicks = Math.max(this.flightTicks, 90 + this.getRandom().nextInt(50));
         this.hoverRetargetTicks = Math.min(Math.max(this.hoverRetargetTicks, 1), 12);
@@ -1081,6 +1078,10 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
         this.setNoGravity(true);
         this.fallDistance = 0.0F;
         ++this.timeFlying;
+        if (this.timeFlying > MAX_CONTROLLED_FLIGHT_TICKS) {
+            this.finishFlight();
+            return;
+        }
         this.setBehaviorState(this.escapeFlightActive ? BudgerigarBehaviorState.FLEEING : BudgerigarBehaviorState.FLYING);
         if (this.flightTicks > 0) {
             --this.flightTicks;
@@ -1170,8 +1171,10 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
         this.hoverRetargetTicks = 0;
         this.escapeFlightActive = false;
         this.landingFlight = false;
+        this.landingRetryCount = 0;
         this.setNoGravity(false);
-        this.setDeltaMovement(this.getDeltaMovement().multiply(0.35D, 0.0D, 0.35D));
+        Vec3 movement = this.getDeltaMovement();
+        this.setDeltaMovement(movement.x * 0.35D, Math.min(movement.y, -0.04D), movement.z * 0.35D);
         this.flightCooldown = wasEscaping ? 120 + this.getRandom().nextInt(120) : (this.isTame() ? 140 + this.getRandom().nextInt(160) : 160 + this.getRandom().nextInt(180));
         if (this.getBehaviorState().isAirborne()) {
             this.setBehaviorStateFor(BudgerigarBehaviorState.ALERT, 28);
@@ -1233,6 +1236,10 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
     }
 
     private void extendCruiseAfterUnsafeLanding() {
+        if (++this.landingRetryCount > MAX_LANDING_RETRIES) {
+            this.finishFlight();
+            return;
+        }
         this.landingFlight = false;
         this.escapeFlightActive = false;
         this.flightTicks = 70 + this.getRandom().nextInt(50);
@@ -1438,7 +1445,7 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
         return BirdGroundAnimation.hasWalkMotion(this);
     }
 
-    private boolean shouldPlayFlyAnimation() {
+    protected final boolean shouldPlayFlyAnimation() {
         return BirdFlightController.shouldPlayFlyAnimation(
                 this,
                 this.getBehaviorState().isAirborne(),
@@ -1448,9 +1455,12 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
                 0);
     }
 
-    private boolean shouldPlayWalkAnimation(BudgerigarBehaviorState state) {
+    private boolean shouldPlayWalkAnimation(BudgerigarBehaviorState state, boolean animationMoving) {
         if (!BirdGroundAnimation.canPlayWalk(this)) {
             return false;
+        }
+        if (animationMoving) {
+            return true;
         }
         if (state == BudgerigarBehaviorState.EATING
                 || state == BudgerigarBehaviorState.PREENING
@@ -1460,7 +1470,7 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
                 || state.isAirborne()) {
             return false;
         }
-        return BirdGroundAnimation.hasWalkMotion(this)
+        return BirdGroundAnimation.hasWalkMotion(this, animationMoving)
                 || state == BudgerigarBehaviorState.WALKING
                 || state == BudgerigarBehaviorState.FOLLOWING
                 || state == BudgerigarBehaviorState.FORAGING;
@@ -1501,7 +1511,7 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
         if (this.shouldPlayFlyAnimation()) {
             return animationState.setAndContinue(FLY_ANIMATION);
         }
-        if (this.shouldPlayWalkAnimation(state)) {
+        if (this.shouldPlayWalkAnimation(state, animationState.isMoving())) {
             return animationState.setAndContinue(WALK_ANIMATION);
         }
         if (state == BudgerigarBehaviorState.PREENING) {

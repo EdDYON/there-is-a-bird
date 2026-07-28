@@ -481,7 +481,7 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
         if (this.entityData.get(EATING)) {
             return animationState.setAndContinue(EAT_ANIMATION);
         }
-        if (this.shouldPlayWalkAnimation()) {
+        if (this.shouldPlayWalkAnimation(animationState.isMoving())) {
             return animationState.setAndContinue(WALK_ANIMATION);
         }
         return animationState.setAndContinue(IDLE_ANIMATION);
@@ -493,12 +493,14 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
                 && (this.isNoGravity() || this.airborneGraceTicks > 0 || !this.isNearGroundForAnimation());
     }
 
-    private boolean shouldPlayWalkAnimation() {
+    private boolean shouldPlayWalkAnimation(boolean animationMoving) {
         return !this.isNightResting()
                 && !this.isInWaterOrBubble()
-                && (BirdGroundAnimation.hasWalkMotion(this)
+                && (BirdGroundAnimation.hasWalkMotion(this, animationMoving)
                 || ((this.onGround() || this.isNearGroundForAnimation())
-                && (this.getDeltaMovement().horizontalDistanceSqr() > WALK_ANIMATION_MOTION_THRESHOLD || !this.getNavigation().isDone())));
+                && (animationMoving
+                || this.getDeltaMovement().horizontalDistanceSqr() > WALK_ANIMATION_MOTION_THRESHOLD
+                || (!this.level().isClientSide && !this.getNavigation().isDone()))));
     }
 
     private RawAnimation flightAnimation() {
@@ -739,6 +741,8 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
         BirdFlightController.clearFlightProgress(this);
         this.flightTarget = null;
         this.setNoGravity(false);
+        Vec3 movement = this.getDeltaMovement();
+        this.setDeltaMovement(movement.x * 0.82D, Math.min(movement.y, -0.04D), movement.z * 0.82D);
         this.airborneGraceTicks = 50;
         this.flightCooldown = 80 + this.getRandom().nextInt(120);
     }

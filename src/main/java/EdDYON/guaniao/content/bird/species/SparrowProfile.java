@@ -111,6 +111,11 @@ public final class SparrowProfile extends BirdSpeciesProfile {
     }
 
     @Override
+    public int habitatScanCost() {
+        return 3;
+    }
+
+    @Override
     public float computeComfort(BirdSenses senses) {
         float comfort = 0.34F;
         if (senses.nearCover()) {

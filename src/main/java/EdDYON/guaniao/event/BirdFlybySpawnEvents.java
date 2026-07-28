@@ -122,12 +122,24 @@ public final class BirdFlybySpawnEvents {
             return false;
         }
         BirdKind kind = chooseKind(level, centerPos, random);
-        if (kind == null || nearbyCount(level, player, kind) >= kind.maxNearby) {
+        if (kind == null) {
+            return false;
+        }
+        int speciesLimit = Math.min(kind.maxNearby, BirdConfigManager.maxWildNearby(kind.species()));
+        int currentSpeciesCount = nearbyCount(level, player, kind);
+        if (speciesLimit <= 0 || currentSpeciesCount >= speciesLimit) {
             return false;
         }
         int globalAllowed = BirdConfigManager.maxBirdsNearby()
                 - BirdPopulationTracker.totalAt(level, player.getX(), player.getZ());
         if (globalAllowed <= 0) {
+            return false;
+        }
+        int regionalLimit = BirdConfigManager.maxWildBirdsPerRegion();
+        int regionalAllowed = regionalLimit <= 0
+                ? Integer.MAX_VALUE
+                : regionalLimit - BirdPopulationTracker.totalInRegionAt(level, center.x, center.z);
+        if (regionalAllowed <= 0) {
             return false;
         }
         int sideSign = random.nextBoolean() ? 1 : -1;
@@ -140,8 +152,8 @@ public final class BirdFlybySpawnEvents {
                 .add(forward.scale(8.0D + random.nextDouble() * 14.0D))
                 .add(right.scale(-sideSign * (sideDistance + 8.0D + random.nextDouble() * 10.0D)));
         FlybyPath path = new FlybyPath(forward, right, startBase, targetBase);
-        int allowed = Math.max(0, kind.maxNearby - nearbyCount(level, player, kind));
-        int count = Math.min(Math.min(kind.groupCount(random), allowed), globalAllowed);
+        int speciesAllowed = Math.max(0, speciesLimit - currentSpeciesCount);
+        int count = Math.min(Math.min(Math.min(kind.groupCount(random), speciesAllowed), globalAllowed), regionalAllowed);
         return switch (kind) {
             case NIGHT_HERON -> spawnNightHeronFlyby(level, path, count, random);
             case SPARROW -> spawnSparrowFlyby(level, path, count, random);
@@ -198,6 +210,7 @@ public final class BirdFlybySpawnEvents {
             Vec3 direction = target.subtract(airPos).multiply(1.0D, 0.0D, 1.0D).normalize();
             placeMobForFlyby(sparrow, airPos, direction);
             sparrow.finalizeSpawn(level, level.getCurrentDifficultyAt(sparrow.blockPosition()), MobSpawnType.NATURAL, null, null);
+            BirdPopulationTracker.markTransientFlyby(sparrow);
             if (!level.noCollision((Entity)sparrow, sparrow.getBoundingBox()) || !sparrow.startFlybyFlight(target)) {
                 continue;
             }
@@ -227,6 +240,7 @@ public final class BirdFlybySpawnEvents {
             Vec3 direction = airTarget.subtract(airPos).multiply(1.0D, 0.0D, 1.0D).normalize();
             placeMobForFlyby(budgerigar, airPos, direction);
             budgerigar.finalizeSpawn(level, level.getCurrentDifficultyAt(budgerigar.blockPosition()), MobSpawnType.NATURAL, null, null);
+            BirdPopulationTracker.markTransientFlyby(budgerigar);
             if (!level.noCollision((Entity)budgerigar, budgerigar.getBoundingBox())) {
                 continue;
             }
@@ -257,6 +271,7 @@ public final class BirdFlybySpawnEvents {
             Vec3 direction = Vec3.atBottomCenterOf(landing).subtract(airPos).multiply(1.0D, 0.0D, 1.0D).normalize();
             placeMobForFlyby(nightHeron, airPos, direction);
             nightHeron.finalizeSpawn(level, level.getCurrentDifficultyAt(nightHeron.blockPosition()), MobSpawnType.NATURAL, null, null);
+            BirdPopulationTracker.markTransientFlyby(nightHeron);
             if (!level.noCollision((Entity)nightHeron, nightHeron.getBoundingBox())) {
                 continue;
             }
@@ -296,6 +311,7 @@ public final class BirdFlybySpawnEvents {
             direction = direction.normalize();
             placeMobForFlyby(columbid, airPos, direction);
             columbid.finalizeSpawn(level, level.getCurrentDifficultyAt(columbid.blockPosition()), MobSpawnType.NATURAL, null, null);
+            BirdPopulationTracker.markTransientFlyby(columbid);
             if (!level.noCollision((Entity)columbid, columbid.getBoundingBox())) {
                 continue;
             }

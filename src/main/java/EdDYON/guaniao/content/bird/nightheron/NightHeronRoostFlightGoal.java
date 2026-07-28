@@ -62,6 +62,6 @@ extends Goal {
     }
 
     private int roostFlightChance() {
-        return NightHeronLandingSelector.hasRoostCoverNear(this.nightHeron.level(), this.nightHeron.blockPosition(), 5) ? 320 : 70;
+        return NightHeronLandingSelector.hasRoostCoverNear(this.nightHeron, 5) ? 320 : 70;
     }
 }

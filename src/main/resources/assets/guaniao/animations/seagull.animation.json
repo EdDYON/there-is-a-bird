@@ -2096,7 +2096,7 @@
 		"idle_diff_1": {
 			"animation_length": 1.1667,
 			"bones": {
-				"leg_left_2": {
+				"lowerleg_left": {
 					"rotation": {
 						"0.0": {
 							"vector": [0, 0, 0]
@@ -2282,7 +2282,7 @@
 						}
 					}
 				},
-				"leg_right_2": {
+				"lowerleg_right": {
 					"rotation": {
 						"0.0": {
 							"vector": [0, 0, 0]
@@ -7898,12 +7898,12 @@
 			"loop": true,
 			"animation_length": 2,
 			"bones": {
-				"left_eye": {
+				"eye_left": {
 					"scale": {
 						"vector": [1, 0.3, 1]
 					}
 				},
-				"right_eye": {
+				"eye_right": {
 					"scale": {
 						"vector": [1, 0.3, 1]
 					}

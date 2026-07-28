@@ -9,12 +9,12 @@ public final class CrowNestTreasure {
     }
 
     public static boolean isAccepted(ItemStack stack) {
-        return isShiny(stack);
+        return BirdItemSafety.isCrowTreasure(stack);
     }
 
     /** Items that may be present in a rummage nest, including harmless bits of crow junk. */
     public static boolean isAllowedNestLoot(ItemStack stack) {
-        return !stack.isEmpty() && !stack.hasTag() && (isShiny(stack) || isLegacyShiny(stack) || isJunk(stack));
+        return !stack.isEmpty() && !stack.hasTag() && (isAccepted(stack) || isLegacyShiny(stack) || isJunk(stack));
     }
 
     public static boolean isShiny(ItemStack stack) {

@@ -10,6 +10,7 @@ import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.Container;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.Containers;
@@ -144,7 +145,7 @@ public class CrowNestBlockEntity extends BlockEntity implements GeoBlockEntity, 
         return this.getOccupiedTreasureSlots() < this.getTreasureSlotLimit();
     }
 
-    /** Stores exactly one shiny item and shrinks the supplied stack on success. */
+    /** Stores exactly one accepted crow collectible and shrinks the supplied stack on success. */
     public boolean addTreasure(ItemStack stack) {
         if (!CrowNestTreasure.isAccepted(stack)) {
             return false;
@@ -351,12 +352,47 @@ public class CrowNestBlockEntity extends BlockEntity implements GeoBlockEntity, 
         return findNearestMatching(level, origin, horizontalRange, verticalRange, stack);
     }
 
+    /** Checks nest density without requiring an empty treasure slot or loading another chunk. */
+    public static boolean hasNestNearby(Level level, Vec3 origin, int horizontalRange, int verticalRange) {
+        if (level == null || origin == null || horizontalRange < 0 || verticalRange < 0) {
+            return false;
+        }
+        for (CrowNestBlockEntity nest : loadedNests(level)) {
+            if (nest.isWithinSearchRange(level, origin, horizontalRange, verticalRange)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Checks for a usable nest without claiming one as a side effect. */
+    public static boolean hasAvailableNestForCrow(Level level, Vec3 origin, int horizontalRange, int verticalRange,
+                                                   ItemStack stack, UUID crowId) {
+        if (level == null || origin == null || crowId == null || horizontalRange < 0 || verticalRange < 0) {
+            return false;
+        }
+        for (CrowNestBlockEntity nest : loadedNests(level)) {
+            if (nest.isWithinSearchRange(level, origin, horizontalRange, verticalRange)
+                    && nest.canAcceptCrow(crowId, stack)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Finds a loaded nest without loading chunks. A crow first returns to an already claimed nest,
      * then may claim one of up to three available slots at a nearby suitable nest.
      */
     public static Optional<CrowNestBlockEntity> findNestForCrow(Level level, Vec3 origin, int horizontalRange,
-                                                                  int verticalRange, ItemStack stack, UUID crowId) {
+                                                                   int verticalRange, ItemStack stack, UUID crowId) {
+        return findNestForCrow(level, origin, horizontalRange, verticalRange, stack, crowId, null);
+    }
+
+    /** Same loaded-nest lookup, temporarily excluding a route that this crow could not reach. */
+    public static Optional<CrowNestBlockEntity> findNestForCrow(Level level, Vec3 origin, int horizontalRange,
+                                                                  int verticalRange, ItemStack stack, UUID crowId,
+                                                                  BlockPos excludedNestPos) {
         if (level == null || origin == null || crowId == null || horizontalRange < 0 || verticalRange < 0) {
             return Optional.empty();
         }
@@ -365,7 +401,8 @@ public class CrowNestBlockEntity extends BlockEntity implements GeoBlockEntity, 
         double claimedDistance = Double.MAX_VALUE;
         double availableDistance = Double.MAX_VALUE;
         for (CrowNestBlockEntity nest : loadedNests(level)) {
-            if (!nest.isWithinSearchRange(level, origin, horizontalRange, verticalRange)
+            if ((excludedNestPos != null && excludedNestPos.equals(nest.getBlockPos()))
+                    || !nest.isWithinSearchRange(level, origin, horizontalRange, verticalRange)
                     || !nest.canAcceptCrow(crowId, stack)) {
                 continue;
             }
@@ -382,6 +419,36 @@ public class CrowNestBlockEntity extends BlockEntity implements GeoBlockEntity, 
         }
         CrowNestBlockEntity result = claimed != null ? claimed : available;
         return result != null && result.claimCrow(crowId) ? Optional.of(result) : Optional.empty();
+    }
+
+    /**
+     * Chooses one usable loaded nest at random and claims it for this delivery.
+     * The chosen nest is expected to remain fixed until the delivery succeeds or
+     * the route is abandoned; this prevents crows from oscillating between nests.
+     */
+    public static Optional<CrowNestBlockEntity> findRandomNestForCrow(Level level, Vec3 origin, int horizontalRange,
+                                                                       int verticalRange, ItemStack stack, UUID crowId,
+                                                                       BlockPos excludedNestPos, RandomSource random) {
+        if (level == null || origin == null || crowId == null || random == null
+                || horizontalRange < 0 || verticalRange < 0) {
+            return Optional.empty();
+        }
+        List<CrowNestBlockEntity> candidates = new ArrayList<>();
+        for (CrowNestBlockEntity nest : loadedNests(level)) {
+            if ((excludedNestPos != null && excludedNestPos.equals(nest.getBlockPos()))
+                    || !nest.isWithinSearchRange(level, origin, horizontalRange, verticalRange)
+                    || !nest.canAcceptCrow(crowId, stack)) {
+                continue;
+            }
+            candidates.add(nest);
+        }
+        while (!candidates.isEmpty()) {
+            CrowNestBlockEntity selected = candidates.remove(random.nextInt(candidates.size()));
+            if (selected.claimCrow(crowId)) {
+                return Optional.of(selected);
+            }
+        }
+        return Optional.empty();
     }
 
     private static Optional<CrowNestBlockEntity> findNearestMatching(Level level, Vec3 origin, int horizontalRange,

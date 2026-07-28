@@ -7,7 +7,7 @@ import net.minecraft.util.RandomSource;
 public final class BirdModelScale {
     public static final String NBT_KEY = "BirdModelScale";
     public static final float DEFAULT_INDIVIDUAL_SCALE = 1.0F;
-    public static final float APRIL_FOOLS_RENDER_MULTIPLIER = 4.7F;
+    public static final float APRIL_FOOLS_RENDER_MULTIPLIER = 4.1F;
 
     private BirdModelScale() {
     }

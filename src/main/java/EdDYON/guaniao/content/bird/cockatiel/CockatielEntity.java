@@ -254,7 +254,7 @@ public class CockatielEntity extends BudgerigarEntity {
             this.wasEating = true;
             return animationState.setAndContinue(EAT_ANIMATION);
         }
-        boolean flying = this.isFlying();
+        boolean flying = this.shouldPlayFlyAnimation();
         if (this.wasEating) {
             this.wasEating = false;
             if (!flying && this.onGround() && this.getRandom().nextInt(3) == 0) {
@@ -269,7 +269,7 @@ public class CockatielEntity extends BudgerigarEntity {
             this.happyDanceUntilTick = 0L;
             return animationState.setAndContinue(SLEEP_ANIMATION);
         }
-        if (shouldWalk(state)) {
+        if (shouldWalk(state, animationState.isMoving())) {
             this.happyDanceUntilTick = 0L;
             return animationState.setAndContinue(WALK_ANIMATION);
         }
@@ -282,11 +282,11 @@ public class CockatielEntity extends BudgerigarEntity {
         return animationState.setAndContinue(this.pickIdleAnimation());
     }
 
-    private boolean shouldWalk(BudgerigarBehaviorState state) {
+    private boolean shouldWalk(BudgerigarBehaviorState state, boolean animationMoving) {
         if (!BirdGroundAnimation.canPlayWalk(this)) {
             return false;
         }
-        return BirdGroundAnimation.hasWalkMotion(this)
+        return BirdGroundAnimation.hasWalkMotion(this, animationMoving)
                 || state == BudgerigarBehaviorState.WALKING
                 || state == BudgerigarBehaviorState.FOLLOWING
                 || state == BudgerigarBehaviorState.FORAGING;

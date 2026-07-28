@@ -108,6 +108,11 @@ public final class BudgerigarProfile extends BirdSpeciesProfile {
     }
 
     @Override
+    public int habitatScanCost() {
+        return 3;
+    }
+
+    @Override
     public float computeComfort(BirdSenses senses) {
         float comfort = 0.36F;
         if (senses.nearCover()) {

@@ -5,6 +5,11 @@ public interface BirdFlightAware {
 
     boolean isBirdFlightActive();
 
+    /** Allows route planning through leaves before a special-purpose flight has fully started. */
+    default boolean shouldPassThroughLeaves() {
+        return false;
+    }
+
     default boolean isBirdLanding() {
         return false;
     }
