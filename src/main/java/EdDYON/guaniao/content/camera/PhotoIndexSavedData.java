@@ -4,8 +4,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -16,7 +19,15 @@ import net.minecraft.world.level.saveddata.SavedData;
 /** Persistent metadata for server-side photographs. JPEG bytes remain outside NBT. */
 public final class PhotoIndexSavedData extends SavedData {
     private static final String DATA_NAME = "guaniao_photo_index";
+    private static final long ACCESS_UPDATE_INTERVAL_MILLIS = 6L * 60L * 60L * 1000L;
     private final Map<String, PhotoRecord> records = new HashMap<>();
+    private final Map<Integer, Set<String>> idsByShard = new HashMap<>();
+    private final Map<UUID, OwnerUsage> usageByOwner = new HashMap<>();
+    private int worldCount;
+    private long worldBytes;
+    private int activeCount;
+    private int trashCount;
+    private int missingCount;
 
     public static PhotoIndexSavedData get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(
@@ -50,7 +61,7 @@ public final class PhotoIndexSavedData extends SavedData {
                     entry.getString("Hash"),
                     status
             );
-            data.records.put(id, record);
+            data.putRecord(record, false);
         }
         return data;
     }
@@ -87,18 +98,36 @@ public final class PhotoIndexSavedData extends SavedData {
         return Collections.unmodifiableList(new ArrayList<>(this.records.values()));
     }
 
+    public Collection<PhotoRecord> snapshotInShards(int firstShard, int shardCount) {
+        int boundedCount = Math.max(1, Math.min(256, shardCount));
+        List<PhotoRecord> snapshot = new ArrayList<>();
+        for (int offset = 0; offset < boundedCount; offset++) {
+            int shard = Math.floorMod(firstShard + offset, 256);
+            Set<String> ids = this.idsByShard.get(shard);
+            if (ids == null) {
+                continue;
+            }
+            for (String id : ids) {
+                PhotoRecord record = this.records.get(id);
+                if (record != null) {
+                    snapshot.add(record);
+                }
+            }
+        }
+        return Collections.unmodifiableList(snapshot);
+    }
+
     public void register(PhotoRecord record) {
-        this.records.put(record.id(), record);
-        this.setDirty();
+        this.putRecord(record, true);
     }
 
     public void touch(String photoId, long now) {
         PhotoRecord record = this.records.get(photoId);
-        if (record == null || now <= record.lastAccessAt()) {
+        if (record == null || now <= record.lastAccessAt()
+                || now - record.lastAccessAt() < ACCESS_UPDATE_INTERVAL_MILLIS) {
             return;
         }
-        this.records.put(photoId, record.withLastAccess(now));
-        this.setDirty();
+        this.putRecord(record.withLastAccess(now), true);
     }
 
     public void updateFileMetadata(String photoId, int bytes, int width, int height, String contentHash, long now) {
@@ -106,12 +135,25 @@ public final class PhotoIndexSavedData extends SavedData {
         if (record == null) {
             return;
         }
-        this.records.put(photoId, new PhotoRecord(
-                record.id(), record.owner(), record.ownerName(), record.createdAt(), Math.max(record.lastAccessAt(), now),
-                record.deletedAt(), Math.max(0, bytes), Math.max(0, width), Math.max(0, height),
-                contentHash == null ? record.contentHash() : contentHash, record.status()
-        ));
-        this.setDirty();
+        int normalizedBytes = Math.max(0, bytes);
+        int normalizedWidth = Math.max(0, width);
+        int normalizedHeight = Math.max(0, height);
+        String normalizedHash = contentHash == null ? record.contentHash() : contentHash;
+        long lastAccess = now - record.lastAccessAt() >= ACCESS_UPDATE_INTERVAL_MILLIS
+                ? Math.max(record.lastAccessAt(), now)
+                : record.lastAccessAt();
+        if (record.bytes() == normalizedBytes
+                && record.width() == normalizedWidth
+                && record.height() == normalizedHeight
+                && record.lastAccessAt() == lastAccess
+                && Objects.equals(record.contentHash(), normalizedHash)) {
+            return;
+        }
+        this.putRecord(new PhotoRecord(
+                record.id(), record.owner(), record.ownerName(), record.createdAt(), lastAccess,
+                record.deletedAt(), normalizedBytes, normalizedWidth, normalizedHeight,
+                normalizedHash, record.status()
+        ), true);
     }
 
     public boolean moveToTrash(String photoId, long now) {
@@ -119,8 +161,7 @@ public final class PhotoIndexSavedData extends SavedData {
         if (record == null || record.status() == PhotoStatus.TRASH) {
             return false;
         }
-        this.records.put(photoId, record.withStatus(PhotoStatus.TRASH, now));
-        this.setDirty();
+        this.putRecord(record.withStatus(PhotoStatus.TRASH, now), true);
         return true;
     }
 
@@ -129,47 +170,37 @@ public final class PhotoIndexSavedData extends SavedData {
         if (record == null || record.status() != PhotoStatus.TRASH) {
             return false;
         }
-        this.records.put(photoId, record.withStatus(PhotoStatus.ACTIVE, 0L));
-        this.setDirty();
+        this.putRecord(record.withStatus(PhotoStatus.ACTIVE, 0L), true);
         return true;
     }
 
     public void markMissing(String photoId) {
         PhotoRecord record = this.records.get(photoId);
         if (record != null && record.status() != PhotoStatus.MISSING) {
-            this.records.put(photoId, record.withStatus(PhotoStatus.MISSING, 0L));
-            this.setDirty();
+            this.putRecord(record.withStatus(PhotoStatus.MISSING, 0L), true);
         }
     }
 
     public void remove(String photoId) {
-        if (this.records.remove(photoId) != null) {
+        PhotoRecord removed = this.records.remove(photoId);
+        if (removed != null) {
+            this.removeShardId(photoId);
+            this.removeUsage(removed);
             this.setDirty();
         }
     }
 
     public Usage usage(UUID owner) {
-        int playerCount = 0;
-        long playerBytes = 0L;
-        int worldCount = 0;
-        long worldBytes = 0L;
-        int activeCount = 0;
-        int trashCount = 0;
-        int missingCount = 0;
-        for (PhotoRecord record : this.records.values()) {
-            worldCount++;
-            worldBytes += record.bytes();
-            if (owner != null && owner.equals(record.owner())) {
-                playerCount++;
-                playerBytes += record.bytes();
-            }
-            switch (record.status()) {
-                case ACTIVE -> activeCount++;
-                case TRASH -> trashCount++;
-                case MISSING -> missingCount++;
-            }
-        }
-        return new Usage(playerCount, playerBytes, worldCount, worldBytes, activeCount, trashCount, missingCount);
+        OwnerUsage player = owner == null ? null : this.usageByOwner.get(owner);
+        return new Usage(
+                player == null ? 0 : player.count,
+                player == null ? 0L : player.bytes,
+                this.worldCount,
+                this.worldBytes,
+                this.activeCount,
+                this.trashCount,
+                this.missingCount
+        );
     }
 
     public List<PhotoRecord> ownedBy(UUID owner) {
@@ -177,6 +208,85 @@ public final class PhotoIndexSavedData extends SavedData {
             return List.of();
         }
         return this.records.values().stream().filter(record -> owner.equals(record.owner())).toList();
+    }
+
+    private void putRecord(PhotoRecord record, boolean markDirty) {
+        PhotoRecord previous = this.records.put(record.id(), record);
+        if (previous != null) {
+            this.removeUsage(previous);
+        } else {
+            int shard = shardOf(record.id());
+            if (shard >= 0) {
+                this.idsByShard.computeIfAbsent(shard, ignored -> new HashSet<>()).add(record.id());
+            }
+        }
+        this.addUsage(record);
+        if (markDirty) {
+            this.setDirty();
+        }
+    }
+
+    private void addUsage(PhotoRecord record) {
+        this.worldCount++;
+        this.worldBytes += record.bytes();
+        if (record.owner() != null) {
+            OwnerUsage usage = this.usageByOwner.computeIfAbsent(record.owner(), ignored -> new OwnerUsage());
+            usage.count++;
+            usage.bytes += record.bytes();
+        }
+        switch (record.status()) {
+            case ACTIVE -> this.activeCount++;
+            case TRASH -> this.trashCount++;
+            case MISSING -> this.missingCount++;
+        }
+    }
+
+    private void removeUsage(PhotoRecord record) {
+        this.worldCount = Math.max(0, this.worldCount - 1);
+        this.worldBytes = Math.max(0L, this.worldBytes - record.bytes());
+        if (record.owner() != null) {
+            OwnerUsage usage = this.usageByOwner.get(record.owner());
+            if (usage != null) {
+                usage.count = Math.max(0, usage.count - 1);
+                usage.bytes = Math.max(0L, usage.bytes - record.bytes());
+                if (usage.count == 0) {
+                    this.usageByOwner.remove(record.owner());
+                }
+            }
+        }
+        switch (record.status()) {
+            case ACTIVE -> this.activeCount = Math.max(0, this.activeCount - 1);
+            case TRASH -> this.trashCount = Math.max(0, this.trashCount - 1);
+            case MISSING -> this.missingCount = Math.max(0, this.missingCount - 1);
+        }
+    }
+
+    private void removeShardId(String photoId) {
+        int shard = shardOf(photoId);
+        Set<String> ids = this.idsByShard.get(shard);
+        if (ids == null) {
+            return;
+        }
+        ids.remove(photoId);
+        if (ids.isEmpty()) {
+            this.idsByShard.remove(shard);
+        }
+    }
+
+    private static int shardOf(String photoId) {
+        if (photoId == null || photoId.length() < 2) {
+            return -1;
+        }
+        try {
+            return Integer.parseInt(photoId.substring(0, 2), 16);
+        } catch (NumberFormatException ignored) {
+            return -1;
+        }
+    }
+
+    private static final class OwnerUsage {
+        private int count;
+        private long bytes;
     }
 
     public enum PhotoStatus {

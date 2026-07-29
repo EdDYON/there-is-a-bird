@@ -27,7 +27,7 @@ public final class PhotoTransferEvents {
             long now = event.getServer().overworld().getGameTime();
             if (now >= nextMaintenanceTick && !PhotoMaintenance.isRunning()) {
                 nextMaintenanceTick = now + 36_000L;
-                PhotoMaintenance.schedule(event.getServer(), true, result -> { });
+                PhotoMaintenance.scheduleAutomatic(event.getServer(), result -> { });
             }
         }
     }

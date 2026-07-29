@@ -3416,7 +3416,7 @@
 						"vector": [65, 0, 0]
 					},
 					"position": {
-						"vector": [0, "2+math.cos(q.anim_time*1440)*0.5+math.min(0,math.cos(q.anim_time*1440)*0.75)", 6]
+						"vector": [0, "2+math.cos(query.anim_time*1440)*0.5+math.min(0,math.cos(query.anim_time*1440)*0.75)", 6]
 					}
 				},
 				"head": {
@@ -3426,14 +3426,14 @@
 					"position": {
 						"vector": [
 							0,
-							"1-0.3*(math.cos(q.anim_time*1440)*0.5+math.min(0,math.cos(q.anim_time*1440)*0.75))",
-							"-0.8*(math.cos(q.anim_time*1440)*0.5+math.min(0,math.cos(q.anim_time*1440)*0.75))"
+							"1-0.3*(math.cos(query.anim_time*1440)*0.5+math.min(0,math.cos(query.anim_time*1440)*0.75))",
+							"-0.8*(math.cos(query.anim_time*1440)*0.5+math.min(0,math.cos(query.anim_time*1440)*0.75))"
 						]
 					}
 				},
 				"crest": {
 					"rotation": {
-						"vector": ["-15-2*(math.cos(q.anim_time*1440)*0.5+math.min(0,math.cos(q.anim_time*1440)*0.75))", 0, 0]
+						"vector": ["-15-2*(math.cos(query.anim_time*1440)*0.5+math.min(0,math.cos(query.anim_time*1440)*0.75))", 0, 0]
 					}
 				},
 				"right": {
@@ -3451,7 +3451,7 @@
 				},
 				"tail": {
 					"rotation": {
-						"vector": ["20-math.cos(q.anim_time*1440+30)*5", 0, 0]
+						"vector": ["20-math.cos(query.anim_time*1440+30)*5", 0, 0]
 					}
 				},
 				"right_leg_2": {

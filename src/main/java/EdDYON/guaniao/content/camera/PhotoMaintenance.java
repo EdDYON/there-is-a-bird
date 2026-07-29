@@ -20,21 +20,49 @@ import net.minecraft.server.MinecraftServer;
 /** Bounded, asynchronous orphan/missing/trash maintenance for the photograph store. */
 public final class PhotoMaintenance {
     private static final int MAX_FILE_ACTIONS = 128;
+    private static final int AUTOMATIC_SHARDS_PER_PASS = 16;
     private static final AtomicBoolean RUNNING = new AtomicBoolean();
+    private static int nextAutomaticShard;
 
     private PhotoMaintenance() {
     }
 
     public static boolean schedule(MinecraftServer server, boolean dryRun, Consumer<Result> callback) {
+        return schedule(server, dryRun, callback, null);
+    }
+
+    public static boolean scheduleAutomatic(MinecraftServer server, Consumer<Result> callback) {
+        int firstShard = nextAutomaticShard;
+        boolean accepted = schedule(
+                server,
+                true,
+                callback,
+                new ShardWindow(firstShard, AUTOMATIC_SHARDS_PER_PASS)
+        );
+        if (accepted) {
+            nextAutomaticShard = Math.floorMod(firstShard + AUTOMATIC_SHARDS_PER_PASS, 256);
+        }
+        return accepted;
+    }
+
+    private static boolean schedule(
+            MinecraftServer server,
+            boolean dryRun,
+            Consumer<Result> callback,
+            ShardWindow shardWindow
+    ) {
         if (!RUNNING.compareAndSet(false, true)) {
             return false;
         }
-        Collection<PhotoRecord> records = PhotoIndexSavedData.get(server).snapshot();
+        PhotoIndexSavedData index = PhotoIndexSavedData.get(server);
+        Collection<PhotoRecord> records = shardWindow == null
+                ? index.snapshot()
+                : index.snapshotInShards(shardWindow.firstShard, shardWindow.shardCount);
         int retentionDays = BirdConfigManager.photoTrashRetentionDays();
         long now = System.currentTimeMillis();
         boolean accepted = PhotoIoService.submit(
                 server,
-                () -> inspect(server, records, retentionDays, now, dryRun),
+                () -> inspect(server, records, retentionDays, now, dryRun, shardWindow),
                 result -> {
                     applyIndexChanges(server, result, now, dryRun);
                     RUNNING.set(false);
@@ -58,6 +86,7 @@ public final class PhotoMaintenance {
 
     public static void reset() {
         RUNNING.set(false);
+        nextAutomaticShard = 0;
     }
 
     private static Result inspect(
@@ -65,19 +94,26 @@ public final class PhotoMaintenance {
             Collection<PhotoRecord> records,
             int retentionDays,
             long now,
-            boolean dryRun
+            boolean dryRun,
+            ShardWindow shardWindow
     ) throws IOException {
         Map<String, PhotoRecord> indexed = new HashMap<>();
         for (PhotoRecord record : records) {
             indexed.put(record.id(), record);
         }
-        Set<String> stored = new HashSet<>(PhotoRepository.listStoredPhotoIds(server, Integer.MAX_VALUE));
+        Set<String> stored = new HashSet<>(shardWindow == null
+                ? PhotoRepository.listStoredPhotoIds(server, Integer.MAX_VALUE)
+                : PhotoRepository.listStoredPhotoIdsInShards(
+                        server, shardWindow.firstShard, shardWindow.shardCount, Integer.MAX_VALUE));
         List<String> missing = new ArrayList<>();
         List<OrphanFile> orphans = new ArrayList<>();
         List<String> deletedTrash = new ArrayList<>();
         int actions = 0;
 
         for (PhotoRecord record : records) {
+            if (shardWindow != null && !shardWindow.includes(record.id())) {
+                continue;
+            }
             if (record.status() == PhotoStatus.TRASH) {
                 long retentionMillis = retentionDays * 86_400_000L;
                 if (record.deletedAt() > 0L && now - record.deletedAt() >= retentionMillis) {
@@ -132,6 +168,25 @@ public final class PhotoMaintenance {
     }
 
     public record OrphanFile(String id, int bytes) {
+    }
+
+    private record ShardWindow(int firstShard, int shardCount) {
+        private boolean includes(String photoId) {
+            if (photoId == null || photoId.length() < 2) {
+                return false;
+            }
+            try {
+                int shard = Integer.parseInt(photoId.substring(0, 2), 16);
+                for (int offset = 0; offset < this.shardCount; offset++) {
+                    if (shard == Math.floorMod(this.firstShard + offset, 256)) {
+                        return true;
+                    }
+                }
+            } catch (NumberFormatException ignored) {
+                return false;
+            }
+            return false;
+        }
     }
 
     public record Result(

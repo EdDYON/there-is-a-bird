@@ -1,21 +1,39 @@
 package EdDYON.guaniao.content.bird.flight;
 
 import EdDYON.guaniao.content.bird.flock.BirdFlockManager;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.phys.Vec3;
 
 public final class BirdFlightBoids {
+    private static final int HEADING_REFRESH_TICKS = 3;
+    private static final Map<PathfinderMob, CachedHeading> HEADING_CACHE =
+            Collections.synchronizedMap(new WeakHashMap<>());
+
     private BirdFlightBoids() {
     }
 
     public static Vec3 sameTypeHeading(PathfinderMob bird, double radius, double separationRadius, double cohesionWeight, double alignmentWeight, double separationWeight, double randomnessWeight) {
+        FlockQuery query = new FlockQuery(radius, separationRadius, cohesionWeight, alignmentWeight, separationWeight, randomnessWeight);
+        long now = bird.level().getGameTime();
+        CachedHeading cached = HEADING_CACHE.get(bird);
+        if (cached != null && cached.query.equals(query) && now < cached.refreshAt) {
+            return cached.heading;
+        }
+        if (cached == null && Math.floorMod(now + bird.getId(), HEADING_REFRESH_TICKS) != 0) {
+            return randomHeading(bird, randomnessWeight);
+        }
         List<PathfinderMob> nearby = BirdFlockManager.nearby(bird, PathfinderMob.class, radius).stream()
                 .filter(other -> other != bird
                         && other instanceof BirdFlightAware aware
                         && aware.isBirdFlightActive())
                 .toList();
-        return headingFrom(bird, nearby, separationRadius, cohesionWeight, alignmentWeight, separationWeight, randomnessWeight);
+        Vec3 heading = headingFrom(bird, nearby, separationRadius, cohesionWeight, alignmentWeight, separationWeight, randomnessWeight);
+        HEADING_CACHE.put(bird, new CachedHeading(query, heading, now + HEADING_REFRESH_TICKS));
+        return heading;
     }
 
     public static Vec3 headingFrom(PathfinderMob bird, List<? extends PathfinderMob> nearby, double separationRadius, double cohesionWeight, double alignmentWeight, double separationWeight, double randomnessWeight) {
@@ -64,5 +82,18 @@ public final class BirdFlightBoids {
             return Vec3.ZERO;
         }
         return BirdFlightTargeting.randomHorizontalDirection(bird.getRandom()).scale(randomnessWeight);
+    }
+
+    private record FlockQuery(
+            double radius,
+            double separationRadius,
+            double cohesionWeight,
+            double alignmentWeight,
+            double separationWeight,
+            double randomnessWeight
+    ) {
+    }
+
+    private record CachedHeading(FlockQuery query, Vec3 heading, long refreshAt) {
     }
 }

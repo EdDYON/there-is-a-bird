@@ -5,24 +5,32 @@ import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.CakeBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
 public final class PollutedCakeData extends SavedData {
     private static final String DATA_NAME = "guaniao_polluted_cakes";
     private static final String TAG_POSITIONS = "Positions";
     private static final int PARTICLE_INTERVAL_TICKS = 10;
+    private static final int MAX_POSITIONS_PER_PASS = 128;
+    private static final int MAX_CHUNKS_PER_PASS = 32;
     private static final DustParticleOptions DIRTY_BROWN_DUST = new DustParticleOptions(new Vector3f(0.28F, 0.18F, 0.07F), 0.80F);
     private static final DustParticleOptions SICK_GREEN_DUST = new DustParticleOptions(new Vector3f(0.20F, 0.40F, 0.08F), 0.70F);
 
-    private final Set<Long> positions = new HashSet<>();
+    private final Map<Long, Set<Long>> positionsByChunk = new HashMap<>();
+    private Iterator<Map.Entry<Long, Set<Long>>> chunkIterator;
+    private Iterator<Long> positionIterator;
+    private Map.Entry<Long, Set<Long>> currentChunk;
 
     public static PollutedCakeData get(ServerLevel level) {
         return level.getDataStorage().computeIfAbsent(PollutedCakeData::load, PollutedCakeData::new, DATA_NAME);
@@ -31,56 +39,117 @@ public final class PollutedCakeData extends SavedData {
     public static PollutedCakeData load(CompoundTag tag) {
         PollutedCakeData data = new PollutedCakeData();
         for (long packedPos : tag.getLongArray(TAG_POSITIONS)) {
-            data.positions.add(packedPos);
+            data.addPacked(packedPos, false);
         }
         return data;
     }
 
     public void pollute(ServerLevel level, BlockPos pos) {
-        if (this.positions.add(pos.asLong())) {
-            this.setDirty();
-        }
+        this.addPacked(pos.asLong(), true);
         spawnBurst(level, cakeSurface(level.getBlockState(pos), pos));
     }
 
     public boolean isPolluted(BlockPos pos) {
-        return this.positions.contains(pos.asLong());
+        Set<Long> positions = this.positionsByChunk.get(chunkKey(pos));
+        return positions != null && positions.contains(pos.asLong());
     }
 
     public void tick(ServerLevel level) {
+        if (Math.floorMod(level.getGameTime(), PARTICLE_INTERVAL_TICKS) != 0) {
+            return;
+        }
         boolean changed = false;
-        Iterator<Long> iterator = this.positions.iterator();
-        while (iterator.hasNext()) {
-            BlockPos pos = BlockPos.of(iterator.next());
-            if (!level.hasChunkAt(pos)) {
+        int processed = 0;
+        int visitedChunks = 0;
+        while (processed < MAX_POSITIONS_PER_PASS && visitedChunks < MAX_CHUNKS_PER_PASS) {
+            if (this.positionIterator == null || !this.positionIterator.hasNext()) {
+                if (this.currentChunk != null && this.currentChunk.getValue().isEmpty()) {
+                    this.chunkIterator.remove();
+                    this.currentChunk = null;
+                    changed = true;
+                }
+                this.positionIterator = null;
+                if (this.chunkIterator == null) {
+                    this.chunkIterator = this.positionsByChunk.entrySet().iterator();
+                }
+                if (!this.chunkIterator.hasNext()) {
+                    this.resetIteration();
+                    break;
+                }
+                this.currentChunk = this.chunkIterator.next();
+                visitedChunks++;
+                ChunkPos chunkPos = new ChunkPos(this.currentChunk.getKey());
+                if (!level.hasChunk(chunkPos.x, chunkPos.z)) {
+                    this.currentChunk = null;
+                    continue;
+                }
+                this.positionIterator = this.currentChunk.getValue().iterator();
                 continue;
             }
 
+            BlockPos pos = BlockPos.of(this.positionIterator.next());
+            processed++;
             BlockState state = level.getBlockState(pos);
             if (!(state.getBlock() instanceof CakeBlock)) {
-                iterator.remove();
+                this.positionIterator.remove();
                 changed = true;
                 continue;
             }
-
-            if (Math.floorMod(level.getGameTime() + pos.asLong(), PARTICLE_INTERVAL_TICKS) == 0) {
-                spawnAmbient(level, cakeSurface(state, pos));
-            }
+            spawnAmbient(level, cakeSurface(state, pos));
         }
         if (changed) {
             this.setDirty();
         }
     }
 
+    public void validateChunk(ServerLevel level, ChunkPos chunkPos) {
+        Set<Long> positions = this.positionsByChunk.get(chunkPos.toLong());
+        if (positions == null || positions.isEmpty()) {
+            return;
+        }
+        boolean changed = positions.removeIf(packedPos ->
+                !(level.getBlockState(BlockPos.of(packedPos)).getBlock() instanceof CakeBlock));
+        if (positions.isEmpty()) {
+            this.positionsByChunk.remove(chunkPos.toLong());
+        }
+        if (changed) {
+            this.resetIteration();
+            this.setDirty();
+        }
+    }
+
     @Override
     public CompoundTag save(CompoundTag tag) {
-        long[] packedPositions = new long[this.positions.size()];
+        int size = this.positionsByChunk.values().stream().mapToInt(Set::size).sum();
+        long[] packedPositions = new long[size];
         int index = 0;
-        for (long packedPos : this.positions) {
-            packedPositions[index++] = packedPos;
+        for (Set<Long> positions : this.positionsByChunk.values()) {
+            for (long packedPos : positions) {
+                packedPositions[index++] = packedPos;
+            }
         }
         tag.putLongArray(TAG_POSITIONS, packedPositions);
         return tag;
+    }
+
+    private void addPacked(long packedPos, boolean markDirty) {
+        BlockPos pos = BlockPos.of(packedPos);
+        if (this.positionsByChunk.computeIfAbsent(chunkKey(pos), ignored -> new HashSet<>()).add(packedPos)) {
+            this.resetIteration();
+            if (markDirty) {
+                this.setDirty();
+            }
+        }
+    }
+
+    private void resetIteration() {
+        this.chunkIterator = null;
+        this.positionIterator = null;
+        this.currentChunk = null;
+    }
+
+    private static long chunkKey(BlockPos pos) {
+        return ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4);
     }
 
     private static Vec3 cakeSurface(BlockState state, BlockPos pos) {

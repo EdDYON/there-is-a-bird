@@ -73,7 +73,12 @@ public final class BirdAdvancementEvents {
         List<LongTailedTitEntity> tits = player.level().getEntitiesOfClass(
                 LongTailedTitEntity.class,
                 player.getBoundingBox().inflate(TIT_LINE_RADIUS, 6.0D, TIT_LINE_RADIUS),
-                tit -> tit.isAlive() && tit.onGround() && !tit.isBirdFlightActive() && tit.getDeltaMovement().horizontalDistanceSqr() < 0.012D);
+                tit -> tit.isAlive() && tit.onGround() && !tit.isBirdFlightActive()
+                        && tit.getDeltaMovement().horizontalDistanceSqr() < 0.012D)
+                .stream()
+                .sorted(java.util.Comparator.comparingDouble(tit -> player.distanceToSqr(tit)))
+                .limit(24)
+                .toList();
         if (tits.size() < 4) {
             return false;
         }

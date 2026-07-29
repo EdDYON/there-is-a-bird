@@ -50,6 +50,7 @@ public final class BirdDroppingPrankHandler {
     private static final int GOLEM_MEMORY_TICKS = 20 * 60;
     private static final float LUCKY_HIT_CHANCE = 0.05F;
     private static final Map<ServerLevel, Map<UUID, Long>> TRACKED_VILLAGERS = new WeakHashMap<>();
+    private static final Map<ServerLevel, Long> NEXT_VILLAGER_EXPIRY = new WeakHashMap<>();
 
     private BirdDroppingPrankHandler() {
     }
@@ -182,8 +183,10 @@ public final class BirdDroppingPrankHandler {
         }
         CompoundTag data = villager.getPersistentData();
         if (data.contains(VILLAGER_TRADE_PENALTY_UNTIL) && data.contains(VILLAGER_TRADE_PENALTY)) {
+            long expiresAt = data.getLong(VILLAGER_TRADE_PENALTY_UNTIL);
             TRACKED_VILLAGERS.computeIfAbsent(level, ignored -> new HashMap<>())
-                    .put(villager.getUUID(), data.getLong(VILLAGER_TRADE_PENALTY_UNTIL));
+                    .put(villager.getUUID(), expiresAt);
+            NEXT_VILLAGER_EXPIRY.merge(level, expiresAt, Math::min);
         }
     }
 
@@ -194,10 +197,15 @@ public final class BirdDroppingPrankHandler {
                 continue;
             }
             long now = level.getGameTime();
+            if (now < NEXT_VILLAGER_EXPIRY.getOrDefault(level, Long.MAX_VALUE)) {
+                continue;
+            }
+            long nextExpiry = Long.MAX_VALUE;
             Iterator<Map.Entry<UUID, Long>> iterator = tracked.entrySet().iterator();
             while (iterator.hasNext()) {
                 Map.Entry<UUID, Long> entry = iterator.next();
                 if (now < entry.getValue()) {
+                    nextExpiry = Math.min(nextExpiry, entry.getValue());
                     continue;
                 }
                 Entity entity = level.getEntity(entry.getKey());
@@ -208,12 +216,16 @@ public final class BirdDroppingPrankHandler {
             }
             if (tracked.isEmpty()) {
                 TRACKED_VILLAGERS.remove(level);
+                NEXT_VILLAGER_EXPIRY.remove(level);
+            } else {
+                NEXT_VILLAGER_EXPIRY.put(level, nextExpiry);
             }
         }
     }
 
     public static void forgetLevel(ServerLevel level) {
         TRACKED_VILLAGERS.remove(level);
+        NEXT_VILLAGER_EXPIRY.remove(level);
     }
 
     public static boolean handleCakeHit(BirdDroppingProjectileEntity projectile, BlockPos pos) {

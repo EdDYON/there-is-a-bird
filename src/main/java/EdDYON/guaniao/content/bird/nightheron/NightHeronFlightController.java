@@ -4,6 +4,9 @@ import EdDYON.guaniao.content.bird.flight.BirdFlightBoids;
 import EdDYON.guaniao.content.bird.flight.BirdFlightController;
 import EdDYON.guaniao.content.bird.nightheron.NightHeronBehaviorState;
 import EdDYON.guaniao.content.bird.nightheron.NightHeronEntity;
+import java.util.Collections;
+import java.util.Map;
+import java.util.WeakHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.tags.FluidTags;
@@ -15,6 +18,10 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 public final class NightHeronFlightController {
+    private static final int OPEN_DIRECTION_CACHE_TICKS = 3;
+    private static final Map<NightHeronEntity, CachedOpenDirection> OPEN_DIRECTIONS =
+            Collections.synchronizedMap(new WeakHashMap<>());
+
     private NightHeronFlightController() {
     }
 
@@ -153,13 +160,18 @@ public final class NightHeronFlightController {
                 requestedDirection = NightHeronFlightController.normalizeHorizontal(requestedDirection.add(flockHeading), requestedDirection);
             }
         }
-        Vec3 safeDirection = NightHeronFlightController.chooseOpenDirection(nightHeron, requestedDirection, defaultFlightState == NightHeronBehaviorState.LOCAL_FLIGHT ? 4.0 : 6.0);
+        double lookAhead = defaultFlightState == NightHeronBehaviorState.LOCAL_FLIGHT ? 4.0 : 6.0;
+        OpenDirectionProbe openDirection = NightHeronFlightController.cachedOpenDirection(nightHeron, requestedDirection, lookAhead);
+        Vec3 safeDirection = openDirection.direction;
         double height = nightHeron.heightAboveSurface();
         Vec3 currentMovement = nightHeron.getDeltaMovement();
-        double clearScore = NightHeronFlightController.airPathScore(nightHeron, safeDirection, 3.2, 0.25);
+        double clearScore = openDirection.score * Math.min(1.0D, 3.2D / lookAhead);
         boolean blockedAhead = clearScore < 1.25;
-        boolean hasClimbRoom = NightHeronFlightController.hasVerticalClearance(nightHeron, 3.6) && height < maxHeight - 1.0;
         boolean stuckInPlace = nightHeron.tickFlightObstructionProbe(blockedAhead);
+        boolean hasClimbRoom = true;
+        if (nightHeron.horizontalCollision || blockedAhead || stuckInPlace) {
+            hasClimbRoom = NightHeronFlightController.hasVerticalClearance(nightHeron, 3.6) && height < maxHeight - 1.0;
+        }
         boolean cruiseBand = height >= targetHeight - 0.8 && height <= maxHeight - 0.75;
         boolean glideWindow = allowGlide && cruiseBand && clearScore >= 2.2 && !blockedAhead;
         if (nightHeron.horizontalCollision || blockedAhead || stuckInPlace) {
@@ -235,6 +247,26 @@ public final class NightHeronFlightController {
     }
 
     private static Vec3 chooseOpenDirection(NightHeronEntity nightHeron, Vec3 preferred, double lookAhead) {
+        return NightHeronFlightController.probeOpenDirection(nightHeron, preferred, lookAhead).direction;
+    }
+
+    private static OpenDirectionProbe cachedOpenDirection(NightHeronEntity nightHeron, Vec3 preferred, double lookAhead) {
+        Vec3 normalized = NightHeronFlightController.normalizeHorizontal(preferred, nightHeron.getLookAngle());
+        long now = nightHeron.level().getGameTime();
+        CachedOpenDirection cached = OPEN_DIRECTIONS.get(nightHeron);
+        if (!nightHeron.horizontalCollision && cached != null && now < cached.refreshAt
+                && Math.abs(cached.lookAhead - lookAhead) < 0.01D
+                && cached.preferred.dot(normalized) >= 0.92D
+                && cached.probe.score * Math.min(1.0D, 3.2D / lookAhead) >= 1.25D) {
+            return cached.probe;
+        }
+        OpenDirectionProbe probe = NightHeronFlightController.probeOpenDirection(nightHeron, normalized, lookAhead);
+        OPEN_DIRECTIONS.put(nightHeron, new CachedOpenDirection(
+                normalized, lookAhead, probe, now + OPEN_DIRECTION_CACHE_TICKS));
+        return probe;
+    }
+
+    private static OpenDirectionProbe probeOpenDirection(NightHeronEntity nightHeron, Vec3 preferred, double lookAhead) {
         double[] angles;
         Vec3 baseDirection;
         Vec3 bestDirection = baseDirection = NightHeronFlightController.normalizeHorizontal(preferred, nightHeron.getLookAngle());
@@ -246,7 +278,7 @@ public final class NightHeronFlightController {
             bestScore = score;
             bestDirection = candidate;
         }
-        return bestDirection;
+        return new OpenDirectionProbe(bestDirection, bestScore);
     }
 
     private static Vec3 chooseRecoveryDirection(NightHeronEntity nightHeron, Vec3 preferred, double lookAhead) {
@@ -329,6 +361,17 @@ public final class NightHeronFlightController {
         double cos = Math.cos(angle);
         double sin = Math.sin(angle);
         return new Vec3(direction.x * cos - direction.z * sin, 0.0, direction.x * sin + direction.z * cos).normalize();
+    }
+
+    private record OpenDirectionProbe(Vec3 direction, double score) {
+    }
+
+    private record CachedOpenDirection(
+            Vec3 preferred,
+            double lookAhead,
+            OpenDirectionProbe probe,
+            long refreshAt
+    ) {
     }
 
     private static void applyMovement(NightHeronEntity nightHeron, Vec3 movement) {

@@ -88,16 +88,16 @@ public class BreadcrumbPileBlock extends Block {
     @Override
     public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
         super.onPlace(state, level, pos, oldState, movedByPiston);
-        if (!level.isClientSide) {
-            BreadcrumbSearchCache.invalidate((ServerLevel)level);
+        if (level instanceof ServerLevel serverLevel) {
+            BreadcrumbSearchCache.register(serverLevel, pos);
             level.scheduleTick(pos, this, TICK_INTERVAL);
         }
     }
 
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
-        if (!level.isClientSide && !newState.is(this)) {
-            BreadcrumbSearchCache.invalidate((ServerLevel)level);
+        if (level instanceof ServerLevel serverLevel && !newState.is(this)) {
+            BreadcrumbSearchCache.remove(serverLevel, pos);
         }
         super.onRemove(state, level, pos, newState, movedByPiston);
     }
@@ -119,6 +119,7 @@ public class BreadcrumbPileBlock extends Block {
 
     @Override
     public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+        BreadcrumbSearchCache.register(level, pos);
         if (!state.canSurvive(level, pos) || !level.getFluidState(pos).isEmpty()) {
             level.removeBlock(pos, false);
             return;
@@ -139,6 +140,9 @@ public class BreadcrumbPileBlock extends Block {
         BlockState currentState = level.getBlockState(pos);
         if (!currentState.is(this)) {
             return false;
+        }
+        if (level instanceof ServerLevel serverLevel) {
+            BreadcrumbSearchCache.register(serverLevel, pos);
         }
         int bites = currentState.getValue(BITES);
         if (bites > 1) {

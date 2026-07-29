@@ -26,7 +26,6 @@ public final class BirdSpawnConfigEvents {
             return;
         }
         ServerLevel level = event.getLevel() instanceof ServerLevel serverLevel ? serverLevel : null;
-        boolean globalCapacity = level == null || isBelowGlobalCaps(level, event.getPos().getX(), event.getPos().getZ());
         for (MobSpawnSettings.SpawnerData original : new ArrayList<>(event.getSpawnerDataList())) {
             BirdSpecies species = BirdSpecies.from(original.type);
             if (species == null) {
@@ -34,8 +33,9 @@ public final class BirdSpawnConfigEvents {
             }
             event.removeSpawnerData(original);
             double multiplier = BirdConfigManager.spawnMultiplier(species);
-            if (!globalCapacity || multiplier <= 0.0D || level != null
-                    && !isBelowSpeciesCap(level, event.getPos().getX(), event.getPos().getZ(), species)) {
+            int available = level == null ? Integer.MAX_VALUE
+                    : remainingCapacity(level, event.getPos().getX(), event.getPos().getZ(), species);
+            if (multiplier <= 0.0D || available <= 0) {
                 continue;
             }
             int weight = Math.max(1, (int)Math.round(original.getWeight().asInt() * multiplier));
@@ -48,6 +48,8 @@ public final class BirdSpawnConfigEvents {
                     maxGroup = colonyGroup.max();
                 }
             }
+            maxGroup = Math.min(maxGroup, available);
+            minGroup = Math.min(minGroup, maxGroup);
             event.addSpawnerData(new MobSpawnSettings.SpawnerData(original.type, weight, minGroup, maxGroup));
         }
     }
@@ -59,6 +61,13 @@ public final class BirdSpawnConfigEvents {
         }
         BirdSpecies species = BirdSpecies.from(event.getEntityType());
         if (species == null) {
+            return;
+        }
+        // Chunk-generation spawning can run against a WorldGenRegion rather than
+        // a ServerLevel, which bypasses the live population tracker. Runtime
+        // natural spawning repopulates the same habitats under the configured caps.
+        if (event.getSpawnType() == MobSpawnType.CHUNK_GENERATION) {
+            event.setResult(Event.Result.DENY);
             return;
         }
         if (!BirdConfigManager.allowsNaturalSpawning(species)) {
@@ -89,6 +98,24 @@ public final class BirdSpawnConfigEvents {
     private static boolean isBelowSpeciesCap(ServerLevel level, double x, double z, BirdSpecies species) {
         int limit = BirdConfigManager.maxWildNearby(species);
         return limit > 0 && BirdPopulationTracker.speciesAt(level, x, z, species) < limit;
+    }
+
+    private static int remainingCapacity(ServerLevel level, double x, double z, BirdSpecies species) {
+        int nearbyLimit = BirdConfigManager.maxBirdsNearby();
+        int speciesLimit = BirdConfigManager.maxWildNearby(species);
+        if (nearbyLimit <= 0 || speciesLimit <= 0) {
+            return 0;
+        }
+        int remaining = Math.min(
+                nearbyLimit - BirdPopulationTracker.totalAt(level, x, z),
+                speciesLimit - BirdPopulationTracker.speciesAt(level, x, z, species)
+        );
+        int regionalLimit = BirdConfigManager.maxWildBirdsPerRegion();
+        if (regionalLimit > 0) {
+            remaining = Math.min(remaining,
+                    regionalLimit - BirdPopulationTracker.totalInRegionAt(level, x, z));
+        }
+        return Math.max(0, remaining);
     }
 
     /** Compatibility entry point used by flyby spawning. */

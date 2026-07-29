@@ -32,9 +32,10 @@ public final class BirdPopulationTracker {
     private static final long EXCESS_POPULATION_GRACE_TICKS = 1200L;
     private static final long UNOBSERVED_LIFETIME_TICKS = 24000L;
     private static final long TRANSIENT_FLYBY_LIFETIME_TICKS = 3600L;
-    private static final double EXCESS_CULL_DISTANCE_SQR = 64.0D * 64.0D;
-    private static final double NEARBY_PLAYER_DISTANCE_SQR = 96.0D * 96.0D;
-    private static final double UNOBSERVED_CULL_DISTANCE_SQR = 128.0D * 128.0D;
+    private static final double EXCESS_CULL_DISTANCE_SQR = 32.0D * 32.0D;
+    private static final double NEARBY_PLAYER_DISTANCE_SQR = 32.0D * 32.0D;
+    private static final double UNOBSERVED_CULL_DISTANCE_SQR = 48.0D * 48.0D;
+    private static final double VISIBLE_CULL_GUARD_DISTANCE_SQR = 64.0D * 64.0D;
     private static final Map<ServerLevel, LevelPopulation> LEVELS = new WeakHashMap<>();
 
     private BirdPopulationTracker() {
@@ -156,15 +157,16 @@ public final class BirdPopulationTracker {
 
         if (data.contains(TRANSIENT_FLYBY_SPAWN_TIME, Tag.TAG_LONG)
                 && elapsed(now, data.getLong(TRANSIENT_FLYBY_SPAWN_TIME)) >= TRANSIENT_FLYBY_LIFETIME_TICKS
-                && nearestPlayerDistanceSqr > EXCESS_CULL_DISTANCE_SQR) {
+                && canCullQuietly(level, mob, nearestPlayerDistanceSqr)) {
             return true;
         }
 
         BirdSpecies species = BirdSpecies.from(mob);
-        if (isOverCapacity(level, mob, species) && nearestPlayerDistanceSqr > EXCESS_CULL_DISTANCE_SQR) {
+        if (isOverCapacity(level, mob, species)) {
             if (!data.contains(EXCESS_POPULATION_SINCE, Tag.TAG_LONG)) {
                 data.putLong(EXCESS_POPULATION_SINCE, now);
-            } else if (elapsed(now, data.getLong(EXCESS_POPULATION_SINCE)) >= EXCESS_POPULATION_GRACE_TICKS) {
+            } else if (elapsed(now, data.getLong(EXCESS_POPULATION_SINCE)) >= EXCESS_POPULATION_GRACE_TICKS
+                    && canCullQuietly(level, mob, nearestPlayerDistanceSqr)) {
                 return true;
             }
         } else {
@@ -172,7 +174,8 @@ public final class BirdPopulationTracker {
         }
 
         return nearestPlayerDistanceSqr > UNOBSERVED_CULL_DISTANCE_SQR
-                && elapsed(now, data.getLong(LAST_NEARBY_PLAYER_TIME)) >= UNOBSERVED_LIFETIME_TICKS;
+                && elapsed(now, data.getLong(LAST_NEARBY_PLAYER_TIME)) >= UNOBSERVED_LIFETIME_TICKS
+                && canCullQuietly(level, mob, nearestPlayerDistanceSqr);
     }
 
     private static boolean isSafeToCull(Mob mob) {
@@ -211,6 +214,22 @@ public final class BirdPopulationTracker {
             nearest = Math.min(nearest, player.distanceToSqr(mob));
         }
         return nearest;
+    }
+
+    private static boolean canCullQuietly(ServerLevel level, Mob mob, double nearestPlayerDistanceSqr) {
+        if (nearestPlayerDistanceSqr <= EXCESS_CULL_DISTANCE_SQR) {
+            return false;
+        }
+        for (net.minecraft.server.level.ServerPlayer player : level.players()) {
+            if (!player.isAlive() || player.isSpectator()) {
+                continue;
+            }
+            if (player.distanceToSqr(mob) <= VISIBLE_CULL_GUARD_DISTANCE_SQR
+                    && player.hasLineOfSight(mob)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static long elapsed(long now, long since) {

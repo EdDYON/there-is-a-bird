@@ -19,7 +19,9 @@ import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -87,6 +89,14 @@ public final class BirdStressTestManager {
             }
         }
         return removed;
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onEntityJoin(EntityJoinLevelEvent event) {
+        if (!event.getLevel().isClientSide() && event.loadedFromDisk() && active == null
+                && event.getEntity().getPersistentData().getBoolean(STRESS_TAG)) {
+            event.setCanceled(true);
+        }
     }
 
     @SubscribeEvent

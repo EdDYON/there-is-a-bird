@@ -2,6 +2,7 @@ package EdDYON.guaniao.content.bird.sparrow;
 
 import EdDYON.guaniao.content.bird.BirdSoundVolume;
 import EdDYON.guaniao.content.bird.BirdFlockSoundLimiter;
+import EdDYON.guaniao.content.bird.BirdScanBudget;
 import EdDYON.guaniao.content.bird.CleanBirdTemptGoal;
 import EdDYON.guaniao.content.bird.BirdFoodSafety;
 import EdDYON.guaniao.content.bird.BirdTags;
@@ -13,7 +14,9 @@ import EdDYON.guaniao.content.bird.command.CommandableBird;
 import EdDYON.guaniao.content.bird.flock.FlockCompatibleBird;
 import EdDYON.guaniao.content.bird.flock.BirdFlockManager;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import EdDYON.guaniao.content.bird.BirdActivitySchedule;
 import EdDYON.guaniao.content.bird.BirdGroundAnimation;
@@ -130,6 +133,9 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
     private static final int MAX_SATIATION_TICKS = 4800;
     private static final int HOME_RADIUS = 36;
     private static final int SETTLEMENT_SCAN_RADIUS = 14;
+    private static final int PERCH_SCAN_BUDGET_COST = 3;
+    private static final int MAX_SCORED_ROOST_CANDIDATES = 18;
+    private static final int MAX_SCORED_DAY_CANDIDATES = 12;
     private final AnimatableInstanceCache animationCache = GeckoLibUtil.createInstanceCache((GeoAnimatable)this);
     private final BirdBrain birdBrain = new BirdBrain(this, SparrowProfile.INSTANCE);
     private SparrowBehaviorState behaviorState = SparrowBehaviorState.IDLE;
@@ -158,6 +164,7 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
     private int breadcrumbInterestTicks;
     private BlockPos homePos;
     private int perchCooldown;
+    private long nextPerchSearchTick;
     private int behaviorStateLockTicks;
     private int ownerFollowSuppressedTicks;
     private int restInterruptionTicks;
@@ -980,7 +987,14 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
         int attempts = roosting ? 130 : 64;
         BlockPos bestPos = null;
         double bestScore = Double.NEGATIVE_INFINITY;
+        int scoredCandidates = 0;
+        int maxScoredCandidates = roosting ? MAX_SCORED_ROOST_CANDIDATES : MAX_SCORED_DAY_CANDIDATES;
+        List<SparrowEntity> nearbyRoostingSparrows = roosting
+                ? BirdFlockManager.nearby(this, SparrowEntity.class, 12.0D)
+                : List.of();
+        Map<Long, Boolean> coverBySection = new HashMap<>();
         BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
+        perchSearch:
         for (int attempt = 0; attempt < attempts; ++attempt) {
             int xOffset = this.randomBetween(-radius, radius);
             int zOffset = this.randomBetween(-radius, radius);
@@ -993,10 +1007,14 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
                 if (!this.isSafePerchPosition(perchPos)) {
                     continue;
                 }
-                double score = this.scorePerchPosition(perchPos, roosting);
+                double score = this.scorePerchPosition(
+                        perchPos, roosting, nearbyRoostingSparrows, coverBySection);
                 if (score > bestScore) {
                     bestScore = score;
                     bestPos = perchPos.immutable();
+                }
+                if (++scoredCandidates >= maxScoredCandidates) {
+                    break perchSearch;
                 }
             }
         }
@@ -1031,7 +1049,12 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
                 || state.is(Blocks.COMPOSTER);
     }
 
-    private double scorePerchPosition(BlockPos pos, boolean roosting) {
+    private double scorePerchPosition(
+            BlockPos pos,
+            boolean roosting,
+            List<SparrowEntity> nearbyRoostingSparrows,
+            Map<Long, Boolean> coverBySection
+    ) {
         BlockState below = this.level().getBlockState(pos.below());
         double score = 0.0;
         if (below.getBlock() instanceof FenceBlock || below.getBlock() instanceof FenceGateBlock) {
@@ -1051,10 +1074,18 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
         }
         score += Math.max(0.0, Math.min(10.0, (double)(pos.getY() - this.blockPosition().getY()) * 1.2));
         if (roosting) {
-            score += this.hasPerchCoverNear(pos, 4) ? 10.0 : 0.0;
-            score += this.nearbyRoostingSparrowScore(pos);
+            long section = SectionPos.asLong(
+                    SectionPos.blockToSectionCoord(pos.getX()),
+                    SectionPos.blockToSectionCoord(pos.getY()),
+                    SectionPos.blockToSectionCoord(pos.getZ()));
+            score += coverBySection.computeIfAbsent(section, ignored -> this.hasPerchCoverNear(pos, 4))
+                    ? 10.0 : 0.0;
+            score += this.nearbyRoostingSparrowScore(pos, nearbyRoostingSparrows);
         }
-        score += Math.min(12.0, this.localSettlementScore(pos, 6) * 0.5);
+        int settlementScore = this.level() instanceof ServerLevel serverLevel
+                ? BirdColonySpawnRules.settlementScore(serverLevel, pos)
+                : this.localSettlementScore(pos, 6);
+        score += Math.min(12.0, settlementScore * 0.5);
         if (this.homePos != null) {
             score -= Math.sqrt(this.blockDistanceSqr(pos, this.homePos)) * 0.08;
         }
@@ -1071,8 +1102,9 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
 
     private boolean hasPerchCoverNear(BlockPos pos, int radius) {
         BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
-        for (int xOffset = -radius; xOffset <= radius; ++xOffset) {
-            for (int zOffset = -radius; zOffset <= radius; ++zOffset) {
+        int horizontalStep = radius >= 4 ? 2 : 1;
+        for (int xOffset = -radius; xOffset <= radius; xOffset += horizontalStep) {
+            for (int zOffset = -radius; zOffset <= radius; zOffset += horizontalStep) {
                 for (int yOffset = 0; yOffset <= 4; ++yOffset) {
                     mutablePos.set(pos.getX() + xOffset, pos.getY() + yOffset, pos.getZ() + zOffset);
                     if (!this.canReadChunk(mutablePos)) {
@@ -1088,8 +1120,8 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
         return false;
     }
 
-    private double nearbyRoostingSparrowScore(BlockPos pos) {
-        return BirdFlockManager.nearby(this, SparrowEntity.class, 12.0).stream()
+    private double nearbyRoostingSparrowScore(BlockPos pos, List<SparrowEntity> nearbyRoostingSparrows) {
+        return nearbyRoostingSparrows.stream()
                 .filter(other -> other != this && other.onGround()).mapToDouble(other -> {
             double distance = Vec3.atCenterOf(pos).distanceTo(other.position());
             if (distance < 0.9) {
@@ -1676,8 +1708,9 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
     }
 
     private BlockPos findNearbyBreadcrumbs(int horizontalRadius, int verticalRadius) {
-        List<SparrowEntity> nearbySparrows = BirdFlockManager.nearby(
-                this, SparrowEntity.class, horizontalRadius + 2.0D);
+        if (!(this.level() instanceof ServerLevel serverLevel)) {
+            return null;
+        }
         BlockPos bestPos = null;
         double bestScore = Double.NEGATIVE_INFINITY;
         BlockPos origin = this.blockPosition();
@@ -1689,14 +1722,12 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
             }
             BlockState state = this.level().getBlockState(candidate);
             if (!state.is(GuaniaoBlocks.BREADCRUMBS.get())) {
+                BreadcrumbSearchCache.remove(serverLevel, candidate);
                 continue;
             }
             double distanceSqr = this.position().distanceToSqr(Vec3.atCenterOf(candidate));
             int layers = state.getValue(BreadcrumbPileBlock.LAYERS);
-            long crowded = nearbySparrows.stream()
-                    .filter(other -> other != this && other.onGround() && this.canFlockWith(other))
-                    .filter(other -> other.position().distanceToSqr(Vec3.atCenterOf(candidate)) <= 1.15D * 1.15D)
-                    .count();
+            int crowded = BreadcrumbSearchCache.userCount(serverLevel, candidate, this.getUUID());
             double crowdedPenalty = crowded * 1.35D;
             double score = (double)(layers * 6) - distanceSqr * 0.14 - crowdedPenalty;
             if (bestPos == null || score > bestScore) {
@@ -2115,7 +2146,20 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
             } else if (this.sparrow.perchCooldown > 0 && this.sparrow.getRandom().nextInt(4) != 0) {
                 return false;
             }
+            long now = this.sparrow.level().getGameTime();
+            if (now < this.sparrow.nextPerchSearchTick) {
+                return false;
+            }
+            this.sparrow.nextPerchSearchTick = now + 40L + this.sparrow.getRandom().nextInt(41);
+            if (this.sparrow.level() instanceof ServerLevel serverLevel
+                    && !BirdScanBudget.tryAcquire(serverLevel, this.sparrow, PERCH_SCAN_BUDGET_COST)) {
+                this.sparrow.nextPerchSearchTick = now + 6L + Math.floorMod(this.sparrow.getId(), 13);
+                return false;
+            }
             this.perchPos = this.sparrow.findPerchTarget(this.roosting);
+            if (this.perchPos == null) {
+                this.sparrow.nextPerchSearchTick = now + 80L + this.sparrow.getRandom().nextInt(81);
+            }
             return this.perchPos != null;
         }
 
@@ -2254,8 +2298,14 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
     private static final class SparrowEatBreadcrumbGoal extends Goal {
         private final SparrowEntity sparrow;
         private BlockPos pilePos;
+        private BlockPos cachedPilePos;
         private Vec3 standPos;
         private int nextPeckTicks;
+        private long cachedPileUntilTick;
+        private long nextClaimRefreshTick;
+        private long nextSearchTick;
+        private boolean searchStaggerInitialized;
+        private boolean claimedPile;
 
         private SparrowEatBreadcrumbGoal(SparrowEntity sparrow) {
             this.sparrow = sparrow;
@@ -2267,21 +2317,43 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
             if ((!this.sparrow.isHungry() && !this.sparrow.hasBreadcrumbInterest()) || this.sparrow.shouldAvoidBreadcrumbs() || this.sparrow.isInWaterOrBubble()) {
                 return false;
             }
+            long now = this.sparrow.level().getGameTime();
+            if (!this.searchStaggerInitialized) {
+                this.searchStaggerInitialized = true;
+                this.nextSearchTick = now + this.sparrow.getRandom().nextInt(41);
+            }
             this.pilePos = null;
             if (this.sparrow.hasBreadcrumbInterest() && this.sparrow.noticedBreadcrumbPos != null
-                    && this.sparrow.level().getBlockState(this.sparrow.noticedBreadcrumbPos).is(GuaniaoBlocks.BREADCRUMBS.get())) {
+                    && this.isValidPile(this.sparrow.noticedBreadcrumbPos)) {
                 this.pilePos = this.sparrow.noticedBreadcrumbPos.immutable();
+            }
+            if (this.pilePos == null && !this.sparrow.hasBreadcrumbInterest() && now < this.nextSearchTick) {
+                return false;
+            }
+            if (this.pilePos == null && this.cachedPilePos != null && now <= this.cachedPileUntilTick
+                    && this.isValidPile(this.cachedPilePos)) {
+                this.pilePos = this.cachedPilePos;
             }
             if (this.pilePos == null) {
                 this.pilePos = this.sparrow.findNearbyBreadcrumbs(this.sparrow.hasBreadcrumbInterest() ? 20 : 14, 3);
             }
             if (this.pilePos == null) {
+                this.nextSearchTick = now + 40L + this.sparrow.getRandom().nextInt(41);
                 return false;
             }
+            this.cachedPilePos = this.pilePos;
+            this.cachedPileUntilTick = now + 120L;
             if (!this.sparrow.hasBreadcrumbInterest() && !this.sparrow.brainWantsForage() && this.sparrow.getRandom().nextInt(3) != 0) {
+                this.nextSearchTick = now + 20L + this.sparrow.getRandom().nextInt(21);
                 return false;
             }
             this.standPos = this.sparrow.breadcrumbStandPosition(this.pilePos);
+            if (this.sparrow.level() instanceof ServerLevel serverLevel) {
+                BreadcrumbSearchCache.register(serverLevel, this.pilePos);
+                BreadcrumbSearchCache.claim(serverLevel, this.pilePos, this.sparrow.getUUID());
+                this.nextClaimRefreshTick = now + 40L;
+                this.claimedPile = true;
+            }
             return true;
         }
 
@@ -2297,11 +2369,18 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
             if (this.pilePos == null) {
                 return;
             }
+            long now = this.sparrow.level().getGameTime();
+            if (now >= this.nextClaimRefreshTick && this.sparrow.level() instanceof ServerLevel serverLevel) {
+                BreadcrumbSearchCache.claim(serverLevel, this.pilePos, this.sparrow.getUUID());
+                this.nextClaimRefreshTick = now + 40L;
+                this.claimedPile = true;
+            }
             if (!this.sparrow.isControlledFlightActive() && this.sparrow.getBehaviorState() != SparrowBehaviorState.PECKING) {
                 this.sparrow.setBehaviorState(SparrowBehaviorState.FORAGING);
             }
             BlockState state = this.sparrow.level().getBlockState(this.pilePos);
             if (!state.is(GuaniaoBlocks.BREADCRUMBS.get())) {
+                this.forgetInvalidPile();
                 this.stop();
                 return;
             }
@@ -2340,6 +2419,7 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
                     this.sparrow.birdBrain().onEat(0.35F);
                 }
                 if (!this.sparrow.level().getBlockState(this.pilePos).is(GuaniaoBlocks.BREADCRUMBS.get())) {
+                    this.forgetInvalidPile();
                     this.stop();
                     return;
                 }
@@ -2360,13 +2440,16 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
 
         @Override
         public boolean canContinueToUse() {
-            return this.pilePos != null
-                    && this.sparrow.level().getBlockState(this.pilePos).is(GuaniaoBlocks.BREADCRUMBS.get())
-                    && !this.sparrow.shouldAvoidBreadcrumbs();
+            return this.pilePos != null && !this.sparrow.shouldAvoidBreadcrumbs();
         }
 
         @Override
         public void stop() {
+            if (this.claimedPile && this.pilePos != null && this.sparrow.level() instanceof ServerLevel serverLevel) {
+                BreadcrumbSearchCache.release(serverLevel, this.pilePos, this.sparrow.getUUID());
+            }
+            this.claimedPile = false;
+            this.nextClaimRefreshTick = 0L;
             this.pilePos = null;
             this.standPos = null;
             this.nextPeckTicks = 0;
@@ -2375,8 +2458,46 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
             }
             this.sparrow.getNavigation().stop();
             this.sparrow.flightCooldown = Math.max(this.sparrow.flightCooldown, 20 + this.sparrow.getRandom().nextInt(41));
+            this.nextSearchTick = Math.max(this.nextSearchTick,
+                    this.sparrow.level().getGameTime() + 20L + this.sparrow.getRandom().nextInt(21));
             if (this.sparrow.getBehaviorState() == SparrowBehaviorState.FORAGING) {
                 this.sparrow.setBehaviorStateFor(SparrowBehaviorState.LOOK_AROUND, 24);
+            }
+        }
+
+        private boolean isValidPile(BlockPos pos) {
+            if (pos == null || !(this.sparrow.level() instanceof ServerLevel serverLevel)) {
+                return false;
+            }
+            if (!serverLevel.hasChunk(pos.getX() >> 4, pos.getZ() >> 4)) {
+                this.forgetKnownPile(pos);
+                return false;
+            }
+            boolean valid = serverLevel.getBlockState(pos).is(GuaniaoBlocks.BREADCRUMBS.get());
+            if (valid) {
+                BreadcrumbSearchCache.register(serverLevel, pos);
+            } else {
+                BreadcrumbSearchCache.remove(serverLevel, pos);
+                this.forgetKnownPile(pos);
+            }
+            return valid;
+        }
+
+        private void forgetInvalidPile() {
+            if (this.pilePos != null && this.sparrow.level() instanceof ServerLevel serverLevel) {
+                BreadcrumbSearchCache.remove(serverLevel, this.pilePos);
+            }
+            this.forgetKnownPile(this.pilePos);
+        }
+
+        private void forgetKnownPile(BlockPos pos) {
+            if (pos != null && pos.equals(this.cachedPilePos)) {
+                this.cachedPilePos = null;
+                this.cachedPileUntilTick = 0L;
+            }
+            if (pos != null && pos.equals(this.sparrow.noticedBreadcrumbPos)) {
+                this.sparrow.noticedBreadcrumbPos = null;
+                this.sparrow.breadcrumbInterestTicks = 0;
             }
         }
     }

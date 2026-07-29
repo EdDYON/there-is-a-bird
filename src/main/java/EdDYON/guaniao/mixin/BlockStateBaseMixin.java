@@ -29,15 +29,16 @@ public class BlockStateBaseMixin {
             cancellable = true
     )
     private void guaniao$birdLeavesCollision(BlockGetter level, BlockPos pos, CollisionContext context, CallbackInfoReturnable<VoxelShape> cir) {
-        BlockState state = (BlockState)(Object)this;
-        if (!(state.getBlock() instanceof LeavesBlock) || !(context instanceof EntityCollisionContext entityContext)) {
+        if (!BirdConfigManager.birdsPassThroughLeaves()
+                || !(context instanceof EntityCollisionContext entityContext)) {
             return;
         }
         Entity entity = entityContext.getEntity();
         if (!(entity instanceof BirdFlightAware bird)) {
             return;
         }
-        if (!BirdConfigManager.birdsPassThroughLeaves()) {
+        BlockState state = (BlockState)(Object)this;
+        if (!(state.getBlock() instanceof LeavesBlock)) {
             return;
         }
         boolean activelyFlying = bird.shouldPassThroughLeaves()

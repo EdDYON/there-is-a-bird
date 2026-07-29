@@ -3,6 +3,7 @@ package EdDYON.guaniao.event;
 import EdDYON.guaniao.GuaniaoMod;
 import EdDYON.guaniao.config.BirdConfigManager;
 import EdDYON.guaniao.config.BirdSpecies;
+import EdDYON.guaniao.content.bird.BirdScanBudget;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -33,6 +34,8 @@ public final class BirdColonySpawnRules {
     private static final int COLONY_CELL_SIZE = 64;
     private static final int COLONY_CELL_DIVISOR = 12;
     private static final int MAX_CACHED_CELLS_PER_LEVEL = 1024;
+    private static final int HABITAT_SCAN_BUDGET_COST = 2;
+    private static final int SCORE_SCAN_BUDGET_COST = 3;
     private static final Map<ServerLevel, LinkedHashMap<ColonyCell, HabitatSnapshot>> HABITAT_CACHE = new WeakHashMap<>();
 
     private BirdColonySpawnRules() {
@@ -80,11 +83,14 @@ public final class BirdColonySpawnRules {
                 ignored -> new LinkedHashMap<>(16, 0.75F, true));
         HabitatSnapshot cached = cachedCells.get(cell);
         long gameTime = level.getGameTime();
-        if (cached != null && gameTime - cached.checkedAt < BirdConfigManager.habitatCacheTicks()) {
+        if (cached != null && gameTime < cached.refreshAt) {
             return cached;
         }
+        if (!BirdScanBudget.tryAcquire(level, HABITAT_SCAN_BUDGET_COST)) {
+            return cached == null ? HabitatSnapshot.unavailable(gameTime) : cached;
+        }
 
-        HabitatSnapshot scanned = new HabitatSnapshot(gameTime,
+        HabitatSnapshot scanned = new HabitatSnapshot(nextRefreshAt(gameTime, cell),
                 hasTreeCover(level, pos, 6), hasNearbyWater(level, pos, 10),
                 hasSettlementMarker(level, pos, 5), isDryOpenGround(level, pos));
         cachedCells.put(cell, scanned);
@@ -153,6 +159,9 @@ public final class BirdColonySpawnRules {
     public static int settlementScore(ServerLevel level, BlockPos pos) {
         HabitatSnapshot snapshot = habitatAt(level, pos, ColonyCell.from(pos));
         if (snapshot.settlementScore < 0) {
+            if (!BirdScanBudget.tryAcquire(level, SCORE_SCAN_BUDGET_COST)) {
+                return 0;
+            }
             snapshot.settlementScore = scanSettlementScore(level, pos);
         }
         return snapshot.settlementScore;
@@ -162,11 +171,17 @@ public final class BirdColonySpawnRules {
         HabitatSnapshot snapshot = habitatAt(level, pos, ColonyCell.from(pos));
         if (urbanBias) {
             if (snapshot.urbanColumbidScore < 0) {
+                if (!BirdScanBudget.tryAcquire(level, SCORE_SCAN_BUDGET_COST)) {
+                    return 0;
+                }
                 snapshot.urbanColumbidScore = scanColumbidScore(level, pos, true);
             }
             return snapshot.urbanColumbidScore;
         }
         if (snapshot.ruralColumbidScore < 0) {
+            if (!BirdScanBudget.tryAcquire(level, SCORE_SCAN_BUDGET_COST)) {
+                return 0;
+            }
             snapshot.ruralColumbidScore = scanColumbidScore(level, pos, false);
         }
         return snapshot.ruralColumbidScore;
@@ -236,6 +251,13 @@ public final class BirdColonySpawnRules {
         return level.hasChunk(SectionPos.blockToSectionCoord(pos.getX()), SectionPos.blockToSectionCoord(pos.getZ()));
     }
 
+    private static long nextRefreshAt(long now, ColonyCell cell) {
+        int cacheTicks = BirdConfigManager.habitatCacheTicks();
+        long mixed = cell.x * 341873128712L ^ cell.z * 132897987541L;
+        int staggerWindow = Math.max(8, Math.min(40, cacheTicks / 5));
+        return now + cacheTicks + Math.floorMod(mixed ^ mixed >>> 32, staggerWindow);
+    }
+
     record GroupSize(int min, int max) {
     }
 
@@ -246,7 +268,7 @@ public final class BirdColonySpawnRules {
     }
 
     private static final class HabitatSnapshot {
-        private final long checkedAt;
+        private final long refreshAt;
         private final boolean treeCover;
         private final boolean nearbyWater;
         private final boolean settlement;
@@ -255,12 +277,16 @@ public final class BirdColonySpawnRules {
         private int urbanColumbidScore = -1;
         private int ruralColumbidScore = -1;
 
-        private HabitatSnapshot(long checkedAt, boolean treeCover, boolean nearbyWater, boolean settlement, boolean dryOpenGround) {
-            this.checkedAt = checkedAt;
+        private HabitatSnapshot(long refreshAt, boolean treeCover, boolean nearbyWater, boolean settlement, boolean dryOpenGround) {
+            this.refreshAt = refreshAt;
             this.treeCover = treeCover;
             this.nearbyWater = nearbyWater;
             this.settlement = settlement;
             this.dryOpenGround = dryOpenGround;
+        }
+
+        private static HabitatSnapshot unavailable(long now) {
+            return new HabitatSnapshot(now + 8L, false, false, false, false);
         }
 
         private boolean supports(BirdSpecies species) {

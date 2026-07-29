@@ -115,6 +115,41 @@ public final class PhotoRepository {
         return ids;
     }
 
+    static List<String> listStoredPhotoIdsInShards(
+            MinecraftServer server,
+            int firstShard,
+            int shardCount,
+            int limit
+    ) throws IOException {
+        int boundedLimit = Math.max(1, limit);
+        int boundedShardCount = Math.max(1, Math.min(256, shardCount));
+        Path root = root(server);
+        if (!Files.isDirectory(root)) {
+            return List.of();
+        }
+        List<String> ids = new ArrayList<>();
+        for (int offset = 0; offset < boundedShardCount && ids.size() < boundedLimit; offset++) {
+            int shard = Math.floorMod(firstShard + offset, 256);
+            Path directory = root.resolve(String.format(java.util.Locale.ROOT, "%02x", shard));
+            if (!Files.isDirectory(directory)) {
+                continue;
+            }
+            try (Stream<Path> paths = Files.list(directory)) {
+                paths.filter(Files::isRegularFile)
+                        .filter(path -> path.getFileName().toString().endsWith(".jpg"))
+                        .limit(boundedLimit - ids.size())
+                        .forEach(path -> {
+                            String name = path.getFileName().toString();
+                            String id = name.substring(0, name.length() - 4);
+                            if (isValidPhotoId(id)) {
+                                ids.add(id);
+                            }
+                        });
+            }
+        }
+        return ids;
+    }
+
     public static void backupLegacy(MinecraftServer server, String photoId, int[] pixels) throws IOException {
         Path target = legacyPath(server, photoId);
         if (Files.exists(target)) {
