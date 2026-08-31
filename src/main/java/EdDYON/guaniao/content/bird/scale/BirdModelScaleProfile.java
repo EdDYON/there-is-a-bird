@@ -29,6 +29,11 @@ public final class BirdModelScaleProfile {
     public static final BirdModelScaleProfile CROW = realBodyMassProfile(
             468.0F, 16.265F, MIN_INDIVIDUAL_SCALE, CROW_MAX_INDIVIDUAL_SCALE);
     public static final BirdModelScaleProfile SEAGULL = realBodyMassProfile(1025.0F, 19.586F);
+    // The supplied Kiwi model's median raw extent is about 17 px. A 1.65x
+    // sparrow linear-size target keeps the rendered bird near 0.65 blocks tall.
+    public static final BirdModelScaleProfile KIWI = relativeLinearSizeProfile(1.65F, 17.034F);
+    // Supplied model median extent is 13.045 px; 1.35x sparrow linear size yields a roughly 0.52-block adult.
+    public static final BirdModelScaleProfile MYNA = relativeLinearSizeProfile(1.35F, 13.045F);
 
     private final float baseRenderScale;
     private final float minIndividualScale;

@@ -7,6 +7,7 @@ import EdDYON.guaniao.content.bird.BirdTags;
 import EdDYON.guaniao.content.bird.BirdFlockSoundLimiter;
 import EdDYON.guaniao.content.bird.budgerigar.BudgerigarBehaviorState;
 import EdDYON.guaniao.content.bird.budgerigar.BudgerigarEntity;
+import EdDYON.guaniao.content.bird.cockatiel.CockatielEntity;
 import EdDYON.guaniao.content.bird.scale.BirdModelScale;
 import EdDYON.guaniao.content.bird.scale.BirdModelScaleProfile;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
@@ -48,7 +49,7 @@ public class MacawEntity extends BudgerigarEntity {
     private static final RawAnimation IDLE_ANIMATION = RawAnimation.begin().thenLoop("idle");
     private static final RawAnimation PREEN_ANIMATION = RawAnimation.begin().thenPlay("idle_diff_1").thenLoop("idle");
     private static final RawAnimation IDLE_TWO_ANIMATION = RawAnimation.begin().thenPlay("idle_diff_2").thenLoop("idle");
-    private static final RawAnimation DANCE_ANIMATION = RawAnimation.begin().thenPlay("idle_diff_3").thenLoop("idle");
+    private static final RawAnimation DANCE_ANIMATION = RawAnimation.begin().thenLoop("idle_diff_3");
     private static final RawAnimation IDLE_FOUR_ANIMATION = RawAnimation.begin().thenPlay("idle_diff_4").thenLoop("idle");
     private static final RawAnimation WALK_ANIMATION = RawAnimation.begin().thenLoop("walk");
     private static final RawAnimation FLY_ANIMATION = RawAnimation.begin().thenLoop("fly_flapping_wing_loop");
@@ -63,6 +64,11 @@ public class MacawEntity extends BudgerigarEntity {
     public MacawEntity(EntityType<? extends MacawEntity> entityType, Level level) {
         super(entityType, level);
         this.mimicCooldown = 360 + this.getRandom().nextInt(640);
+    }
+
+    @Override
+    public boolean canFlockWith(net.minecraft.world.entity.Entity other) {
+        return other instanceof CockatielEntity || super.canFlockWith(other);
     }
 
     public static AttributeSupplier.Builder createMacawAttributes() {
@@ -184,11 +190,11 @@ public class MacawEntity extends BudgerigarEntity {
         if (state == BudgerigarBehaviorState.SLEEPING || state == BudgerigarBehaviorState.ROOSTING) {
             return animationState.setAndContinue(SLEEP_ANIMATION);
         }
+        if (this.isDancing()) {
+            return animationState.setAndContinue(DANCE_ANIMATION);
+        }
         if (shouldWalk(state, animationState.isMoving())) {
             return animationState.setAndContinue(WALK_ANIMATION);
-        }
-        if (state == BudgerigarBehaviorState.DANCING) {
-            return animationState.setAndContinue(DANCE_ANIMATION);
         }
         if (state == BudgerigarBehaviorState.PREENING) {
             return animationState.setAndContinue(PREEN_ANIMATION);
@@ -298,7 +304,7 @@ public class MacawEntity extends BudgerigarEntity {
             case BUDGERIGAR, COCKATIEL -> GuaniaoSoundEvents.BUDGERIGAR_AMBIENT.get();
             case SPOTTED_DOVE -> GuaniaoSoundEvents.SPOTTED_DOVE_AMBIENT.get();
             case PIGEON -> GuaniaoSoundEvents.PIGEON_AMBIENT.get();
-            case CROW, SEAGULL, MACAW -> null;
+            case CROW, SEAGULL, MACAW, KIWI, MYNA -> null;
         };
     }
 

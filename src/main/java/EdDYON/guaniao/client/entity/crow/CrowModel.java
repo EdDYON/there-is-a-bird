@@ -1,5 +1,6 @@
 package EdDYON.guaniao.client.entity.crow;
 
+import EdDYON.guaniao.client.entity.mutation.BirdMutationTextureFactory;
 import EdDYON.guaniao.content.bird.crow.CrowDefinition;
 import EdDYON.guaniao.content.bird.crow.CrowEntity;
 import net.minecraft.resources.ResourceLocation;
@@ -13,7 +14,7 @@ public class CrowModel extends GeoModel<CrowEntity> {
 
     @Override
     public ResourceLocation getTextureResource(CrowEntity animatable) {
-        return animatable.getTextureResource();
+        return BirdMutationTextureFactory.textureFor(animatable.getTextureResource(), animatable);
     }
 
     @Override

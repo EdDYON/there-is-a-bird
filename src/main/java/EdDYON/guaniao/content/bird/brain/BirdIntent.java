@@ -11,5 +11,6 @@ public enum BirdIntent {
     LONG_FLIGHT,
     LAND,
     ROOST,
-    SOCIAL_SPACE
+    SOCIAL_SPACE,
+    MIGRATE
 }

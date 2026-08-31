@@ -1,22 +1,12 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_paper": {
+    "has_colored_feather": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
           {
-            "item": "minecraft:paper"
-          }
-        ]
-      }
-    },
-    "has_feather": {
-      "trigger": "minecraft:inventory_changed",
-      "conditions": {
-        "items": [
-          {
-            "item": "minecraft:feather"
+            "tag": "guaniao:wind_feather_fan_feathers"
           }
         ]
       }
@@ -24,20 +14,19 @@
     "has_the_recipe": {
       "trigger": "minecraft:recipe_unlocked",
       "conditions": {
-        "recipe": "guaniao:bird_guide"
+        "recipe": "guaniao:wind_feather_fan"
       }
     }
   },
   "requirements": [
     [
-      "has_paper",
-      "has_feather",
+      "has_colored_feather",
       "has_the_recipe"
     ]
   ],
   "rewards": {
     "recipes": [
-      "guaniao:bird_guide"
+      "guaniao:wind_feather_fan"
     ]
   }
 }

@@ -1,5 +1,6 @@
 package EdDYON.guaniao.client.entity.sparrow;
 
+import EdDYON.guaniao.client.entity.mutation.BirdMutationTextureFactory;
 import EdDYON.guaniao.content.bird.sparrow.SparrowDefinition;
 import EdDYON.guaniao.content.bird.sparrow.SparrowEntity;
 import net.minecraft.resources.ResourceLocation;
@@ -13,7 +14,7 @@ public class SparrowModel extends GeoModel<SparrowEntity> {
 
     @Override
     public ResourceLocation getTextureResource(SparrowEntity animatable) {
-        return SparrowDefinition.TEXTURE;
+        return BirdMutationTextureFactory.textureFor(SparrowDefinition.TEXTURE, animatable);
     }
 
     @Override

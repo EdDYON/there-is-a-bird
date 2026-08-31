@@ -10,6 +10,7 @@ import EdDYON.guaniao.content.bird.budgerigar.BudgerigarEntity;
 import EdDYON.guaniao.content.bird.columbid.AbstractColumbidEntity;
 import EdDYON.guaniao.content.bird.crow.CrowEntity;
 import EdDYON.guaniao.content.bird.nightheron.NightHeronEntity;
+import EdDYON.guaniao.content.bird.myna.MynaEntity;
 import EdDYON.guaniao.content.bird.seagull.SeagullEntity;
 import EdDYON.guaniao.content.bird.scale.BirdModelScale;
 import EdDYON.guaniao.content.bird.sparrow.SparrowEntity;
@@ -394,12 +395,17 @@ public class BirdConfigScreen extends Screen {
             settings.add(SettingSpec.number("max_birds", () -> global.maxBirdsNearby, value -> global.maxBirdsNearby = (int)value, 0.0D, 256.0D, true));
             settings.add(SettingSpec.number("max_wild_birds_region", () -> global.maxWildBirdsPerRegion, value -> global.maxWildBirdsPerRegion = (int)value, 0.0D, 1024.0D, true));
             settings.add(SettingSpec.number("population_region_chunks", () -> global.populationRegionChunks, value -> global.populationRegionChunks = (int)value, 1.0D, 16.0D, true));
+            settings.add(SettingSpec.number("wild_bird_despawn_ticks", () -> global.wildBirdDespawnTicks, value -> global.wildBirdDespawnTicks = (int)value, 200.0D, 1728000.0D, true));
+            settings.add(SettingSpec.number("flyby_bird_lifetime_ticks", () -> global.flybyBirdLifetimeTicks, value -> global.flybyBirdLifetimeTicks = (int)value, 200.0D, 72000.0D, true));
             settings.add(SettingSpec.number("flock_refresh_ticks", () -> global.flockRefreshTicks, value -> global.flockRefreshTicks = (int)value, 5.0D, 200.0D, true));
             settings.add(SettingSpec.number("habitat_cache_ticks", () -> global.habitatCacheTicks, value -> global.habitatCacheTicks = (int)value, 20.0D, 2400.0D, true));
             settings.add(SettingSpec.number("seagull_steal_cooldown", () -> global.seagullPlayerCooldownTicks, value -> global.seagullPlayerCooldownTicks = (int)value, 0.0D, 72000.0D, true));
             settings.add(SettingSpec.number("seagull_concurrent_targets", () -> global.maxConcurrentSeagullTargetsPerPlayer, value -> global.maxConcurrentSeagullTargetsPerPlayer = (int)value, 0.0D, 8.0D, true));
             settings.add(SettingSpec.number("bird_scan_budget", () -> global.birdScanBudgetPerTick, value -> global.birdScanBudgetPerTick = (int)value, 1.0D, 128.0D, true));
-            settings.add(SettingSpec.number("max_droppings", () -> global.maxGroundDroppingsNearby, value -> global.maxGroundDroppingsNearby = (int)value, 0.0D, 128.0D, true));
+            settings.add(SettingSpec.number("max_droppings", () -> global.maxGroundDroppingsNearby, value -> global.maxGroundDroppingsNearby = (int)value, 0.0D, 16.0D, true));
+            settings.add(SettingSpec.toggle("enable_migration", () -> global.enableMigration, value -> global.enableMigration = value));
+            settings.add(SettingSpec.number("migration_interval_ticks", () -> global.migrationIntervalTicks, value -> global.migrationIntervalTicks = (int)value, 200.0D, 72000.0D, true));
+            settings.add(SettingSpec.number("migration_radius", () -> global.migrationRadius, value -> global.migrationRadius = (int)value, 32.0D, 512.0D, true));
             return settings;
         }
 
@@ -440,7 +446,9 @@ public class BirdConfigScreen extends Screen {
     }
 
     private static void applyPreviewIdle(LivingEntity entity) {
-        if (entity instanceof NightHeronEntity bird) {
+        if (entity instanceof MynaEntity bird) {
+            bird.setGuidePreviewAnimation(MynaEntity.GuidePreviewAnimation.IDLE);
+        } else if (entity instanceof NightHeronEntity bird) {
             bird.setGuidePreviewAnimation(NightHeronEntity.GuidePreviewAnimation.IDLE);
         } else if (entity instanceof SparrowEntity bird) {
             bird.setGuidePreviewAnimation(SparrowEntity.GuidePreviewAnimation.IDLE);
@@ -543,6 +551,8 @@ public class BirdConfigScreen extends Screen {
             case BUDGERIGAR -> 48;
             case SPOTTED_DOVE, PIGEON -> 42;
             case CROW, SEAGULL -> 37;
+            case KIWI -> 43;
+            case MYNA -> 47;
         };
         return BirdModelScale.fitPreviewScale(scale);
     }

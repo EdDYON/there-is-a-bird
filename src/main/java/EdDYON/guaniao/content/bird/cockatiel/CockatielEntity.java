@@ -49,7 +49,7 @@ import java.util.UUID;
 public class CockatielEntity extends BudgerigarEntity {
     private static final EntityDataAccessor<Integer> CREST_STATE = SynchedEntityData.defineId(CockatielEntity.class, EntityDataSerializers.INT);
     private static final RawAnimation IDLE_ANIMATION = RawAnimation.begin().thenLoop("animation.idle");
-    private static final RawAnimation DANCE_ANIMATION = RawAnimation.begin().thenPlay("animation.idle_diff_1").thenLoop("animation.idle");
+    private static final RawAnimation DANCE_ANIMATION = RawAnimation.begin().thenLoop("animation.idle_diff_1");
     private static final RawAnimation PREEN_ANIMATION = RawAnimation.begin().thenPlay("animation.idle_diff_2").thenLoop("animation.idle");
     private static final RawAnimation STARTLED_NAP_ANIMATION = RawAnimation.begin().thenPlay("animation.idle_diff_3").thenLoop("animation.idle");
     private static final RawAnimation FLY_ANIMATION = RawAnimation.begin().thenLoop("animation.fly");
@@ -67,6 +67,11 @@ public class CockatielEntity extends BudgerigarEntity {
 
     public CockatielEntity(EntityType<? extends CockatielEntity> entityType, Level level) {
         super(entityType, level);
+    }
+
+    @Override
+    public boolean canFlockWith(net.minecraft.world.entity.Entity other) {
+        return other instanceof EdDYON.guaniao.content.bird.macaw.MacawEntity || super.canFlockWith(other);
     }
 
     @Override
@@ -269,12 +274,12 @@ public class CockatielEntity extends BudgerigarEntity {
             this.happyDanceUntilTick = 0L;
             return animationState.setAndContinue(SLEEP_ANIMATION);
         }
+        if (this.isDancing() || this.level().getGameTime() < this.happyDanceUntilTick) {
+            return animationState.setAndContinue(DANCE_ANIMATION);
+        }
         if (shouldWalk(state, animationState.isMoving())) {
             this.happyDanceUntilTick = 0L;
             return animationState.setAndContinue(WALK_ANIMATION);
-        }
-        if (state == BudgerigarBehaviorState.DANCING || this.level().getGameTime() < this.happyDanceUntilTick) {
-            return animationState.setAndContinue(DANCE_ANIMATION);
         }
         if (state == BudgerigarBehaviorState.PREENING) {
             return animationState.setAndContinue(PREEN_ANIMATION);

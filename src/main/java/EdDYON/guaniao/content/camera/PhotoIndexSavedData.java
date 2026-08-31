@@ -1,5 +1,6 @@
 package EdDYON.guaniao.content.camera;
 
+import EdDYON.guaniao.GuaniaoMod;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -304,7 +305,10 @@ public final class PhotoIndexSavedData extends SavedData {
                     return status;
                 }
             }
-            return ACTIVE;
+            // Unknown/corrupted status must never be treated as a usable photo; default to MISSING
+            // so the photo surfaces as unavailable rather than incorrectly downloadable.
+            GuaniaoMod.LOGGER.warn("Unknown photograph status '{}'; treating as missing", name);
+            return MISSING;
         }
     }
 

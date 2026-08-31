@@ -1,5 +1,6 @@
 package EdDYON.guaniao.client.entity.budgerigar;
 
+import EdDYON.guaniao.client.entity.mutation.BirdMutationTextureFactory;
 import EdDYON.guaniao.content.bird.budgerigar.BudgerigarDefinition;
 import EdDYON.guaniao.content.bird.budgerigar.BudgerigarEntity;
 import net.minecraft.resources.ResourceLocation;
@@ -13,7 +14,7 @@ public class BudgerigarModel extends GeoModel<BudgerigarEntity> {
 
     @Override
     public ResourceLocation getTextureResource(BudgerigarEntity animatable) {
-        return animatable.getTextureResource();
+        return BirdMutationTextureFactory.textureFor(animatable.getTextureResource(), animatable);
     }
 
     @Override

@@ -37,7 +37,36 @@ public final class GuaniaoSoundEvents {
     public static final RegistryObject<SoundEvent> SPOTTED_DOVE_DEATH = register("entity.spotted_dove.death");
     public static final RegistryObject<SoundEvent> SPOTTED_DOVE_MATE = register("entity.spotted_dove.mate");
     public static final RegistryObject<SoundEvent> PIGEON_AMBIENT = register("entity.pigeon.ambient");
+    public static final RegistryObject<SoundEvent> KIWI_AMBIENT = register("entity.kiwi.ambient");
     public static final RegistryObject<SoundEvent> SEAGULL_AMBIENT = register("entity.seagull.ambient");
+    public static final RegistryObject<SoundEvent> MYNA_MIMIC_WHISTLE_SHORT = register("entity.myna.mimic.whistle_short");
+    public static final RegistryObject<SoundEvent> MYNA_MIMIC_WHISTLE_RISE = register("entity.myna.mimic.whistle_rise");
+    public static final RegistryObject<SoundEvent> MYNA_MIMIC_WHISTLE_FALL = register("entity.myna.mimic.whistle_fall");
+    public static final RegistryObject<SoundEvent> MYNA_MIMIC_RASP = register("entity.myna.mimic.rasp");
+    public static final RegistryObject<SoundEvent> MYNA_MIMIC_CLICK = register("entity.myna.mimic.click");
+    public static final RegistryObject<SoundEvent> MYNA_MIMIC_TRILL = register("entity.myna.mimic.trill");
+    public static final RegistryObject<SoundEvent> MYNA_MIMIC_HISS = register("entity.myna.mimic.hiss");
+    public static final RegistryObject<SoundEvent> MYNA_MIMIC_BURST = register("entity.myna.mimic.burst");
+    public static final RegistryObject<SoundEvent> FEATHER_FAN_BURIAL_VORTEX =
+            register("item.feather_fan.burial_vortex");
+    public static final RegistryObject<SoundEvent> FEATHER_FAN_BURIAL_SLASH =
+            register("item.feather_fan.burial_slash");
+    public static final RegistryObject<SoundEvent> FEATHER_FAN_RIVEN_PIN =
+            register("item.feather_fan.riven_pin");
+    public static final RegistryObject<SoundEvent> FEATHER_FAN_RIVEN_SPLIT =
+            register("item.feather_fan.riven_split");
+    public static final RegistryObject<SoundEvent> FEATHER_FAN_RIVEN_LOCK =
+            register("item.feather_fan.riven_lock");
+    public static final RegistryObject<SoundEvent> FEATHER_FAN_RIVEN_BURST =
+            register("item.feather_fan.riven_burst");
+    public static final RegistryObject<SoundEvent> FEATHER_FAN_HUNT_LOCK =
+            register("item.feather_fan.hunt_lock");
+    public static final RegistryObject<SoundEvent> FEATHER_FAN_HUNT_START =
+            register("item.feather_fan.hunt_start");
+    public static final RegistryObject<SoundEvent> FEATHER_FAN_HUNT_TURN =
+            register("item.feather_fan.hunt_turn");
+    public static final RegistryObject<SoundEvent> FEATHER_FAN_HUNT_HIT =
+            register("item.feather_fan.hunt_hit");
 
     private GuaniaoSoundEvents() {
     }

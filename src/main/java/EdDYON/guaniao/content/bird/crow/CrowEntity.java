@@ -20,6 +20,8 @@ import EdDYON.guaniao.content.bird.command.BirdStayGoal;
 import EdDYON.guaniao.content.bird.command.CommandableBird;
 import EdDYON.guaniao.content.bird.flock.FlockCompatibleBird;
 import EdDYON.guaniao.content.bird.flock.BirdFlockManager;
+import EdDYON.guaniao.content.bird.mutation.BirdMutation;
+import EdDYON.guaniao.content.bird.mutation.BirdMutationHolder;
 import EdDYON.guaniao.content.bird.BirdGroundAnimation;
 import EdDYON.guaniao.content.bird.PollutedFoodReactionUtil;
 import EdDYON.guaniao.content.bird.flight.BirdFlightAware;
@@ -94,7 +96,7 @@ import software.bernie.geckolib.core.animation.RawAnimation;
 import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
-public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal, ScalableBirdModel, BirdFlightAware, BirdBathMountable, BirdBathFeedingAnimatable, CommandableBird, FlockCompatibleBird, BirdSleepWakeable {
+public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal, ScalableBirdModel, BirdFlightAware, BirdBathMountable, BirdBathFeedingAnimatable, CommandableBird, FlockCompatibleBird, BirdSleepWakeable, BirdMutationHolder {
     private static final EntityDataAccessor<Integer> BEHAVIOR_STATE = SynchedEntityData.defineId(CrowEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Float> MODEL_SCALE = SynchedEntityData.defineId(CrowEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Boolean> FLYING_ANIMATION_ACTIVE = SynchedEntityData.defineId(CrowEntity.class, EntityDataSerializers.BOOLEAN);
@@ -102,6 +104,8 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
     private static final EntityDataAccessor<ItemStack> HELD_FOOD = SynchedEntityData.defineId(CrowEntity.class, EntityDataSerializers.ITEM_STACK);
     private static final EntityDataAccessor<Integer> HELD_FOOD_POSE_SEED = SynchedEntityData.defineId(CrowEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> COMMAND_MODE = SynchedEntityData.defineId(CrowEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> MUTATION = SynchedEntityData.defineId(CrowEntity.class, EntityDataSerializers.INT);
+    public static final String MUTATION_NBT_KEY = "BirdMutation";
     private static final BirdFlightProfile FLIGHT_PROFILE = BirdFlightProfile.CROW;
     private static final int EAT_ANIMATION_TICKS = 82;
     private static final int EAT_BITE_DELAY_TICKS = 18;
@@ -218,6 +222,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
     protected void registerGoals() {
         this.goalSelector.addGoal(0, new FloatGoal(this));
         this.goalSelector.addGoal(1, new CrowFleeGoal(this));
+        this.goalSelector.addGoal(1, new CrowScareSmallBirdsGoal(this));
         this.goalSelector.addGoal(2, new CrowDepositTreasureGoal(this));
         this.goalSelector.addGoal(2, new BirdStayGoal<>(this));
         this.goalSelector.addGoal(2, new BirdRoostGoal<>(this));
@@ -265,6 +270,17 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         this.entityData.define(HELD_FOOD, ItemStack.EMPTY);
         this.entityData.define(HELD_FOOD_POSE_SEED, 0);
         this.entityData.define(COMMAND_MODE, BirdCommandMode.FREE.ordinal());
+        this.entityData.define(MUTATION, BirdMutation.NONE.ordinal());
+    }
+
+    @Override
+    public BirdMutation getBirdMutation() {
+        return BirdMutation.byId(this.entityData.get(MUTATION));
+    }
+
+    @Override
+    public void setBirdMutation(BirdMutation mutation) {
+        this.entityData.set(MUTATION, mutation.ordinal());
     }
 
     @Override
@@ -283,6 +299,9 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         SpawnGroupData data = super.finalizeSpawn(level, difficulty, spawnType, spawnGroupData, compoundTag);
         if (compoundTag == null || !compoundTag.contains(BirdModelScale.NBT_KEY, 5)) {
             this.randomizeModelScale();
+        }
+        if (compoundTag == null || !compoundTag.contains(MUTATION_NBT_KEY, 3)) {
+            this.setBirdMutation(BirdMutation.randomMutation(this.getRandom()));
         }
         return data;
     }
@@ -304,6 +323,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         }
         BirdModelScale.save(compoundTag, this.getIndividualModelScale(), this.modelScaleProfile());
         compoundTag.putInt(CommandableBird.COMMAND_MODE_NBT_KEY, this.getBirdCommandMode().ordinal());
+        compoundTag.putInt(MUTATION_NBT_KEY, this.getBirdMutation().ordinal());
         compoundTag.putInt(NBT_NEST_BUILD_COOLDOWN, this.nestBuildCooldown);
     }
 
@@ -333,6 +353,9 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
             this.setBirdCommandMode(BirdCommandMode.byId(compoundTag.getInt(CommandableBird.COMMAND_MODE_NBT_KEY)));
         } else {
             this.setBirdCommandMode(this.isTame() ? BirdCommandMode.FOLLOW : BirdCommandMode.FREE);
+        }
+        if (compoundTag.contains(MUTATION_NBT_KEY, 3)) {
+            this.setBirdMutation(BirdMutation.byId(compoundTag.getInt(MUTATION_NBT_KEY)));
         }
         if (compoundTag.contains(NBT_NEST_BUILD_COOLDOWN, 3)) {
             this.nestBuildCooldown = Mth.clamp(compoundTag.getInt(NBT_NEST_BUILD_COOLDOWN), 0, 24000);
@@ -737,7 +760,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
                 this.level(), this.position(), BirdConfigManager.crowNestSearchDistance(), 32, heldItem, this.getUUID());
     }
 
-    private boolean dropHeldItem() {
+    public boolean dropHeldItem() {
         ItemStack heldItem = this.getHeldFoodForRendering();
         if (heldItem.isEmpty()) {
             return false;

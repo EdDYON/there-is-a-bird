@@ -7,6 +7,7 @@ public final class BirdFlightProfile {
     public static final BirdFlightProfile NIGHT_HERON = new BirdFlightProfile(7.0D, 36.0D, 0.40D, 0.55D, 0.24D, 80, 320, 18.0D, 64.0D, 9.0D, 36.0F);
     public static final BirdFlightProfile CROW = new BirdFlightProfile(7.0D, 18.0D, 0.34D, 0.46D, 0.22D, 150, 340, 10.0D, 34.0D, 7.0D, 38.0F);
     public static final BirdFlightProfile SEAGULL = new BirdFlightProfile(9.0D, 24.0D, 0.62D, 0.76D, 0.30D, 110, 220, 18.0D, 54.0D, 12.0D, 34.0F);
+    public static final BirdFlightProfile MYNA = new BirdFlightProfile(3.0D, 10.0D, 0.29D, 0.43D, 0.20D, 70, 220, 5.0D, 22.0D, 4.5D, 40.0F);
 
     private final double minCruiseHeight;
     private final double maxCruiseHeight;

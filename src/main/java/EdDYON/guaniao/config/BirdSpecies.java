@@ -9,29 +9,38 @@ import net.minecraftforge.registries.ForgeRegistries;
 import java.util.Locale;
 
 public enum BirdSpecies {
-    NIGHT_HERON("night_heron", 1, 2, 7800, 15000),
-    SPARROW("sparrow", 5, 10, 7200, 14000),
-    LONG_TAILED_TIT("long_tailed_tit", 4, 10, 7600, 14500),
-    COCKATIEL("cockatiel", 2, 5, 7000, 13500),
-    MACAW("macaw", 2, 4, 6200, 12000),
-    BUDGERIGAR("budgerigar", 3, 8, 7200, 14000),
-    SPOTTED_DOVE("spotted_dove", 1, 2, 5600, 10800),
-    PIGEON("pigeon", 3, 7, 4800, 9600),
-    CROW("crow", 1, 3, 6000, 12000),
-    SEAGULL("seagull", 2, 5, 5200, 10400);
+    NIGHT_HERON("night_heron", 1, 2, 2400, 3600),
+    SPARROW("sparrow", 5, 10, 1800, 3200),
+    LONG_TAILED_TIT("long_tailed_tit", 4, 10, 1900, 3300),
+    COCKATIEL("cockatiel", 2, 5, 1800, 3000),
+    MACAW("macaw", 2, 4, 1600, 2800),
+    BUDGERIGAR("budgerigar", 3, 8, 1800, 3200),
+    SPOTTED_DOVE("spotted_dove", 1, 2, 1400, 2600),
+    PIGEON("pigeon", 3, 7, 1200, 2400),
+    CROW("crow", 1, 3, 1500, 3000),
+    SEAGULL("seagull", 2, 5, 1300, 2600),
+    KIWI("kiwi", 1, 2, 1700, 3200, false),
+    MYNA("myna", 2, 4, 1500, 2800);
 
     private final String id;
     private final int defaultMinGroup;
     private final int defaultMaxGroup;
     private final int defaultDroppingMinTicks;
     private final int defaultDroppingMaxTicks;
+    private final boolean requiresOpenSkyForNaturalSpawn;
 
     BirdSpecies(String id, int defaultMinGroup, int defaultMaxGroup, int defaultDroppingMinTicks, int defaultDroppingMaxTicks) {
+        this(id, defaultMinGroup, defaultMaxGroup, defaultDroppingMinTicks, defaultDroppingMaxTicks, true);
+    }
+
+    BirdSpecies(String id, int defaultMinGroup, int defaultMaxGroup, int defaultDroppingMinTicks,
+                int defaultDroppingMaxTicks, boolean requiresOpenSkyForNaturalSpawn) {
         this.id = id;
         this.defaultMinGroup = defaultMinGroup;
         this.defaultMaxGroup = defaultMaxGroup;
         this.defaultDroppingMinTicks = defaultDroppingMinTicks;
         this.defaultDroppingMaxTicks = defaultDroppingMaxTicks;
+        this.requiresOpenSkyForNaturalSpawn = requiresOpenSkyForNaturalSpawn;
     }
 
     public String id() {
@@ -56,6 +65,10 @@ public enum BirdSpecies {
 
     public int defaultDroppingMaxTicks() {
         return this.defaultDroppingMaxTicks;
+    }
+
+    public boolean requiresOpenSkyForNaturalSpawn() {
+        return this.requiresOpenSkyForNaturalSpawn;
     }
 
     public EntityType<?> entityType() {

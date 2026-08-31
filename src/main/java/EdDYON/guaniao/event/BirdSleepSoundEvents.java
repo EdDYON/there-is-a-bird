@@ -1,6 +1,7 @@
 package EdDYON.guaniao.event;
 
 import EdDYON.guaniao.GuaniaoMod;
+import EdDYON.guaniao.content.bird.BirdLoudSoundListener;
 import EdDYON.guaniao.content.bird.BirdSleepWakeable;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
@@ -39,10 +40,15 @@ public final class BirdSleepSoundEvents {
         double radius = Math.min(MAX_WAKE_RADIUS, Math.max(MIN_WAKE_RADIUS, 8.0D + volume * 8.0D));
         double radiusSqr = radius * radius;
         AABB wakeArea = new AABB(soundPosition, soundPosition).inflate(radius);
-        for (Entity entity : level.getEntities((Entity) null, wakeArea,
-                candidate -> candidate instanceof BirdSleepWakeable bird && bird.isBirdSleeping())) {
+        for (Entity entity : level.getEntities((Entity) null, wakeArea, candidate ->
+                candidate instanceof BirdLoudSoundListener
+                        || candidate instanceof BirdSleepWakeable bird && bird.isBirdSleeping())) {
             if (entity.distanceToSqr(soundPosition) <= radiusSqr) {
-                ((BirdSleepWakeable) entity).wakeFromLoudSound(soundPosition);
+                if (entity instanceof BirdLoudSoundListener listener) {
+                    listener.onLoudSound(soundPosition, volume);
+                } else if (entity instanceof BirdSleepWakeable wakeable) {
+                    wakeable.wakeFromLoudSound(soundPosition);
+                }
             }
         }
     }

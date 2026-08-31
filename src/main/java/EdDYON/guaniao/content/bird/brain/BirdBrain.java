@@ -15,6 +15,8 @@ public class BirdBrain {
     private int senseCooldown;
     private float cachedRiskScore;
     private BirdIntent currentIntent = BirdIntent.IDLE;
+    /** Next world game-time at which migration may trigger; 0 = not yet armed. */
+    private long nextMigrationTick;
 
     public BirdBrain(PathfinderMob bird, BirdSpeciesProfile profile) {
         this.bird = bird;
@@ -32,7 +34,6 @@ public class BirdBrain {
             this.senseCooldown = 5 + this.bird.getRandom().nextInt(6);
         }
 
-        this.cachedRiskScore = this.profile.computeRisk(this);
         this.motivation.tick(this);
         this.cachedRiskScore = this.profile.computeRisk(this);
         this.currentIntent = this.chooseIntent();
@@ -86,6 +87,9 @@ public class BirdBrain {
         this.personality.save(personalityTag);
         brainTag.put("Motivation", motivationTag);
         brainTag.put("Personality", personalityTag);
+        if (this.nextMigrationTick > 0L) {
+            brainTag.putLong("Migration", this.nextMigrationTick);
+        }
         tag.put("BirdBrain", brainTag);
     }
 
@@ -97,6 +101,9 @@ public class BirdBrain {
         CompoundTag brainTag = tag.getCompound("BirdBrain");
         if (brainTag.contains("Motivation", 10)) {
             this.motivation.load(brainTag.getCompound("Motivation"));
+        }
+        if (brainTag.contains("Migration", 4)) {
+            this.nextMigrationTick = brainTag.getLong("Migration");
         }
         this.personality = BirdPersonality.load(brainTag.getCompound("Personality"), this.bird.getRandom(), this.profile);
     }
@@ -125,6 +132,14 @@ public class BirdBrain {
         return this.currentIntent;
     }
 
+    public long nextMigrationTick() {
+        return this.nextMigrationTick;
+    }
+
+    public void setNextMigrationTick(long value) {
+        this.nextMigrationTick = value;
+    }
+
     private BirdIntent chooseIntent() {
         if (this.wantsLongEscape()) {
             return BirdIntent.LONG_FLIGHT;
@@ -137,6 +152,9 @@ public class BirdBrain {
         }
         if (this.wantsRoost()) {
             return BirdIntent.ROOST;
+        }
+        if (this.profile.wantsMigrate(this)) {
+            return BirdIntent.MIGRATE;
         }
         if (this.wantsForage()) {
             return BirdIntent.FORAGE;

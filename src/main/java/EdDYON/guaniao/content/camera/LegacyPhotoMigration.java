@@ -60,7 +60,7 @@ public final class LegacyPhotoMigration {
             return;
         }
         int[] pixels = PhotographData.pixels(task.stack());
-        if (pixels.length != PhotographData.IMAGE_SIZE * PhotographData.IMAGE_SIZE) {
+        if (pixels.length != PhotographData.LEGACY_IMAGE_SIZE * PhotographData.LEGACY_IMAGE_SIZE) {
             return;
         }
         int[] snapshot = Arrays.copyOf(pixels, pixels.length);
@@ -98,7 +98,7 @@ public final class LegacyPhotoMigration {
         byte[] jpeg;
         if (!PhotoRepository.exists(server, photoId)) {
             PhotoRepository.backupLegacy(server, photoId, pixels);
-            jpeg = PhotoImageCodec.encodeJpeg(pixels, PhotographData.IMAGE_SIZE, PhotographData.IMAGE_SIZE);
+            jpeg = PhotoImageCodec.encodeJpeg(pixels, PhotographData.LEGACY_IMAGE_SIZE, PhotographData.LEGACY_IMAGE_SIZE);
             PhotoRepository.storeValidated(server, photoId, jpeg);
         } else {
             jpeg = PhotoRepository.load(server, photoId);
@@ -116,7 +116,7 @@ public final class LegacyPhotoMigration {
         UUID owner = PhotographData.photographerId(stack);
         index.register(new PhotoRecord(
                 photoId, owner, PhotographData.photographer(stack), now, now, 0L,
-                result.bytes(), PhotographData.IMAGE_SIZE, PhotographData.IMAGE_SIZE,
+                result.bytes(), PhotographData.LEGACY_IMAGE_SIZE, PhotographData.LEGACY_IMAGE_SIZE,
                 result.contentHash(), PhotoStatus.ACTIVE
         ));
     }

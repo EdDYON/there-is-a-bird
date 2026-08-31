@@ -1,5 +1,6 @@
 package EdDYON.guaniao.client.entity.macaw;
 
+import EdDYON.guaniao.client.entity.mutation.BirdMutationTextureFactory;
 import EdDYON.guaniao.content.bird.macaw.MacawDefinition;
 import EdDYON.guaniao.content.bird.macaw.MacawEntity;
 import net.minecraft.resources.ResourceLocation;
@@ -13,7 +14,7 @@ public class MacawModel extends GeoModel<MacawEntity> {
 
     @Override
     public ResourceLocation getTextureResource(MacawEntity animatable) {
-        return animatable.getTextureResource();
+        return BirdMutationTextureFactory.textureFor(animatable.getTextureResource(), animatable);
     }
 
     @Override

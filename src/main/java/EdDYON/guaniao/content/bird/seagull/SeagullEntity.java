@@ -11,6 +11,7 @@ import EdDYON.guaniao.content.bird.BirdItemSafety;
 import EdDYON.guaniao.content.bird.BirdScanBudget;
 import EdDYON.guaniao.content.bird.BirdSleepWakeable;
 import EdDYON.guaniao.content.bird.BirdTags;
+import EdDYON.guaniao.content.bird.crow.CrowEntity;
 import EdDYON.guaniao.content.advancement.BirdAdvancements;
 import EdDYON.guaniao.content.bird.command.BirdCommandInteraction;
 import EdDYON.guaniao.content.bird.command.BirdCommandMode;
@@ -25,6 +26,8 @@ import EdDYON.guaniao.content.bird.scale.BirdModelScale;
 import EdDYON.guaniao.content.bird.scale.BirdModelScaleProfile;
 import EdDYON.guaniao.content.bird.scale.ScalableBirdModel;
 import EdDYON.guaniao.content.bird.flock.FlockCompatibleBird;
+import EdDYON.guaniao.content.bird.mutation.BirdMutation;
+import EdDYON.guaniao.content.bird.mutation.BirdMutationHolder;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
 import EdDYON.guaniao.registry.GuaniaoSoundEvents;
 import java.util.EnumSet;
@@ -89,7 +92,7 @@ import software.bernie.geckolib.core.animation.RawAnimation;
 import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
-public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAnimal, ScalableBirdModel, BirdFlightAware, CommandableBird, FlockCompatibleBird, BirdSleepWakeable {
+public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAnimal, ScalableBirdModel, BirdFlightAware, CommandableBird, FlockCompatibleBird, BirdSleepWakeable, BirdMutationHolder {
     private static final Map<UUID, Set<UUID>> ACTIVE_THEFT_TARGETS = new HashMap<>();
 
     public static void clearTheftTargetsFor(UUID playerId) {
@@ -100,6 +103,8 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
     private static final EntityDataAccessor<Boolean> EATING = SynchedEntityData.defineId(SeagullEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<ItemStack> HELD_FOOD = SynchedEntityData.defineId(SeagullEntity.class, EntityDataSerializers.ITEM_STACK);
     private static final EntityDataAccessor<Integer> COMMAND_MODE = SynchedEntityData.defineId(SeagullEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> MUTATION = SynchedEntityData.defineId(SeagullEntity.class, EntityDataSerializers.INT);
+    public static final String MUTATION_NBT_KEY = "BirdMutation";
     private static final BirdFlightProfile FLIGHT_PROFILE = BirdFlightProfile.SEAGULL;
     private static final byte TAMING_FAILED_EVENT = 6;
     private static final byte TAMING_SUCCEEDED_EVENT = 7;
@@ -215,6 +220,7 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
         this.goalSelector.addGoal(2, new BirdRoostGoal<>(this));
         this.goalSelector.addGoal(3, new SeagullFollowOwnerGoal(this));
         this.goalSelector.addGoal(4, new SeagullStealFoodGoal(this));
+        this.goalSelector.addGoal(4, new SeagullStealFromBirdGoal(this));
         this.goalSelector.addGoal(4, new SeagullScavengeFoodGoal(this));
         this.goalSelector.addGoal(5, new SeagullAirCruiseGoal(this));
         this.goalSelector.addGoal(6, new WaterAvoidingRandomStrollGoal(this, 0.92D, 0.001F));
@@ -244,6 +250,17 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
         this.entityData.define(EATING, false);
         this.entityData.define(HELD_FOOD, ItemStack.EMPTY);
         this.entityData.define(COMMAND_MODE, BirdCommandMode.FREE.ordinal());
+        this.entityData.define(MUTATION, BirdMutation.NONE.ordinal());
+    }
+
+    @Override
+    public BirdMutation getBirdMutation() {
+        return BirdMutation.byId(this.entityData.get(MUTATION));
+    }
+
+    @Override
+    public void setBirdMutation(BirdMutation mutation) {
+        this.entityData.set(MUTATION, mutation.ordinal());
     }
 
     @Override
@@ -251,6 +268,9 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
         SpawnGroupData data = super.finalizeSpawn(level, difficulty, spawnType, spawnGroupData, compoundTag);
         if (compoundTag == null || !compoundTag.contains(BirdModelScale.NBT_KEY, 5)) {
             this.randomizeModelScale();
+        }
+        if (compoundTag == null || !compoundTag.contains(MUTATION_NBT_KEY, 3)) {
+            this.setBirdMutation(BirdMutation.randomMutation(this.getRandom()));
         }
         return data;
     }
@@ -260,6 +280,7 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
         super.addAdditionalSaveData(compoundTag);
         BirdModelScale.save(compoundTag, this.getIndividualModelScale(), this.modelScaleProfile());
         compoundTag.putInt(CommandableBird.COMMAND_MODE_NBT_KEY, this.getBirdCommandMode().ordinal());
+        compoundTag.putInt(MUTATION_NBT_KEY, this.getBirdMutation().ordinal());
         ItemStack heldFood = this.getHeldFoodForRendering();
         if (!heldFood.isEmpty()) {
             compoundTag.put(NBT_HELD_FOOD, heldFood.save(new CompoundTag()));
@@ -280,6 +301,9 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
             this.setBirdCommandMode(BirdCommandMode.byId(compoundTag.getInt(CommandableBird.COMMAND_MODE_NBT_KEY)));
         } else {
             this.setBirdCommandMode(this.isTame() ? BirdCommandMode.FOLLOW : BirdCommandMode.FREE);
+        }
+        if (compoundTag.contains(MUTATION_NBT_KEY, 3)) {
+            this.setBirdMutation(BirdMutation.byId(compoundTag.getInt(MUTATION_NBT_KEY)));
         }
         if (compoundTag.contains(NBT_HELD_FOOD, 10)) {
             ItemStack heldFood = ItemStack.of(compoundTag.getCompound(NBT_HELD_FOOD));
@@ -310,6 +334,15 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
         }
         if (this.emergencyTicks > 0) {
             --this.emergencyTicks;
+        }
+        if (this.isInWaterOrBubble() && this.flightTicks <= 0) {
+            this.setNoGravity(true);
+            this.setOnGround(false);
+            this.setDeltaMovement(this.getDeltaMovement().add(0.0D, 0.32D, 0.0D));
+            this.fallDistance = 0.0F;
+            this.hasImpulse = true;
+            this.flightTicks = 40;
+            this.airborneGraceTicks = 80;
         }
         if (!this.getHeldFoodForRendering().isEmpty()) {
             if (this.heldFoodTicks > 0) {
@@ -1182,6 +1215,125 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
             Vec3 toSeagull = this.seagull.getEyePosition().subtract(this.player.getEyePosition());
             return toSeagull.lengthSqr() <= 1.0E-4D
                     || this.player.getLookAngle().normalize().dot(toSeagull.normalize()) >= 0.78D;
+        }
+    }
+
+    private static final class SeagullStealFromBirdGoal extends Goal {
+        private final SeagullEntity seagull;
+        @Nullable
+        private CrowEntity crowTarget;
+        @Nullable
+        private ItemEntity itemTarget;
+        private int recalcTicks;
+        private boolean itemDropped;
+
+        private SeagullStealFromBirdGoal(SeagullEntity seagull) {
+            this.seagull = seagull;
+            this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
+        }
+
+        @Override
+        public boolean canUse() {
+            if (this.seagull.isBusyWithCommand() || this.seagull.entityData.get(EATING)
+                    || !this.seagull.getHeldFoodForRendering().isEmpty()
+                    || this.seagull.stealCooldownTicks > 0
+                    || this.seagull.getRandom().nextInt(120) != 0) {
+                return false;
+            }
+            if (!(this.seagull.level() instanceof ServerLevel serverLevel) || !BirdScanBudget.tryAcquire(serverLevel, this.seagull)) {
+                return false;
+            }
+            this.crowTarget = this.seagull.level().getEntitiesOfClass(CrowEntity.class,
+                            this.seagull.getBoundingBox().inflate(10.0D, 5.0D, 10.0D),
+                            crow -> crow.isAlive() && !crow.getHeldFoodForRendering().isEmpty()
+                                    && CrowEntity.isCrowFood(crow.getHeldFoodForRendering()))
+                    .stream().min(java.util.Comparator.comparingDouble(this.seagull::distanceToSqr)).orElse(null);
+            return this.crowTarget != null;
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            if (this.itemDropped) {
+                return this.itemTarget != null && this.itemTarget.isAlive()
+                        && BirdItemSafety.isSeagullStealableFood(this.itemTarget.getItem())
+                        && this.seagull.distanceToSqr(this.itemTarget) < 256.0D;
+            }
+            return this.crowTarget != null && this.crowTarget.isAlive()
+                    && !this.crowTarget.getHeldFoodForRendering().isEmpty()
+                    && this.seagull.distanceToSqr(this.crowTarget) < 144.0D;
+        }
+
+        @Override
+        public void start() {
+            this.recalcTicks = 0;
+            this.itemDropped = false;
+            this.itemTarget = null;
+        }
+
+        @Override
+        public void tick() {
+            if (this.itemDropped) {
+                this.tickPickupItem();
+                return;
+            }
+            if (this.crowTarget == null) {
+                return;
+            }
+            this.seagull.getLookControl().setLookAt(this.crowTarget, 18.0F, 18.0F);
+            if (this.seagull.distanceToSqr(this.crowTarget) <= 2.5D) {
+                this.crowTarget.dropHeldItem();
+                this.itemDropped = true;
+                this.findDroppedItem();
+                return;
+            }
+            if (--this.recalcTicks <= 0) {
+                this.recalcTicks = 10;
+                this.seagull.getNavigation().moveTo(this.crowTarget, 1.08D);
+            }
+        }
+
+        private void tickPickupItem() {
+            if (this.itemTarget == null) {
+                this.findDroppedItem();
+                return;
+            }
+            this.seagull.getLookControl().setLookAt(this.itemTarget, 18.0F, 18.0F);
+            if (this.seagull.distanceToSqr(this.itemTarget) <= 1.7D) {
+                ItemStack stack = this.itemTarget.getItem();
+                ItemStack food = stack.copy();
+                food.setCount(1);
+                if (!this.seagull.takeFood(food, 42 + this.seagull.getRandom().nextInt(28), this.itemTarget.position())) {
+                    return;
+                }
+                stack.shrink(1);
+                if (stack.isEmpty()) {
+                    this.itemTarget.discard();
+                } else {
+                    this.itemTarget.setItem(stack);
+                }
+                this.itemTarget = null;
+                return;
+            }
+            if (--this.recalcTicks <= 0) {
+                this.recalcTicks = 10;
+                this.seagull.getNavigation().moveTo(this.itemTarget, 1.08D);
+            }
+        }
+
+        private void findDroppedItem() {
+            this.itemTarget = this.seagull.level().getEntitiesOfClass(ItemEntity.class,
+                            this.seagull.getBoundingBox().inflate(8.0D, 4.0D, 8.0D),
+                            item -> item.isAlive() && BirdItemSafety.isSeagullStealableFood(item.getItem()))
+                    .stream().min(java.util.Comparator.comparingDouble(this.seagull::distanceToSqr)).orElse(null);
+        }
+
+        @Override
+        public void stop() {
+            this.crowTarget = null;
+            this.itemTarget = null;
+            this.itemDropped = false;
+            this.seagull.stealCooldownTicks = 600 + this.seagull.getRandom().nextInt(600);
+            this.seagull.getNavigation().stop();
         }
     }
 

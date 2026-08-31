@@ -21,6 +21,7 @@ import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.client.event.RenderGuiEvent;
 import net.minecraftforge.client.event.RenderGuiOverlayEvent;
 import net.minecraftforge.client.event.RenderHandEvent;
+import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.client.event.ViewportEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -36,6 +37,9 @@ public final class CameraClientEvents {
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase == TickEvent.Phase.END) {
             CameraClientCapture.tickViewfinder();
+            while (CameraKeyMappings.CYCLE_FILTER.consumeClick()) {
+                CameraClientCapture.cycleFilter();
+            }
         }
     }
 
@@ -78,6 +82,13 @@ public final class CameraClientEvents {
     @SubscribeEvent
     public static void onRenderGui(RenderGuiEvent.Post event) {
         CameraClientCapture.renderViewfinder(event.getGuiGraphics(), event.getPartialTick());
+    }
+
+    @SubscribeEvent
+    public static void onRenderLevelStage(RenderLevelStageEvent event) {
+        if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES) {
+            CameraClientCapture.rebindOffscreenCaptureTarget();
+        }
     }
 
     @SubscribeEvent

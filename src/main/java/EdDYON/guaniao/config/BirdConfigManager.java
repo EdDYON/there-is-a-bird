@@ -3,6 +3,7 @@ package EdDYON.guaniao.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import EdDYON.guaniao.GuaniaoMod;
+import EdDYON.guaniao.content.bird.BirdAmbientDropControl;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraftforge.fml.loading.FMLPaths;
@@ -22,7 +23,7 @@ import java.time.format.DateTimeFormatter;
 public final class BirdConfigManager {
     public static final double BIRD_CAP_HORIZONTAL_RADIUS = 96.0D;
     public static final double BIRD_CAP_VERTICAL_RADIUS = 48.0D;
-    public static final double DROPPING_CAP_RADIUS = 8.0D;
+    public static final double DROPPING_CAP_RADIUS = 16.0D;
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path CONFIG_DIR = FMLPaths.CONFIGDIR.get().resolve(GuaniaoMod.MOD_ID);
@@ -116,8 +117,10 @@ public final class BirdConfigManager {
     }
 
     public static boolean isEnabled(BirdSpecies species) {
-        BirdSpeciesConfig bird = speciesConfig(species);
-        return species != null && bird.enabled;
+        if (species == null) {
+            return false;
+        }
+        return speciesConfig(species).enabled;
     }
 
     public static boolean allowsNaturalSpawning(BirdSpecies species) {
@@ -199,6 +202,8 @@ public final class BirdConfigManager {
 
     public static int maxWildBirdsPerRegion() { return config.global.maxWildBirdsPerRegion; }
     public static int populationRegionChunks() { return config.global.populationRegionChunks; }
+    public static int wildBirdDespawnTicks() { return config.global.wildBirdDespawnTicks; }
+    public static int flybyBirdLifetimeTicks() { return config.global.flybyBirdLifetimeTicks; }
     public static int flockRefreshTicks() { return config.global.flockRefreshTicks; }
     public static int habitatCacheTicks() { return config.global.habitatCacheTicks; }
     public static boolean petBirdCommandsEnabled() { return config.global.enablePetBirdCommands; }
@@ -207,6 +212,9 @@ public final class BirdConfigManager {
     public static int seagullPlayerCooldownTicks() { return config.global.seagullPlayerCooldownTicks; }
     public static int maxConcurrentSeagullTargetsPerPlayer() { return config.global.maxConcurrentSeagullTargetsPerPlayer; }
     public static int birdScanBudgetPerTick() { return config.global.birdScanBudgetPerTick; }
+    public static boolean migrationEnabled() { return config.global.enableMigration; }
+    public static int migrationIntervalTicks() { return config.global.migrationIntervalTicks; }
+    public static int migrationRadius() { return config.global.migrationRadius; }
     public static boolean birdsPassThroughLeaves() { return config.global.birdsPassThroughLeaves; }
     public static boolean aprilFoolsMode() { return config.global.aprilFoolsMode; }
     public static boolean droppingPressurePlatePulseEnabled() { return config.global.droppingPressurePlatePulseEnabled; }
@@ -247,7 +255,9 @@ public final class BirdConfigManager {
     private static BirdConfigData readOrCreate(Path file, BirdConfigData fallback) throws Exception {
         Files.createDirectories(file.getParent());
         if (!Files.exists(file)) {
-            write(file, fallback);
+            BirdConfigData initialized = normalize(fallback);
+            write(file, initialized);
+            return initialized;
         }
         BirdConfigData loaded;
         try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
@@ -316,9 +326,15 @@ public final class BirdConfigManager {
         normalized.global.droppingFrequencyMultiplier = finiteClamp(sourceGlobal.droppingFrequencyMultiplier, 0.0D, 10.0D, 1.0D);
         normalized.global.soundVolumeMultiplier = finiteClamp(sourceGlobal.soundVolumeMultiplier, 0.0D, 4.0D, 1.0D);
         normalized.global.maxBirdsNearby = clamp(sourceGlobal.maxBirdsNearby, 0, 256);
-        normalized.global.maxGroundDroppingsNearby = clamp(sourceGlobal.maxGroundDroppingsNearby, 0, 128);
+        normalized.global.maxGroundDroppingsNearby = clamp(
+                sourceGlobal.maxGroundDroppingsNearby,
+                0,
+                BirdAmbientDropControl.HARD_MAX_DROPPINGS_NEARBY
+        );
         normalized.global.crowNestSearchDistance = clamp(sourceGlobal.crowNestSearchDistance, 16, 128);
         normalized.global.maxCrowNestTreasures = clamp(sourceGlobal.maxCrowNestTreasures, 1, 6);
+        normalized.global.wildBirdDespawnTicks = clamp(sourceGlobal.wildBirdDespawnTicks, 200, 1728000);
+        normalized.global.flybyBirdLifetimeTicks = clamp(sourceGlobal.flybyBirdLifetimeTicks, 200, 72000);
         normalized.global.maxWildBirdsPerRegion = clamp(sourceGlobal.maxWildBirdsPerRegion, 0, 1024);
         normalized.global.populationRegionChunks = clamp(sourceGlobal.populationRegionChunks, 1, 16);
         normalized.global.flockRefreshTicks = clamp(sourceGlobal.flockRefreshTicks, 5, 200);
@@ -326,6 +342,9 @@ public final class BirdConfigManager {
         normalized.global.seagullPlayerCooldownTicks = clamp(sourceGlobal.seagullPlayerCooldownTicks, 0, 72000);
         normalized.global.maxConcurrentSeagullTargetsPerPlayer = clamp(sourceGlobal.maxConcurrentSeagullTargetsPerPlayer, 0, 8);
         normalized.global.birdScanBudgetPerTick = clamp(sourceGlobal.birdScanBudgetPerTick, 1, 128);
+        normalized.global.enableMigration = sourceGlobal.enableMigration;
+        normalized.global.migrationIntervalTicks = clamp(sourceGlobal.migrationIntervalTicks, 200, 72000);
+        normalized.global.migrationRadius = clamp(sourceGlobal.migrationRadius, 32, 512);
         normalized.global.droppingPressurePlatePulseTicks = clamp(sourceGlobal.droppingPressurePlatePulseTicks, 5, 100);
         normalized.global.maxPhotosPerPlayer = clamp(sourceGlobal.maxPhotosPerPlayer, 1, 10000);
         normalized.global.maxPhotoStorageMiBPerPlayer = clamp(sourceGlobal.maxPhotoStorageMiBPerPlayer, 1, 4096);

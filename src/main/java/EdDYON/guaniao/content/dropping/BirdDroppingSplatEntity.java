@@ -1,6 +1,7 @@
 package EdDYON.guaniao.content.dropping;
 
 import EdDYON.guaniao.config.BirdConfigManager;
+import EdDYON.guaniao.content.bird.BirdAmbientDropControl;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -23,6 +24,7 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -42,7 +44,8 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 import java.util.UUID;
 
 public class BirdDroppingSplatEntity extends Entity implements GeoEntity {
-    public static final int MAX_AGE_TICKS = 20 * 60 * 5;
+    public static final int MIN_AGE_TICKS = BirdAmbientDropControl.MIN_LIFETIME_TICKS;
+    public static final int MAX_AGE_TICKS = BirdAmbientDropControl.MAX_LIFETIME_TICKS;
     private static final int FADE_TICKS = 20 * 20;
     private static final double ENTITY_HORIZONTAL_SURFACE_INSET = 0.16D;
     private static final double ENTITY_VERTICAL_SURFACE_INSET = 0.055D;
@@ -55,6 +58,7 @@ public class BirdDroppingSplatEntity extends Entity implements GeoEntity {
     private static final EntityDataAccessor<Float> DATA_LOCAL_X = SynchedEntityData.defineId(BirdDroppingSplatEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> DATA_LOCAL_Y = SynchedEntityData.defineId(BirdDroppingSplatEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> DATA_LOCAL_Z = SynchedEntityData.defineId(BirdDroppingSplatEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Integer> DATA_MAX_AGE_TICKS = SynchedEntityData.defineId(BirdDroppingSplatEntity.class, EntityDataSerializers.INT);
 
     private final AnimatableInstanceCache animationCache = GeckoLibUtil.createInstanceCache((GeoAnimatable)this);
     private int ageTicks;
@@ -77,7 +81,11 @@ public class BirdDroppingSplatEntity extends Entity implements GeoEntity {
                 position.y + radius,
                 position.z + radius
         );
-        return level.getEntitiesOfClass(BirdDroppingSplatEntity.class, area).size() < BirdConfigManager.maxGroundDroppingsNearby();
+        int cap = Math.min(
+                BirdConfigManager.maxGroundDroppingsNearby(),
+                BirdAmbientDropControl.HARD_MAX_DROPPINGS_NEARBY
+        );
+        return cap > 0 && level.getEntitiesOfClass(BirdDroppingSplatEntity.class, area).size() < cap;
     }
 
     public static BirdDroppingSplatEntity onBlock(Level level, Vec3 position, Direction direction, BlockPos anchorBlock) {
@@ -86,6 +94,7 @@ public class BirdDroppingSplatEntity extends Entity implements GeoEntity {
         splat.setPos(position.add(offset));
         splat.setSurfaceDirection(direction);
         splat.anchorBlock = anchorBlock.immutable();
+        splat.setMaxAgeTicks(BirdAmbientDropControl.randomLifetime(level.random));
         return splat;
     }
 
@@ -94,6 +103,7 @@ public class BirdDroppingSplatEntity extends Entity implements GeoEntity {
         splat.setPos(position);
         splat.setSurfaceDirection(direction);
         splat.setAttachedEntity(target, position, direction);
+        splat.setMaxAgeTicks(BirdAmbientDropControl.randomLifetime(level.random));
         return splat;
     }
 
@@ -106,6 +116,7 @@ public class BirdDroppingSplatEntity extends Entity implements GeoEntity {
         this.entityData.define(DATA_LOCAL_X, 0.0F);
         this.entityData.define(DATA_LOCAL_Y, 0.0F);
         this.entityData.define(DATA_LOCAL_Z, 0.0F);
+        this.entityData.define(DATA_MAX_AGE_TICKS, MIN_AGE_TICKS);
     }
 
     @Override
@@ -138,7 +149,7 @@ public class BirdDroppingSplatEntity extends Entity implements GeoEntity {
             }
         }
 
-        if (!this.level().isClientSide && this.ageTicks >= MAX_AGE_TICKS) {
+        if (!this.level().isClientSide && this.ageTicks >= this.getMaxAgeTicks()) {
             this.discard();
         }
     }
@@ -161,7 +172,7 @@ public class BirdDroppingSplatEntity extends Entity implements GeoEntity {
         if (!this.level().isClientSide) {
             Entity attacker = source.getEntity();
             if (!(attacker instanceof Player player) || !player.isCreative()) {
-                this.spawnAtLocation(BirdDroppingUtil.randomDroppingStack(this.level().random));
+                this.dropCollectible(BirdDroppingUtil.randomDroppingStack(this.level().random));
             }
             this.level().playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.SLIME_BLOCK_BREAK, SoundSource.NEUTRAL, 0.5F, 0.9F + this.level().random.nextFloat() * 0.2F);
             this.discard();
@@ -193,10 +204,19 @@ public class BirdDroppingSplatEntity extends Entity implements GeoEntity {
     }
 
     public float getFadeAlpha() {
-        if (this.ageTicks <= MAX_AGE_TICKS - FADE_TICKS) {
+        int maxAge = this.getMaxAgeTicks();
+        if (this.ageTicks <= maxAge - FADE_TICKS) {
             return 1.0F;
         }
-        return Math.max(0.0F, (MAX_AGE_TICKS - this.ageTicks) / (float)FADE_TICKS);
+        return Math.max(0.0F, (maxAge - this.ageTicks) / (float)FADE_TICKS);
+    }
+
+    private int getMaxAgeTicks() {
+        return this.entityData.get(DATA_MAX_AGE_TICKS);
+    }
+
+    private void setMaxAgeTicks(int ticks) {
+        this.entityData.set(DATA_MAX_AGE_TICKS, Mth.clamp(ticks, MIN_AGE_TICKS, MAX_AGE_TICKS));
     }
 
     private void setAttachedEntity(Entity target, Vec3 hitPosition, Direction hitDirection) {
@@ -246,7 +266,7 @@ public class BirdDroppingSplatEntity extends Entity implements GeoEntity {
     }
 
     private void cleanWithBrush(ServerLevel level, Player player, InteractionHand hand, ItemStack brush) {
-        this.spawnAtLocation(BirdDroppingUtil.randomDroppingStack(level.random));
+        this.dropCollectible(BirdDroppingUtil.randomDroppingStack(level.random));
         level.sendParticles(ParticleTypes.POOF, this.getX(), this.getY() + 0.05D, this.getZ(), 8, 0.22D, 0.06D, 0.22D, 0.01D);
         level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.SLIME_BLOCK_BREAK, SoundSource.NEUTRAL, 0.6F, 0.85F + level.random.nextFloat() * 0.25F);
         if (!player.getAbilities().instabuild) {
@@ -259,6 +279,13 @@ public class BirdDroppingSplatEntity extends Entity implements GeoEntity {
         level.sendParticles(particles, this.getX(), this.getY() + 0.05D, this.getZ(), 5, 0.2D, 0.05D, 0.2D, 0.01D);
         level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.SLIME_BLOCK_BREAK, SoundSource.NEUTRAL, 0.35F, 1.1F + level.random.nextFloat() * 0.25F);
         this.discard();
+    }
+
+    private void dropCollectible(ItemStack stack) {
+        ItemEntity itemEntity = this.spawnAtLocation(stack);
+        if (itemEntity != null) {
+            BirdAmbientDropControl.applyRandomLifetime(itemEntity);
+        }
     }
 
     private boolean isTouchingWater() {
@@ -279,6 +306,7 @@ public class BirdDroppingSplatEntity extends Entity implements GeoEntity {
     @Override
     protected void addAdditionalSaveData(CompoundTag tag) {
         tag.putInt("Age", this.ageTicks);
+        tag.putInt("MaxAge", this.getMaxAgeTicks());
         tag.putInt("SurfaceDirection", this.getSurfaceDirection().get3DDataValue());
         tag.putLong("AnchorPos", this.anchorBlock.asLong());
         tag.putInt("AttachmentPart", this.entityData.get(DATA_ATTACHMENT_PART));
@@ -294,6 +322,9 @@ public class BirdDroppingSplatEntity extends Entity implements GeoEntity {
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
         this.ageTicks = tag.getInt("Age");
+        if (tag.contains("MaxAge")) {
+            this.setMaxAgeTicks(tag.getInt("MaxAge"));
+        }
         this.setSurfaceDirection(Direction.from3DDataValue(tag.getInt("SurfaceDirection")));
         this.anchorBlock = BlockPos.of(tag.getLong("AnchorPos"));
         this.entityData.set(DATA_ATTACHMENT_PART, tag.getInt("AttachmentPart"));

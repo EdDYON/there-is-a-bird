@@ -49,7 +49,7 @@ public final class BirdHabitatCache {
             return cached.snapshot;
         }
         if (!BirdScanBudget.tryAcquire(serverLevel, bird, scanCost)) {
-            return cached == null ? null : cached.snapshot;
+            return cached == null ? new BirdHabitatSnapshot(false, false, false, false) : cached.snapshot;
         }
 
         BirdHabitatSnapshot snapshot = profile.scanHabitat(bird);

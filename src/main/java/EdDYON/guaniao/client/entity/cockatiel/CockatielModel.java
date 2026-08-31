@@ -1,5 +1,6 @@
 package EdDYON.guaniao.client.entity.cockatiel;
 
+import EdDYON.guaniao.client.entity.mutation.BirdMutationTextureFactory;
 import EdDYON.guaniao.content.bird.cockatiel.CockatielDefinition;
 import EdDYON.guaniao.content.bird.cockatiel.CockatielEntity;
 import EdDYON.guaniao.content.bird.cockatiel.CockatielCrestState;
@@ -15,7 +16,7 @@ public class CockatielModel extends GeoModel<CockatielEntity> {
 
     @Override
     public ResourceLocation getTextureResource(CockatielEntity animatable) {
-        return animatable.getTextureResource();
+        return BirdMutationTextureFactory.textureFor(animatable.getTextureResource(), animatable);
     }
 
     @Override

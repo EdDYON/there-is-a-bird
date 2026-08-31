@@ -1,9 +1,12 @@
 package EdDYON.guaniao.content.bird.brain;
 
 import EdDYON.guaniao.config.BirdConfigManager;
+import EdDYON.guaniao.content.bird.command.BirdCommandMode;
+import EdDYON.guaniao.content.bird.command.CommandableBird;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PathfinderMob;
+import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.player.Player;
 
 public abstract class BirdSpeciesProfile {
@@ -117,6 +120,39 @@ public abstract class BirdSpeciesProfile {
 
     public boolean wantsLongEscape(BirdBrain brain) {
         return brain.computeRiskScore() >= 0.78F;
+    }
+
+    public boolean wantsMigrate(BirdBrain brain) {
+        if (!BirdConfigManager.migrationEnabled()) {
+            return false;
+        }
+        PathfinderMob bird = brain.bird();
+        if (bird instanceof TamableAnimal tamable && tamable.isTame()) {
+            return false;
+        }
+        if (bird instanceof CommandableBird commandable && commandable.getBirdCommandMode() != BirdCommandMode.FREE) {
+            return false;
+        }
+        BirdSenses senses = brain.senses();
+        if (!senses.roostTime() || brain.motivation().fatigue() > 0.3F || brain.computeRiskScore() >= 0.4F) {
+            return false;
+        }
+        // Migration runs on a real schedule (migrationIntervalTicks) rather than a flat
+        // 1/200 per-tick dice roll, and stays armed across ticks so a long migration state
+        // machine can actually play out. 0 arms the first interval without migrating.
+        long now = bird.level().getGameTime();
+        long next = brain.nextMigrationTick();
+        int interval = Math.max(1, BirdConfigManager.migrationIntervalTicks());
+        int jitter = Math.max(1, interval / 4);
+        if (next <= 0L) {
+            brain.setNextMigrationTick(now + interval + bird.getRandom().nextInt(jitter + 1));
+            return false;
+        }
+        if (now < next) {
+            return false;
+        }
+        brain.setNextMigrationTick(now + interval + bird.getRandom().nextInt(jitter));
+        return true;
     }
 
     public abstract boolean isActiveTime(BirdSenses senses);

@@ -12,6 +12,9 @@ public class BirdGlobalConfig {
     public boolean birdsPassThroughLeaves = true;
     public boolean aprilFoolsMode;
     public boolean droppingPressurePlatePulseEnabled = true;
+    public boolean enableMigration = true;
+    public int migrationIntervalTicks = 6000;
+    public int migrationRadius = 128;
     public boolean photoUploadsEnabled = true;
     public boolean photoUploadsOperatorOnly;
     public boolean photoUploadsWhitelistedOnly;
@@ -23,6 +26,8 @@ public class BirdGlobalConfig {
     public int maxGroundDroppingsNearby = 8;
     public int crowNestSearchDistance = 96;
     public int maxCrowNestTreasures = 6;
+    public int wildBirdDespawnTicks = 24000;
+    public int flybyBirdLifetimeTicks = 3600;
     public int maxWildBirdsPerRegion = 48;
     public int populationRegionChunks = 4;
     public int flockRefreshTicks = 20;
@@ -52,6 +57,9 @@ public class BirdGlobalConfig {
         copy.birdsPassThroughLeaves = this.birdsPassThroughLeaves;
         copy.aprilFoolsMode = this.aprilFoolsMode;
         copy.droppingPressurePlatePulseEnabled = this.droppingPressurePlatePulseEnabled;
+        copy.enableMigration = this.enableMigration;
+        copy.migrationIntervalTicks = this.migrationIntervalTicks;
+        copy.migrationRadius = this.migrationRadius;
         copy.photoUploadsEnabled = this.photoUploadsEnabled;
         copy.photoUploadsOperatorOnly = this.photoUploadsOperatorOnly;
         copy.photoUploadsWhitelistedOnly = this.photoUploadsWhitelistedOnly;
@@ -63,6 +71,8 @@ public class BirdGlobalConfig {
         copy.maxGroundDroppingsNearby = this.maxGroundDroppingsNearby;
         copy.crowNestSearchDistance = this.crowNestSearchDistance;
         copy.maxCrowNestTreasures = this.maxCrowNestTreasures;
+        copy.wildBirdDespawnTicks = this.wildBirdDespawnTicks;
+        copy.flybyBirdLifetimeTicks = this.flybyBirdLifetimeTicks;
         copy.maxWildBirdsPerRegion = this.maxWildBirdsPerRegion;
         copy.populationRegionChunks = this.populationRegionChunks;
         copy.flockRefreshTicks = this.flockRefreshTicks;

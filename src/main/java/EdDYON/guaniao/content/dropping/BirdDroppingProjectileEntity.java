@@ -35,10 +35,12 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 import java.util.UUID;
 
 public class BirdDroppingProjectileEntity extends ThrowableItemProjectile implements GeoEntity {
+    private static final int MAX_FLIGHT_LIFETIME_TICKS = 20 * 10;
     private static final EntityDataAccessor<Integer> DATA_VARIANT = SynchedEntityData.defineId(BirdDroppingProjectileEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> DATA_NATURAL_DROPPING = SynchedEntityData.defineId(BirdDroppingProjectileEntity.class, EntityDataSerializers.BOOLEAN);
     private final AnimatableInstanceCache animationCache = GeckoLibUtil.createInstanceCache((GeoAnimatable)this);
     private int lifeTicks;
+    private boolean impactResolved;
     private UUID sourceBirdUuid;
 
     public BirdDroppingProjectileEntity(EntityType<? extends BirdDroppingProjectileEntity> entityType, Level level) {
@@ -70,7 +72,12 @@ public class BirdDroppingProjectileEntity extends ThrowableItemProjectile implem
     @Override
     public void tick() {
         super.tick();
-        if (!this.level().isClientSide && ++this.lifeTicks > 200) {
+        if (this.level().isClientSide || this.isRemoved()) {
+            return;
+        }
+        ++this.lifeTicks;
+        if (this.isInWaterOrBubble() || this.lifeTicks >= MAX_FLIGHT_LIFETIME_TICKS) {
+            this.impactResolved = true;
             this.discard();
         }
     }
@@ -78,7 +85,7 @@ public class BirdDroppingProjectileEntity extends ThrowableItemProjectile implem
     @Override
     protected void onHitEntity(EntityHitResult result) {
         super.onHitEntity(result);
-        if (this.level().isClientSide) {
+        if (this.level().isClientSide || !this.beginImpactResolution()) {
             return;
         }
 
@@ -111,7 +118,7 @@ public class BirdDroppingProjectileEntity extends ThrowableItemProjectile implem
     @Override
     protected void onHitBlock(BlockHitResult result) {
         super.onHitBlock(result);
-        if (this.level().isClientSide) {
+        if (this.level().isClientSide || !this.beginImpactResolution()) {
             return;
         }
 
@@ -132,6 +139,14 @@ public class BirdDroppingProjectileEntity extends ThrowableItemProjectile implem
         this.spawnBlockSplat(result);
         this.splat();
         this.discard();
+    }
+
+    private boolean beginImpactResolution() {
+        if (this.impactResolved) {
+            return false;
+        }
+        this.impactResolved = true;
+        return true;
     }
 
     private void spawnBlockSplat(BlockHitResult result) {
@@ -183,6 +198,7 @@ public class BirdDroppingProjectileEntity extends ThrowableItemProjectile implem
         super.addAdditionalSaveData(tag);
         tag.putInt("Variant", this.getVariant().id());
         tag.putBoolean("NaturalDropping", this.isNaturalDropping());
+        tag.putInt("LifeTicks", this.lifeTicks);
         if (this.sourceBirdUuid != null) {
             tag.putUUID("SourceBirdUuid", this.sourceBirdUuid);
         }
@@ -193,6 +209,7 @@ public class BirdDroppingProjectileEntity extends ThrowableItemProjectile implem
         super.readAdditionalSaveData(tag);
         this.setVariant(BirdDroppingVariant.byId(tag.getInt("Variant")));
         this.entityData.set(DATA_NATURAL_DROPPING, tag.getBoolean("NaturalDropping"));
+        this.lifeTicks = Math.max(0, tag.getInt("LifeTicks"));
         if (tag.hasUUID("SourceBirdUuid")) {
             this.sourceBirdUuid = tag.getUUID("SourceBirdUuid");
         }

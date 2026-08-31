@@ -74,7 +74,7 @@ public final class BirdSpawnConfigEvents {
             event.setResult(Event.Result.DENY);
             return;
         }
-        if (!event.getLevel().canSeeSky(event.getPos())) {
+        if (species.requiresOpenSkyForNaturalSpawn() && !event.getLevel().canSeeSky(event.getPos())) {
             event.setResult(Event.Result.DENY);
             return;
         }

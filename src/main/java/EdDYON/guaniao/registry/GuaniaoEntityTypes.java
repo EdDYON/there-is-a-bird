@@ -12,6 +12,10 @@ import EdDYON.guaniao.content.bird.nightheron.NightHeronDefinition;
 import EdDYON.guaniao.content.bird.nightheron.NightHeronEntity;
 import EdDYON.guaniao.content.bird.seagull.SeagullDefinition;
 import EdDYON.guaniao.content.bird.seagull.SeagullEntity;
+import EdDYON.guaniao.content.bird.kiwi.KiwiDefinition;
+import EdDYON.guaniao.content.bird.kiwi.KiwiEntity;
+import EdDYON.guaniao.content.bird.myna.MynaDefinition;
+import EdDYON.guaniao.content.bird.myna.MynaEntity;
 import EdDYON.guaniao.content.bird.sparrow.SparrowDefinition;
 import EdDYON.guaniao.content.bird.sparrow.SparrowEntity;
 import EdDYON.guaniao.content.bird.longtailedtit.LongTailedTitDefinition;
@@ -23,6 +27,7 @@ import EdDYON.guaniao.content.bird.macaw.MacawEntity;
 import EdDYON.guaniao.content.camera.PhotographEntity;
 import EdDYON.guaniao.content.dropping.BirdDroppingProjectileEntity;
 import EdDYON.guaniao.content.dropping.BirdDroppingSplatEntity;
+import EdDYON.guaniao.content.fan.FeatherFanProjectileEntity;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
@@ -45,6 +50,8 @@ public final class GuaniaoEntityTypes {
     public static final RegistryObject<EntityType<PigeonEntity>> PIGEON = GuaniaoEntityTypes.registerCreature(PigeonDefinition.ENTITY_ID, PigeonEntity::new, PigeonDefinition.WIDTH, PigeonDefinition.HEIGHT);
     public static final RegistryObject<EntityType<CrowEntity>> CROW = GuaniaoEntityTypes.registerCreature(CrowDefinition.ENTITY_ID, CrowEntity::new, CrowDefinition.WIDTH, CrowDefinition.HEIGHT);
     public static final RegistryObject<EntityType<SeagullEntity>> SEAGULL = GuaniaoEntityTypes.registerCreature(SeagullDefinition.ENTITY_ID, SeagullEntity::new, SeagullDefinition.WIDTH, SeagullDefinition.HEIGHT);
+    public static final RegistryObject<EntityType<KiwiEntity>> KIWI = GuaniaoEntityTypes.registerCreature(KiwiDefinition.ENTITY_ID, KiwiEntity::new, KiwiDefinition.WIDTH, KiwiDefinition.HEIGHT);
+    public static final RegistryObject<EntityType<MynaEntity>> MYNA = GuaniaoEntityTypes.registerCreature(MynaDefinition.ENTITY_ID, MynaEntity::new, MynaDefinition.WIDTH, MynaDefinition.HEIGHT);
     public static final RegistryObject<EntityType<PhotographEntity>> PHOTOGRAPH = ENTITY_TYPES.register("photograph", () ->
             EntityType.Builder.<PhotographEntity>of(PhotographEntity::new, MobCategory.MISC)
                     .sized(0.5F, 0.5F)
@@ -63,6 +70,12 @@ public final class GuaniaoEntityTypes {
                     .clientTrackingRange(8)
                     .updateInterval(2)
                     .build(new ResourceLocation("guaniao", "bird_dropping_splat").toString()));
+    public static final RegistryObject<EntityType<FeatherFanProjectileEntity>> FEATHER_FAN_PROJECTILE = ENTITY_TYPES.register("feather_fan_projectile", () ->
+            EntityType.Builder.<FeatherFanProjectileEntity>of(FeatherFanProjectileEntity::new, MobCategory.MISC)
+                    .sized(0.65F, 0.15F)
+                    .clientTrackingRange(8)
+                    .updateInterval(1)
+                    .build(new ResourceLocation("guaniao", "feather_fan_projectile").toString()));
 
     private GuaniaoEntityTypes() {
     }

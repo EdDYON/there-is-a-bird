@@ -17,14 +17,13 @@ import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 
 public final class PhotoImageCodec {
-    private static final float[] JPEG_QUALITIES = {0.75F, 0.65F, 0.55F, 0.45F};
+    private static final float[] JPEG_QUALITIES = {0.98F, 0.96F, 0.94F, 0.90F};
 
     private PhotoImageCodec() {
     }
 
     public static byte[] encodeJpeg(int[] nativeAbgrPixels, int width, int height) throws IOException {
-        if (width != PhotoTransferLimits.IMAGE_WIDTH
-                || height != PhotoTransferLimits.IMAGE_HEIGHT
+        if (!PhotoTransferLimits.isSupportedDimensions(width, height)
                 || nativeAbgrPixels.length != width * height) {
             throw new IOException("Invalid photograph dimensions");
         }
@@ -68,11 +67,8 @@ public final class PhotoImageCodec {
                 }
                 int width = reader.getWidth(0);
                 int height = reader.getHeight(0);
-                if (width != PhotoTransferLimits.IMAGE_WIDTH || height != PhotoTransferLimits.IMAGE_HEIGHT) {
+                if (!PhotoTransferLimits.isSupportedDimensions(width, height)) {
                     throw new IOException("Invalid photograph dimensions");
-                }
-                if (reader.read(0) == null) {
-                    throw new IOException("Unable to decode photograph");
                 }
                 return new Dimensions(width, height);
             } finally {

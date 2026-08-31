@@ -1,9 +1,16 @@
 package EdDYON.guaniao.client.camera;
 
+import EdDYON.guaniao.content.camera.CameraFilter;
+import EdDYON.guaniao.content.camera.CameraSettingsData;
 import EdDYON.guaniao.content.camera.PhotographData;
 import EdDYON.guaniao.content.camera.PhotoImageCodec;
+import EdDYON.guaniao.network.GuaniaoNetwork;
+import EdDYON.guaniao.network.SetCameraFilterPacket;
 import EdDYON.guaniao.registry.GuaniaoItems;
+import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
@@ -16,7 +23,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.client.event.ViewportEvent;
 
 public final class CameraClientCapture {
-    private static final int CLEAN_CAPTURE_DELAY_FRAMES = 2;
+    private static final int CLEAN_CAPTURE_DELAY_FRAMES = 0;
     private static final double MIN_FOCAL_LENGTH = 18.0D;
     private static final double MAX_FOCAL_LENGTH = 200.0D;
     private static final double DEFAULT_FOCAL_LENGTH = 50.0D;
@@ -27,15 +34,21 @@ public final class CameraClientCapture {
     private static boolean viewfinderOpen;
     private static InteractionHand viewfinderHand = InteractionHand.MAIN_HAND;
     private static double focalLength = DEFAULT_FOCAL_LENGTH;
+    private static CameraFilter currentFilter = CameraFilter.NONE;
 
     private static boolean cleanCapturePending;
     private static int cleanCaptureDelayFrames;
     private static InteractionHand pendingCaptureHand = InteractionHand.MAIN_HAND;
     private static double pendingCaptureFov = focalLengthToFov(DEFAULT_FOCAL_LENGTH);
+    private static CameraFilter pendingCaptureFilter = CameraFilter.NONE;
+    private static float pendingCameraYRot;
+    private static float pendingCameraXRot;
     private static boolean storedHideGui;
     private static CameraType storedCameraType = CameraType.FIRST_PERSON;
     private static boolean sensitivityAdjusted;
     private static double storedSensitivity;
+    private static boolean offscreenCaptureActive;
+    private static RenderTarget offscreenCaptureTarget;
 
     private CameraClientCapture() {
     }
@@ -52,6 +65,7 @@ public final class CameraClientCapture {
         }
 
         viewfinderHand = hand;
+        currentFilter = CameraSettingsData.filter(minecraft.player.getItemInHand(hand));
         focalLength = Mth.clamp(focalLength, MIN_FOCAL_LENGTH, MAX_FOCAL_LENGTH);
         beginSensitivityAdjustment(minecraft);
         applyFocalSensitivity(minecraft);
@@ -65,6 +79,21 @@ public final class CameraClientCapture {
 
     public static boolean shouldHideHands() {
         return viewfinderOpen || cleanCapturePending;
+    }
+
+    /** Used by the client Minecraft mixin while the world is being rendered into the camera canvas. */
+    public static RenderTarget redirectedRenderTarget() {
+        return offscreenCaptureActive ? offscreenCaptureTarget : null;
+    }
+
+    /**
+     * Some world render passes temporarily bind their own framebuffer. Rebind the camera canvas
+     * at Forge's stage boundaries so the following entity/translucent passes return to it.
+     */
+    public static void rebindOffscreenCaptureTarget() {
+        if (offscreenCaptureActive && offscreenCaptureTarget != null) {
+            offscreenCaptureTarget.bindWrite(true);
+        }
     }
 
     public static void closeViewfinder() {
@@ -124,11 +153,29 @@ public final class CameraClientCapture {
         return false;
     }
 
+    public static boolean cycleFilter() {
+        if (!viewfinderOpen || cleanCapturePending) {
+            return false;
+        }
+
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null || !isCameraStillHeld(minecraft, viewfinderHand)) {
+            closeViewfinder();
+            return true;
+        }
+
+        currentFilter = currentFilter.next();
+        CameraSettingsData.setFilter(minecraft.player.getItemInHand(viewfinderHand), currentFilter);
+        GuaniaoNetwork.sendToServer(new SetCameraFilterPacket(viewfinderHand, currentFilter));
+        minecraft.player.playSound(SoundEvents.UI_BUTTON_CLICK.value(), 0.28F, 1.2F + currentFilter.ordinal() * 0.08F);
+        return true;
+    }
+
     public static void renderViewfinder(GuiGraphics graphics, float partialTick) {
         if (!viewfinderOpen || cleanCapturePending) {
             return;
         }
-        CameraViewfinderOverlay.render(graphics, focalLength, currentFov());
+        CameraViewfinderOverlay.render(graphics, focalLength, currentFov(), currentFilter);
     }
 
     public static void modifyFov(ViewportEvent.ComputeFov event) {
@@ -152,6 +199,18 @@ public final class CameraClientCapture {
             return;
         }
 
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null) {
+            restoreAfterCleanCapture();
+            return;
+        }
+
+        // Re-render from the exact shutter orientation, as Exposure's background capture does.
+        minecraft.player.setYRot(pendingCameraYRot);
+        minecraft.player.yRotO = pendingCameraYRot;
+        minecraft.player.setXRot(pendingCameraXRot);
+        minecraft.player.xRotO = pendingCameraXRot;
+
         try {
             captureAndSend(pendingCaptureHand);
         } finally {
@@ -161,68 +220,78 @@ public final class CameraClientCapture {
 
     public static void captureAndSend(InteractionHand hand) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.getMainRenderTarget() == null) {
+        if (minecraft.player == null) {
             return;
         }
 
-        try (NativeImage image = Screenshot.takeScreenshot(minecraft.getMainRenderTarget())) {
-            int[] pixels = cropSquare(image, PhotographData.IMAGE_SIZE);
-            byte[] jpeg = PhotoImageCodec.encodeJpeg(pixels, PhotographData.IMAGE_SIZE, PhotographData.IMAGE_SIZE);
-            PhotoClientRepository.upload(hand, jpeg);
+        try {
+            beginOffscreenCaptureFrame(minecraft);
+            minecraft.gameRenderer.renderLevel(minecraft.getFrameTime(), 0L, new PoseStack());
+
+            try (NativeImage image = Screenshot.takeScreenshot(offscreenCaptureTarget)) {
+                int[] pixels = cropSquare(image, PhotographData.IMAGE_SIZE);
+                CameraImageFilters.apply(pixels, PhotographData.IMAGE_SIZE, PhotographData.IMAGE_SIZE, pendingCaptureFilter, System.nanoTime());
+                byte[] jpeg = PhotoImageCodec.encodeJpeg(pixels, PhotographData.IMAGE_SIZE, PhotographData.IMAGE_SIZE);
+                PhotoClientRepository.upload(hand, jpeg);
+            }
         } catch (Exception exception) {
             minecraft.player.displayClientMessage(Component.translatable("item.guaniao.nikon_d750.capture_failed"), true);
+        } finally {
+            releaseOffscreenCaptureFrame(minecraft);
+        }
+    }
+
+    private static void beginOffscreenCaptureFrame(Minecraft minecraft) {
+        int windowWidth = Math.max(1, minecraft.getWindow().getWidth());
+        int windowHeight = Math.max(1, minecraft.getWindow().getHeight());
+        RenderTarget target = new TextureTarget(windowWidth, windowHeight, true, Minecraft.ON_OSX);
+        offscreenCaptureTarget = target;
+        offscreenCaptureActive = true;
+
+        target.setClearColor(0.0F, 0.0F, 0.0F, 0.0F);
+        target.clear(Minecraft.ON_OSX);
+        minecraft.gameRenderer.setRenderBlockOutline(false);
+        minecraft.levelRenderer.graphicsChanged();
+        target.bindWrite(false);
+    }
+
+    private static void releaseOffscreenCaptureFrame(Minecraft minecraft) {
+        RenderTarget target = offscreenCaptureTarget;
+        offscreenCaptureActive = false;
+        offscreenCaptureTarget = null;
+
+        try {
+            if (target != null) {
+                target.unbindWrite();
+                target.destroyBuffers();
+            }
+        } finally {
+            minecraft.gameRenderer.setRenderBlockOutline(true);
+            try {
+                minecraft.levelRenderer.graphicsChanged();
+            } finally {
+                minecraft.getMainRenderTarget().bindWrite(true);
+            }
         }
     }
 
     private static int[] cropSquare(NativeImage image, int size) {
         int sourceWidth = image.getWidth();
         int sourceHeight = image.getHeight();
-        int sourceSize = Math.min(sourceWidth, sourceHeight);
+        int sourceSize = CameraViewfinderOverlay.apertureSize(sourceWidth, sourceHeight);
         int offsetX = (sourceWidth - sourceSize) / 2;
         int offsetY = (sourceHeight - sourceSize) / 2;
         int[] pixels = new int[size * size];
 
         for (int y = 0; y < size; y++) {
-            int startY = offsetY + y * sourceSize / size;
-            int endY = offsetY + Math.max(startY - offsetY + 1, (y + 1) * sourceSize / size);
-            endY = Math.min(offsetY + sourceSize, Math.max(startY + 1, endY));
+            int sampleY = offsetY + Math.min(sourceSize - 1, (int)((y + 0.5D) * sourceSize / size));
             for (int x = 0; x < size; x++) {
-                int startX = offsetX + x * sourceSize / size;
-                int endX = offsetX + Math.max(startX - offsetX + 1, (x + 1) * sourceSize / size);
-                endX = Math.min(offsetX + sourceSize, Math.max(startX + 1, endX));
-                pixels[y * size + x] = averagePixels(image, startX, startY, endX, endY);
+                int sampleX = offsetX + Math.min(sourceSize - 1, (int)((x + 0.5D) * sourceSize / size));
+                pixels[y * size + x] = image.getPixelRGBA(sampleX, sampleY);
             }
         }
 
         return pixels;
-    }
-
-    private static int averagePixels(NativeImage image, int startX, int startY, int endX, int endY) {
-        long a = 0L;
-        long b = 0L;
-        long g = 0L;
-        long r = 0L;
-        int count = 0;
-
-        for (int y = startY; y < endY; y++) {
-            for (int x = startX; x < endX; x++) {
-                int pixel = image.getPixelRGBA(x, y);
-                a += pixel >>> 24 & 255;
-                b += pixel >>> 16 & 255;
-                g += pixel >>> 8 & 255;
-                r += pixel & 255;
-                count++;
-            }
-        }
-
-        if (count <= 0) {
-            return image.getPixelRGBA(startX, startY);
-        }
-
-        return ((int)(a / count) << 24)
-                | ((int)(b / count) << 16)
-                | ((int)(g / count) << 8)
-                | (int)(r / count);
     }
 
     private static void beginCleanCapture(InteractionHand hand, double fov) {
@@ -233,11 +302,13 @@ public final class CameraClientCapture {
         }
 
         viewfinderOpen = false;
-        restoreSensitivity(minecraft);
         cleanCapturePending = true;
         cleanCaptureDelayFrames = CLEAN_CAPTURE_DELAY_FRAMES;
         pendingCaptureHand = hand;
         pendingCaptureFov = fov;
+        pendingCaptureFilter = currentFilter;
+        pendingCameraYRot = minecraft.player.getViewYRot(1.0F);
+        pendingCameraXRot = minecraft.player.getViewXRot(1.0F);
         storedHideGui = minecraft.options.hideGui;
         storedCameraType = minecraft.options.getCameraType();
         minecraft.options.hideGui = true;

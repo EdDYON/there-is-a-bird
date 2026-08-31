@@ -158,7 +158,7 @@ public final class PhotoMaintenance {
             if (index.get(orphan.id()) == null) {
                 index.register(new PhotoRecord(
                         orphan.id(), null, "", now, now, now, orphan.bytes(),
-                        PhotoTransferLimits.IMAGE_WIDTH, PhotoTransferLimits.IMAGE_HEIGHT, "", PhotoStatus.TRASH
+                        0, 0, "", PhotoStatus.TRASH
                 ));
             }
         }

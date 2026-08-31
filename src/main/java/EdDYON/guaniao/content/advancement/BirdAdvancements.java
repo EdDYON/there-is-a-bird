@@ -2,6 +2,8 @@ package EdDYON.guaniao.content.advancement;
 
 import EdDYON.guaniao.GuaniaoMod;
 import EdDYON.guaniao.config.BirdSpecies;
+import java.util.List;
+import java.util.Map;
 import net.minecraft.advancements.Advancement;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -21,7 +23,24 @@ public final class BirdAdvancements {
     public static final ResourceLocation RED_LOUDMOUTH = id("red_loudmouth");
     public static final ResourceLocation LITTLE_SUN = id("little_sun");
     public static final ResourceLocation AVIARY_KEEPER = id("aviary_keeper");
+    public static final ResourceLocation BIRD_NOTE = id("bird_note");
+    public static final ResourceLocation DEV_NOTE_PROGRAMMER = id("dev_note_programmer");
+    public static final ResourceLocation DEV_NOTE_KEEPER = id("dev_note_keeper");
+    public static final ResourceLocation DEV_NOTE_ANIMATOR = id("dev_note_animator");
+    public static final ResourceLocation DEV_NOTE_SOUND = id("dev_note_sound");
+    public static final ResourceLocation DEV_NOTE_MODELER = id("dev_note_modeler");
+    public static final ResourceLocation DEV_NOTES_ALL = id("dev_notes_all");
     private static final String CRITERION = "triggered";
+
+    /** Maps each dev easter-egg note's author to the hidden "note found" advancement. */
+    private static final Map<String, ResourceLocation> DEV_NOTE_BY_AUTHOR = Map.of(
+            "蛋炒饭", DEV_NOTE_PROGRAMMER,
+            "伊洛哥斯拉", DEV_NOTE_KEEPER,
+            "多雨", DEV_NOTE_ANIMATOR,
+            "老三", DEV_NOTE_SOUND,
+            "千年村庄", DEV_NOTE_MODELER);
+    private static final List<ResourceLocation> DEV_NOTE_ADVANCEMENTS =
+            List.copyOf(DEV_NOTE_BY_AUTHOR.values());
 
     private BirdAdvancements() {
     }
@@ -50,6 +69,25 @@ public final class BirdAdvancements {
         if (player instanceof ServerPlayer serverPlayer) {
             grant(serverPlayer, SEAGULL_STOLE_FOOD);
         }
+    }
+
+    /**
+     * Records that the player read a dev easter-egg note (matched by author). Each
+     * note's hidden advancement latches permanently; once all five are read, the
+     * "collect the devs' notes" advancement unlocks.
+     */
+    public static void awardDevNote(ServerPlayer player, String author) {
+        ResourceLocation perNote = DEV_NOTE_BY_AUTHOR.get(author);
+        if (perNote == null) {
+            return;
+        }
+        grant(player, perNote);
+        for (ResourceLocation noteId : DEV_NOTE_ADVANCEMENTS) {
+            if (!isDone(player, noteId)) {
+                return;
+            }
+        }
+        grant(player, DEV_NOTES_ALL);
     }
 
     public static boolean grant(ServerPlayer player, ResourceLocation advancementId) {

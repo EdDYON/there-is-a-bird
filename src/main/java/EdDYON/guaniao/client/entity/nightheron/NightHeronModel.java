@@ -1,5 +1,6 @@
 package EdDYON.guaniao.client.entity.nightheron;
 
+import EdDYON.guaniao.client.entity.mutation.BirdMutationTextureFactory;
 import EdDYON.guaniao.content.bird.nightheron.NightHeronDefinition;
 import EdDYON.guaniao.content.bird.nightheron.NightHeronEntity;
 import net.minecraft.resources.ResourceLocation;
@@ -12,7 +13,7 @@ extends GeoModel<NightHeronEntity> {
     }
 
     public ResourceLocation getTextureResource(NightHeronEntity animatable) {
-        return NightHeronDefinition.TEXTURE;
+        return BirdMutationTextureFactory.textureFor(NightHeronDefinition.TEXTURE, animatable);
     }
 
     public ResourceLocation getAnimationResource(NightHeronEntity animatable) {

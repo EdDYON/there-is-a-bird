@@ -2,6 +2,7 @@ package EdDYON.guaniao.event;
 
 import EdDYON.guaniao.GuaniaoMod;
 import EdDYON.guaniao.config.BirdSpecies;
+import EdDYON.guaniao.content.bird.flight.BirdFlightLock;
 import EdDYON.guaniao.content.dropping.BirdDroppingPrankHandler;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -69,6 +70,8 @@ public final class BirdServerTickManager {
                     continue;
                 }
                 BirdDroppingEvents.tickBird(bird);
+                BirdMoltEvents.tickBird(bird);
+                BirdFlightLock.tickBird(bird);
                 if (BirdPopulationTracker.tickBird(bird)) {
                     birdsToDiscard.add(bird);
                 }

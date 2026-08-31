@@ -9,7 +9,9 @@
     "PressurePlateBlockMixin",
     "WeightedPressurePlateBlockMixin"
   ],
-  "client": [],
+  "client": [
+    "client.MinecraftRenderTargetMixin"
+  ],
   "server": [],
   "injectors": {
     "defaultRequire": 0

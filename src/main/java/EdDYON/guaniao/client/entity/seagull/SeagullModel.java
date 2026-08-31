@@ -1,5 +1,6 @@
 package EdDYON.guaniao.client.entity.seagull;
 
+import EdDYON.guaniao.client.entity.mutation.BirdMutationTextureFactory;
 import EdDYON.guaniao.content.bird.seagull.SeagullDefinition;
 import EdDYON.guaniao.content.bird.seagull.SeagullEntity;
 import net.minecraft.resources.ResourceLocation;
@@ -13,7 +14,7 @@ public class SeagullModel extends GeoModel<SeagullEntity> {
 
     @Override
     public ResourceLocation getTextureResource(SeagullEntity animatable) {
-        return SeagullDefinition.TEXTURE;
+        return BirdMutationTextureFactory.textureFor(SeagullDefinition.TEXTURE, animatable);
     }
 
     @Override

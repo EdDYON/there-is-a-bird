@@ -45,7 +45,7 @@ public class PhotographScreen extends Screen {
         graphics.fill(x - 4, y - 4, x + imageSize + 4, y + imageSize + 4, 0xFF2A2A2A);
 
         ResourceLocation texture = PhotographTextureCache.textureFor(this.photograph);
-        graphics.blit(texture, x, y, 0, 0, imageSize, imageSize, textureWidth, textureHeight);
+        blitFullTexture(graphics, texture, x, y, imageSize, textureWidth, textureHeight);
 
         String photographer = PhotographData.photographer(this.photograph);
         if (!photographer.isEmpty()) {
@@ -58,6 +58,29 @@ public class PhotographScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    private static void blitFullTexture(
+            GuiGraphics graphics,
+            ResourceLocation texture,
+            int x,
+            int y,
+            int imageSize,
+            int textureWidth,
+            int textureHeight
+    ) {
+        graphics.pose().pushPose();
+        try {
+            graphics.pose().translate(x, y, 0.0F);
+            graphics.pose().scale(
+                    imageSize / (float) textureWidth,
+                    imageSize / (float) textureHeight,
+                    1.0F
+            );
+            graphics.blit(texture, 0, 0, 0, 0, textureWidth, textureHeight, textureWidth, textureHeight);
+        } finally {
+            graphics.pose().popPose();
+        }
     }
 
     private void export() {

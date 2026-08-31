@@ -1,11 +1,18 @@
 package EdDYON.guaniao.content.camera;
 
 public final class PhotoTransferLimits {
-    public static final int IMAGE_WIDTH = 256;
-    public static final int IMAGE_HEIGHT = 256;
-    public static final int MAX_COMPRESSED_BYTES = 96 * 1024;
+    /** Resolution used by newly captured photographs. */
+    public static final int IMAGE_WIDTH = 1024;
+    public static final int IMAGE_HEIGHT = 1024;
+    /** Resolution used by photographs created by the first high-resolution capture update. */
+    public static final int PREVIOUS_IMAGE_WIDTH = 512;
+    public static final int PREVIOUS_IMAGE_HEIGHT = 512;
+    /** Resolution used by photographs created before the high-resolution capture update. */
+    public static final int LEGACY_IMAGE_WIDTH = 256;
+    public static final int LEGACY_IMAGE_HEIGHT = 256;
+    public static final int MAX_COMPRESSED_BYTES = 2 * 1024 * 1024;
     public static final int MAX_CHUNK_BYTES = 24 * 1024;
-    public static final int MAX_CHUNKS = MAX_COMPRESSED_BYTES / MAX_CHUNK_BYTES;
+    public static final int MAX_CHUNKS = (MAX_COMPRESSED_BYTES + MAX_CHUNK_BYTES - 1) / MAX_CHUNK_BYTES;
     public static final int UPLOAD_TIMEOUT_TICKS = 10 * 20;
     public static final int DOWNLOAD_TIMEOUT_TICKS = 10 * 20;
     public static final int CAPTURE_COOLDOWN_TICKS = 30;
@@ -14,6 +21,16 @@ public final class PhotoTransferLimits {
     public static final int SHA256_HEX_LENGTH = 64;
 
     private PhotoTransferLimits() {
+    }
+
+    public static boolean isCaptureDimensions(int width, int height) {
+        return width == IMAGE_WIDTH && height == IMAGE_HEIGHT;
+    }
+
+    public static boolean isSupportedDimensions(int width, int height) {
+        return isCaptureDimensions(width, height)
+                || width == PREVIOUS_IMAGE_WIDTH && height == PREVIOUS_IMAGE_HEIGHT
+                || width == LEGACY_IMAGE_WIDTH && height == LEGACY_IMAGE_HEIGHT;
     }
 
     public static boolean isValidPhotoId(String photoId) {

@@ -15,9 +15,12 @@ import EdDYON.guaniao.content.bird.command.BirdStayGoal;
 import EdDYON.guaniao.content.bird.command.CommandableBird;
 import EdDYON.guaniao.content.bird.flock.FlockCompatibleBird;
 import EdDYON.guaniao.content.bird.flock.BirdFlockManager;
+import EdDYON.guaniao.content.bird.mutation.BirdMutation;
+import EdDYON.guaniao.content.bird.mutation.BirdMutationHolder;
 import EdDYON.guaniao.content.bird.BirdGroundAnimation;
 import EdDYON.guaniao.content.bird.brain.BirdBrain;
 import EdDYON.guaniao.content.bird.brain.BirdIntent;
+import EdDYON.guaniao.content.bird.brain.BirdMigrationGoal;
 import EdDYON.guaniao.content.bird.brain.BirdSpeciesProfile;
 import EdDYON.guaniao.content.bird.flight.BirdFlightAware;
 import EdDYON.guaniao.content.bird.flight.BirdFlightBoids;
@@ -102,10 +105,12 @@ import software.bernie.geckolib.core.animation.RawAnimation;
 import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
-public abstract class AbstractColumbidEntity extends TamableAnimal implements GeoEntity, FlyingAnimal, ScalableBirdModel, BirdFlightAware, BirdBathMountable, BirdBathFeedingAnimatable, CommandableBird, FlockCompatibleBird {
+public abstract class AbstractColumbidEntity extends TamableAnimal implements GeoEntity, FlyingAnimal, ScalableBirdModel, BirdFlightAware, BirdBathMountable, BirdBathFeedingAnimatable, CommandableBird, FlockCompatibleBird, BirdMutationHolder {
     private static final EntityDataAccessor<Integer> BEHAVIOR_STATE = SynchedEntityData.defineId(AbstractColumbidEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Float> MODEL_SCALE = SynchedEntityData.defineId(AbstractColumbidEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Integer> COMMAND_MODE = SynchedEntityData.defineId(AbstractColumbidEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> MUTATION = SynchedEntityData.defineId(AbstractColumbidEntity.class, EntityDataSerializers.INT);
+    public static final String MUTATION_NBT_KEY = "BirdMutation";
     private static final double FLIGHT_SPEED = 0.34D;
     private static final double HIGH_FLIGHT_SPEED = 0.38D;
     private static final double ESCAPE_FLIGHT_SPEED = 0.44D;
@@ -235,6 +240,7 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
     @Override
     protected void registerGoals() {
         this.goalSelector.addGoal(0, new FloatGoal((Mob)this));
+        this.goalSelector.addGoal(0, new BirdMigrationGoal(this, this::birdBrain));
         this.goalSelector.addGoal(1, new ColumbidEatSeedGoal(this));
         this.goalSelector.addGoal(2, new BirdStayGoal<>(this));
         this.goalSelector.addGoal(2, new BirdRoostGoal<>(this));
@@ -276,6 +282,17 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
         this.entityData.define(BEHAVIOR_STATE, ColumbidBehaviorState.IDLE.ordinal());
         this.entityData.define(MODEL_SCALE, BirdModelScale.DEFAULT_INDIVIDUAL_SCALE);
         this.entityData.define(COMMAND_MODE, BirdCommandMode.FREE.ordinal());
+        this.entityData.define(MUTATION, BirdMutation.NONE.ordinal());
+    }
+
+    @Override
+    public BirdMutation getBirdMutation() {
+        return BirdMutation.byId(this.entityData.get(MUTATION));
+    }
+
+    @Override
+    public void setBirdMutation(BirdMutation mutation) {
+        this.entityData.set(MUTATION, mutation.ordinal());
     }
 
     @Override
@@ -291,6 +308,9 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
         SpawnGroupData data = super.finalizeSpawn(level, difficulty, spawnType, spawnGroupData, compoundTag);
         if (compoundTag == null || !compoundTag.contains(BirdModelScale.NBT_KEY, 5)) {
             this.randomizeModelScale();
+        }
+        if (compoundTag == null || !compoundTag.contains(MUTATION_NBT_KEY, 3)) {
+            this.setBirdMutation(BirdMutation.randomMutation(this.getRandom()));
         }
         return data;
     }
@@ -486,6 +506,7 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
         }
         compoundTag.putInt("SeedTrustTicks", this.seedTrustTicks);
         compoundTag.putInt(CommandableBird.COMMAND_MODE_NBT_KEY, this.getBirdCommandMode().ordinal());
+        compoundTag.putInt(MUTATION_NBT_KEY, this.getBirdMutation().ordinal());
     }
 
     @Override
@@ -506,6 +527,9 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
             this.setBirdCommandMode(BirdCommandMode.byId(compoundTag.getInt(CommandableBird.COMMAND_MODE_NBT_KEY)));
         } else {
             this.setBirdCommandMode(this.isTame() ? BirdCommandMode.FOLLOW : BirdCommandMode.FREE);
+        }
+        if (compoundTag.contains(MUTATION_NBT_KEY, 3)) {
+            this.setBirdMutation(BirdMutation.byId(compoundTag.getInt(MUTATION_NBT_KEY)));
         }
         this.clearFlightState();
     }

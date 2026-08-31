@@ -1,0 +1,21 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:wheat_seeds",
+    "minecraft:melon_seeds",
+    "minecraft:pumpkin_seeds",
+    "minecraft:beetroot_seeds",
+    "minecraft:torchflower_seeds",
+    "minecraft:pitcher_pod",
+    "minecraft:sweet_berries",
+    "minecraft:glow_berries",
+    "minecraft:apple",
+    "minecraft:melon_slice",
+    "minecraft:carrot",
+    "minecraft:beetroot",
+    "minecraft:wheat",
+    "minecraft:bread",
+    "minecraft:spider_eye",
+    "guaniao:breadcrumbs"
+  ]
+}

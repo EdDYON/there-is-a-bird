@@ -93,9 +93,9 @@ public final class BirdScanBudget {
             int cap = Math.max(2, budget / 2);
             for (BirdSpecies species : BirdSpecies.values()) {
                 int previous = this.speciesTokens.getOrDefault(species, cap);
-                this.speciesTokens.put(species, Math.min(cap, previous + (int)Math.min(Integer.MAX_VALUE, elapsed * refill)));
+                this.speciesTokens.put(species, (int)Math.min(cap, (long)previous + Math.min((long)Integer.MAX_VALUE, elapsed * refill)));
             }
-            this.unclassifiedTokens = Math.min(cap, this.unclassifiedTokens + (int)Math.min(Integer.MAX_VALUE, elapsed * refill));
+            this.unclassifiedTokens = (int)Math.min(cap, (long)this.unclassifiedTokens + Math.min((long)Integer.MAX_VALUE, elapsed * refill));
         }
 
         private boolean consumeSpecies(BirdSpecies species, int cost, int budget) {

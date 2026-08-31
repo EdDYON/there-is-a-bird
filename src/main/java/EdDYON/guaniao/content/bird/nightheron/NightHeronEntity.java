@@ -8,10 +8,13 @@ import EdDYON.guaniao.content.bird.CleanBirdTemptGoal;
 import EdDYON.guaniao.content.bird.BirdFoodSafety;
 import EdDYON.guaniao.content.bird.BirdTags;
 import EdDYON.guaniao.content.bird.flock.FlockCompatibleBird;
+import EdDYON.guaniao.content.bird.mutation.BirdMutation;
+import EdDYON.guaniao.content.bird.mutation.BirdMutationHolder;
 import EdDYON.guaniao.content.bird.BirdGroundAnimation;
 import EdDYON.guaniao.content.bird.BirdSleepWakeable;
 import EdDYON.guaniao.content.bird.PollutedFoodReactionUtil;
 import EdDYON.guaniao.content.bird.brain.BirdBrain;
+import EdDYON.guaniao.content.bird.brain.BirdMigrationGoal;
 import EdDYON.guaniao.content.bird.flight.BirdFlightAware;
 import EdDYON.guaniao.content.bird.flight.BirdFlightController;
 import EdDYON.guaniao.content.bird.flight.BirdFlightProfile;
@@ -90,12 +93,14 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 
 public class NightHeronEntity
 extends PathfinderMob
-implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, BirdBathFeedingAnimatable, FlockCompatibleBird, BirdSleepWakeable {
+implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, BirdBathFeedingAnimatable, FlockCompatibleBird, BirdSleepWakeable, BirdMutationHolder {
     private static final EntityDataAccessor<Integer> BEHAVIOR_STATE = SynchedEntityData.defineId(NightHeronEntity.class, (EntityDataSerializer)EntityDataSerializers.INT);
     private static final EntityDataAccessor<Float> MODEL_SCALE = SynchedEntityData.defineId(NightHeronEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<ItemStack> HELD_FISH = SynchedEntityData.defineId(NightHeronEntity.class, EntityDataSerializers.ITEM_STACK);
     private static final EntityDataAccessor<Integer> HELD_FISH_POSE_SEED = SynchedEntityData.defineId(NightHeronEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> EATING_TICKS = SynchedEntityData.defineId(NightHeronEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> MUTATION = SynchedEntityData.defineId(NightHeronEntity.class, (EntityDataSerializer)EntityDataSerializers.INT);
+    public static final String MUTATION_NBT_KEY = "BirdMutation";
     static final Ingredient TEMPT_ITEMS = Ingredient.of(BirdTags.NIGHT_HERON_FOODS);
     private static final RawAnimation IDLE_ANIMATION = RawAnimation.begin().thenLoop("idle");
     private static final RawAnimation IDLE_DIFF_1_ANIMATION = RawAnimation.begin().thenPlay("idle_diff_1").thenLoop("idle");
@@ -163,6 +168,17 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
         this.entityData.define(HELD_FISH, ItemStack.EMPTY);
         this.entityData.define(HELD_FISH_POSE_SEED, 0);
         this.entityData.define(EATING_TICKS, 0);
+        this.entityData.define(MUTATION, BirdMutation.NONE.ordinal());
+    }
+
+    @Override
+    public BirdMutation getBirdMutation() {
+        return BirdMutation.byId(this.entityData.get(MUTATION));
+    }
+
+    @Override
+    public void setBirdMutation(BirdMutation mutation) {
+        this.entityData.set(MUTATION, mutation.ordinal());
     }
 
     public void onSyncedDataUpdated(EntityDataAccessor<?> key) {
@@ -190,11 +206,15 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
         if (compoundTag == null || !compoundTag.contains(BirdModelScale.NBT_KEY, 5)) {
             this.randomizeModelScale();
         }
+        if (compoundTag == null || !compoundTag.contains(MUTATION_NBT_KEY, 3)) {
+            this.setBirdMutation(BirdMutation.randomMutation(this.getRandom()));
+        }
         return data;
     }
 
     protected void registerGoals() {
         this.goalSelector.addGoal(0, (Goal)new FloatGoal((Mob)this));
+        this.goalSelector.addGoal(0, new BirdMigrationGoal(this, this::birdBrain));
         this.goalSelector.addGoal(1, (Goal)new NightHeronFrightGoal(this));
         this.goalSelector.addGoal(3, (Goal)new NightHeronEatThrownFishGoal(this));
         this.goalSelector.addGoal(4, (Goal)new CleanBirdTemptGoal((PathfinderMob)this, 1.0, TEMPT_ITEMS, false));
@@ -301,6 +321,7 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
         compoundTag.putBoolean("NoGravity", false);
         this.birdBrain.save(compoundTag);
         BirdModelScale.save(compoundTag, this.getIndividualModelScale(), this.modelScaleProfile());
+        compoundTag.putInt(MUTATION_NBT_KEY, this.getBirdMutation().ordinal());
     }
 
     @Override
@@ -312,6 +333,9 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
             this.setIndividualModelScale(BirdModelScale.load(compoundTag, this.modelScaleProfile()));
         } else {
             this.randomizeModelScale();
+        }
+        if (compoundTag.contains(MUTATION_NBT_KEY, 3)) {
+            this.setBirdMutation(BirdMutation.byId(compoundTag.getInt(MUTATION_NBT_KEY)));
         }
     }
 

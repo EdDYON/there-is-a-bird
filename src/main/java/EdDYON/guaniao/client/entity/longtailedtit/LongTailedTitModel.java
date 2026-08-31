@@ -1,5 +1,6 @@
 package EdDYON.guaniao.client.entity.longtailedtit;
 
+import EdDYON.guaniao.client.entity.mutation.BirdMutationTextureFactory;
 import EdDYON.guaniao.content.bird.longtailedtit.LongTailedTitDefinition;
 import EdDYON.guaniao.content.bird.longtailedtit.LongTailedTitEntity;
 import net.minecraft.resources.ResourceLocation;
@@ -13,7 +14,7 @@ public class LongTailedTitModel extends GeoModel<LongTailedTitEntity> {
 
     @Override
     public ResourceLocation getTextureResource(LongTailedTitEntity animatable) {
-        return LongTailedTitDefinition.TEXTURE;
+        return BirdMutationTextureFactory.textureFor(LongTailedTitDefinition.TEXTURE, animatable);
     }
 
     @Override

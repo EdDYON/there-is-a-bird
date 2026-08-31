@@ -119,14 +119,13 @@ public final class PhotoClientRepository {
         String expectedHash = EXPECTED_HASHES.getOrDefault(photoId, "");
         if (totalBytes <= 0
                 || totalBytes > PhotoTransferLimits.MAX_COMPRESSED_BYTES
-                || width != PhotoTransferLimits.IMAGE_WIDTH
-                || height != PhotoTransferLimits.IMAGE_HEIGHT
+                || !PhotoTransferLimits.isSupportedDimensions(width, height)
                 || !PhotoImageCodec.isSha256(contentHash)
                 || (!expectedHash.isEmpty() && !expectedHash.equals(contentHash))) {
             reject(photoId);
             return;
         }
-        DOWNLOADS.put(photoId, new DownloadSession(totalBytes, contentHash));
+        DOWNLOADS.put(photoId, new DownloadSession(totalBytes, width, height, contentHash));
     }
 
     public static void acceptDownloadChunk(String photoId, int chunkIndex, byte[] data) {
@@ -154,7 +153,8 @@ public final class PhotoClientRepository {
             try {
                 valid = session.contentHash.equals(PhotoImageCodec.sha256(jpeg));
                 if (valid) {
-                    PhotoImageCodec.validateJpeg(jpeg);
+                    PhotoImageCodec.Dimensions dimensions = PhotoImageCodec.validateJpeg(jpeg);
+                    valid = dimensions.width() == session.width && dimensions.height() == session.height;
                 }
             } catch (IOException | RuntimeException exception) {
                 valid = false;
@@ -241,12 +241,16 @@ public final class PhotoClientRepository {
 
     private static final class DownloadSession {
         private final int totalBytes;
+        private final int width;
+        private final int height;
         private final String contentHash;
         private final byte[][] chunks;
         private int receivedBytes;
 
-        private DownloadSession(int totalBytes, String contentHash) {
+        private DownloadSession(int totalBytes, int width, int height, String contentHash) {
             this.totalBytes = totalBytes;
+            this.width = width;
+            this.height = height;
             this.contentHash = contentHash;
             this.chunks = new byte[(totalBytes + PhotoTransferLimits.MAX_CHUNK_BYTES - 1) / PhotoTransferLimits.MAX_CHUNK_BYTES][];
         }

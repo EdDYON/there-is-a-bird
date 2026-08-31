@@ -4,6 +4,7 @@ import EdDYON.guaniao.GuaniaoMod;
 import EdDYON.guaniao.config.BirdConfigManager;
 import EdDYON.guaniao.config.BirdSpecies;
 import EdDYON.guaniao.content.bird.BirdScanBudget;
+import EdDYON.guaniao.content.bird.flock.FlockCompatibleBird;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -46,13 +47,19 @@ public final class BirdFlockManager {
         }
         if (!(source.level() instanceof ServerLevel serverLevel)) {
             return source.level().getEntitiesOfClass(entityClass, source.getBoundingBox().inflate(radius),
-                    other -> other.isAlive() && other.getType() == source.getType());
+                    other -> {
+                        if (!other.isAlive()) return false;
+                        if (source instanceof FlockCompatibleBird fcb) {
+                            return fcb.canFlockWith(other);
+                        }
+                        return other.getType() == source.getType();
+                    });
         }
         int sectionX = SectionPos.blockToSectionCoord(source.getBlockX());
         int sectionY = SectionPos.blockToSectionCoord(source.getBlockY());
         int sectionZ = SectionPos.blockToSectionCoord(source.getBlockZ());
         int radiusBucket = Math.max(1, (int)Math.ceil(radius / 4.0D));
-        CacheKey key = new CacheKey(SectionPos.asLong(sectionX, sectionY, sectionZ), source.getType(), radiusBucket);
+        CacheKey key = new CacheKey(SectionPos.asLong(sectionX, sectionY, sectionZ), source.getType(), radiusBucket, entityClass);
         LevelCache levelCache = LEVEL_CACHES.computeIfAbsent(serverLevel, ignored -> new LevelCache());
         CacheEntry entry = levelCache.entries.get(key);
         long now = serverLevel.getGameTime();
@@ -65,9 +72,13 @@ public final class BirdFlockManager {
                 double scanRadius = radiusBucket * 4.0D + 14.0D;
                 Vec3 sectionCenter = new Vec3(sectionX * 16.0D + 8.0D, sectionY * 16.0D + 8.0D, sectionZ * 16.0D + 8.0D);
                 AABB scanBox = AABB.ofSize(sectionCenter, scanRadius * 2.0D, scanRadius * 2.0D, scanRadius * 2.0D);
-                List<Integer> ids = serverLevel.getEntitiesOfClass(entityClass, scanBox,
-                                entity -> entity.isAlive() && entity.getType() == source.getType())
-                        .stream().map(Entity::getId).toList();
+                List<Integer> ids = serverLevel.getEntitiesOfClass(entityClass, scanBox, entity -> {
+                    if (!entity.isAlive()) return false;
+                    if (source instanceof FlockCompatibleBird fcb) {
+                        return fcb.canFlockWith(entity);
+                    }
+                    return entity.getType() == source.getType();
+                }).stream().map(Entity::getId).toList();
                 entry = new CacheEntry(now, ids);
                 levelCache.entries.put(key, entry);
                 levelCache.trim();
@@ -78,8 +89,12 @@ public final class BirdFlockManager {
         List<T> result = new ArrayList<>();
         for (int id : entry.entityIds) {
             Entity entity = serverLevel.getEntity(id);
-            if (!entityClass.isInstance(entity) || !entity.isAlive() || entity.getType() != source.getType()
-                    || source.distanceToSqr(entity) > radiusSqr) {
+            if (!entityClass.isInstance(entity) || !entity.isAlive() || source.distanceToSqr(entity) > radiusSqr) {
+                continue;
+            }
+            if (source instanceof FlockCompatibleBird fcb) {
+                if (!fcb.canFlockWith(entity)) continue;
+            } else if (entity.getType() != source.getType()) {
                 continue;
             }
             result.add(entityClass.cast(entity));
@@ -98,7 +113,7 @@ public final class BirdFlockManager {
         }
     }
 
-    private record CacheKey(long section, EntityType<?> type, int radiusBucket) {
+    private record CacheKey(long section, EntityType<?> type, int radiusBucket, Class<?> entityClass) {
     }
 
     private record CacheEntry(long createdAt, List<Integer> entityIds) {

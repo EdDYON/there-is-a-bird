@@ -2,6 +2,8 @@ package EdDYON.guaniao.event;
 
 import EdDYON.guaniao.config.BirdConfigManager;
 import EdDYON.guaniao.config.BirdSpecies;
+import EdDYON.guaniao.content.bird.BirdAmbientDropControl;
+import EdDYON.guaniao.content.dropping.BirdDroppingItem;
 import EdDYON.guaniao.content.dropping.BirdDroppingProjectileEntity;
 import EdDYON.guaniao.content.dropping.BirdDroppingSplatEntity;
 import EdDYON.guaniao.content.dropping.BirdDroppingVariant;
@@ -14,6 +16,8 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.fml.common.Mod;
 
@@ -37,6 +41,9 @@ public final class BirdDroppingEvents {
             return;
         }
         if ((entity.tickCount + entity.getId()) % CHECK_INTERVAL_TICKS != 0) {
+            return;
+        }
+        if (!BirdAmbientDropControl.hasNearbyPlayer(level, entity)) {
             return;
         }
 
@@ -63,6 +70,9 @@ public final class BirdDroppingEvents {
         if (bird.isDeadOrDying() || bird.isRemoved() || bird.isInWaterOrBubble() || !bird.isAlive()) {
             return false;
         }
+        if (!hasNaturalDroppingCapacity(level, bird)) {
+            return false;
+        }
 
         Vec3 spawnPosition = droppingSpawnPosition(bird);
         if (!BirdDroppingSplatEntity.canAddSplatAt(level, spawnPosition)) {
@@ -86,6 +96,38 @@ public final class BirdDroppingEvents {
         dropping.setPos(spawnPosition.x, spawnPosition.y, spawnPosition.z);
         dropping.setDeltaMovement(motion);
         return level.addFreshEntity(dropping);
+    }
+
+    private static boolean hasNaturalDroppingCapacity(ServerLevel level, LivingEntity bird) {
+        int cap = Math.min(
+                BirdConfigManager.maxGroundDroppingsNearby(),
+                BirdAmbientDropControl.HARD_MAX_DROPPINGS_NEARBY
+        );
+        if (cap <= 0) {
+            return false;
+        }
+
+        AABB area = bird.getBoundingBox().inflate(BirdAmbientDropControl.LOCAL_CAP_RADIUS);
+        int count = level.getEntitiesOfClass(
+                BirdDroppingProjectileEntity.class,
+                area,
+                projectile -> projectile.isAlive() && projectile.isNaturalDropping()
+        ).size();
+        if (count >= cap) {
+            return false;
+        }
+
+        count += level.getEntitiesOfClass(BirdDroppingSplatEntity.class, area, Entity::isAlive).size();
+        if (count >= cap) {
+            return false;
+        }
+
+        count += level.getEntitiesOfClass(
+                ItemEntity.class,
+                area,
+                item -> item.isAlive() && item.getItem().getItem() instanceof BirdDroppingItem
+        ).size();
+        return count < cap;
     }
 
     private static Vec3 droppingSpawnPosition(LivingEntity bird) {

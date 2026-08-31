@@ -78,6 +78,9 @@ public final class PhotographTextureCache {
             }
             try {
                 DynamicTexture texture = new DynamicTexture(decoded.image);
+                // Photographs should retain their captured pixels when the GUI scales
+                // them; linear filtering makes Minecraft foliage and small birds look soft.
+                texture.setFilter(false, false);
                 texture.upload();
                 ResourceLocation location = minecraft.getTextureManager().register("guaniao_photo/" + decoded.key, texture);
                 TEXTURES.put(decoded.key, new CachedTexture(location, System.currentTimeMillis()));

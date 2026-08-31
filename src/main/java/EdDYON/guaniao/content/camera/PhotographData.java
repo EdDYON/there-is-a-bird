@@ -5,9 +5,10 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 
 public final class PhotographData {
-    public static final int IMAGE_SIZE = 256;
+    public static final int IMAGE_SIZE = PhotoTransferLimits.IMAGE_WIDTH;
+    public static final int LEGACY_IMAGE_SIZE = PhotoTransferLimits.LEGACY_IMAGE_WIDTH;
     private static final int MIN_IMAGE_SIZE = 16;
-    private static final int MAX_IMAGE_SIZE = 512;
+    private static final int MAX_IMAGE_SIZE = PhotoTransferLimits.IMAGE_WIDTH;
     public static final String TAG_PHOTO_ID = "PhotoId";
     public static final String TAG_PHOTOGRAPHER = "Photographer";
     public static final String TAG_PHOTOGRAPHER_ID = "PhotographerId";
@@ -56,7 +57,7 @@ public final class PhotographData {
 
     public static boolean hasLegacyPixels(ItemStack stack) {
         CompoundTag tag = stack.getTag();
-        return tag != null && tag.getIntArray(TAG_PIXELS).length == IMAGE_SIZE * IMAGE_SIZE;
+        return tag != null && tag.getIntArray(TAG_PIXELS).length == LEGACY_IMAGE_SIZE * LEGACY_IMAGE_SIZE;
     }
 
     public static String contentHash(ItemStack stack) {
@@ -127,11 +128,11 @@ public final class PhotographData {
         }
         int width = imageWidth(source);
         int height = imageHeight(source);
-        target.putInt(TAG_WIDTH, width > 0 ? width : IMAGE_SIZE);
-        target.putInt(TAG_HEIGHT, height > 0 ? height : IMAGE_SIZE);
+        target.putInt(TAG_WIDTH, width > 0 ? width : LEGACY_IMAGE_SIZE);
+        target.putInt(TAG_HEIGHT, height > 0 ? height : LEGACY_IMAGE_SIZE);
         // Legacy pixels are copied only so an old film crafted before migration can
         // still be imported by the resulting photograph item on its next server tick.
-        if (source.getIntArray(TAG_PIXELS).length == IMAGE_SIZE * IMAGE_SIZE) {
+        if (source.getIntArray(TAG_PIXELS).length == LEGACY_IMAGE_SIZE * LEGACY_IMAGE_SIZE) {
             target.putIntArray(TAG_PIXELS, source.getIntArray(TAG_PIXELS));
         }
     }
@@ -141,8 +142,8 @@ public final class PhotographData {
         if (tag == null || !PhotoImageCodec.isSha256(contentHash)) {
             return;
         }
-        tag.putInt(TAG_WIDTH, IMAGE_SIZE);
-        tag.putInt(TAG_HEIGHT, IMAGE_SIZE);
+        tag.putInt(TAG_WIDTH, LEGACY_IMAGE_SIZE);
+        tag.putInt(TAG_HEIGHT, LEGACY_IMAGE_SIZE);
         tag.putString(TAG_CONTENT_HASH, contentHash);
         tag.remove(TAG_PIXELS);
     }
@@ -154,7 +155,7 @@ public final class PhotographData {
             return width;
         }
 
-        return tag.getIntArray(TAG_PIXELS).length == IMAGE_SIZE * IMAGE_SIZE ? IMAGE_SIZE : 0;
+        return tag.getIntArray(TAG_PIXELS).length == LEGACY_IMAGE_SIZE * LEGACY_IMAGE_SIZE ? LEGACY_IMAGE_SIZE : 0;
     }
 
     private static int imageHeight(CompoundTag tag) {
@@ -164,7 +165,7 @@ public final class PhotographData {
             return height;
         }
 
-        return tag.getIntArray(TAG_PIXELS).length == IMAGE_SIZE * IMAGE_SIZE ? IMAGE_SIZE : 0;
+        return tag.getIntArray(TAG_PIXELS).length == LEGACY_IMAGE_SIZE * LEGACY_IMAGE_SIZE ? LEGACY_IMAGE_SIZE : 0;
     }
 
     private static boolean validDimensions(int width, int height) {

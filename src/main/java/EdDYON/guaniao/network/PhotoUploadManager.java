@@ -37,6 +37,7 @@ public final class PhotoUploadManager {
     private static final DateTimeFormatter PHOTO_NAME_DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final Map<UUID, UploadSession> ACTIVE_UPLOADS = new HashMap<>();
     private static final Map<UUID, UUID> PROCESSING_UPLOADS = new HashMap<>();
+    /** Pending store byte count: one entry per player (at most one pending store per player). */
     private static final Map<UUID, Integer> PENDING_STORE_BYTES = new HashMap<>();
     private static final Map<UUID, ArrayDeque<RateEntry>> UPLOAD_RATE = new HashMap<>();
     private static final Map<UUID, RequestWindow> DOWNLOAD_RATE = new HashMap<>();
@@ -55,8 +56,7 @@ public final class PhotoUploadManager {
                 || PROCESSING_UPLOADS.containsKey(player.getUUID())
                 || totalBytes <= 0
                 || totalBytes > PhotoTransferLimits.MAX_COMPRESSED_BYTES
-                || width != PhotoTransferLimits.IMAGE_WIDTH
-                || height != PhotoTransferLimits.IMAGE_HEIGHT
+                || !PhotoTransferLimits.isCaptureDimensions(width, height)
                 || !PhotoImageCodec.isSha256(contentHash)
                 || !quotaAllows(player.server, player.getUUID(), totalBytes)) {
             fail(player, uploadId);
@@ -141,8 +141,15 @@ public final class PhotoUploadManager {
             return;
         }
         PhotoRecord indexed = PhotoIndexSavedData.get(player.server).get(photoId);
-        if (indexed != null && (indexed.status() != PhotoStatus.ACTIVE
-                || !expectedHash.isEmpty() && !expectedHash.equals(indexed.contentHash()))) {
+        // Only an indexed photo may be served. A disk file with no index record is an orphan —
+        // never revive it as ACTIVE (its dimensions/hash would be fabricated). Maintenance tools
+        // are the sole path that rebuilds the index, and they go through TRASH handling.
+        if (indexed == null) {
+            sendMissing(player, photoId);
+            return;
+        }
+        if (indexed.status() != PhotoStatus.ACTIVE
+                || !expectedHash.isEmpty() && !expectedHash.equals(indexed.contentHash())) {
             sendMissing(player, photoId);
             return;
         }
@@ -162,21 +169,19 @@ public final class PhotoUploadManager {
                     PhotoRecord record = index.get(photoId);
                     long now = System.currentTimeMillis();
                     if (record == null) {
-                        index.register(new PhotoRecord(
-                                photoId, null, "", now, now, 0L, loaded.data.length,
-                                PhotoTransferLimits.IMAGE_WIDTH, PhotoTransferLimits.IMAGE_HEIGHT,
-                                loaded.contentHash, PhotoStatus.ACTIVE
-                        ));
-                    } else {
-                        index.updateFileMetadata(
-                                photoId, loaded.data.length,
-                                PhotoTransferLimits.IMAGE_WIDTH, PhotoTransferLimits.IMAGE_HEIGHT,
-                                loaded.contentHash, now
-                        );
+                        // Index entry vanishes (corruption/maintenance) after the file loaded:
+                        // do not resurrect a fabricated ACTIVE record; report missing.
+                        sendMissing(online, photoId);
+                        return;
                     }
+                    index.updateFileMetadata(
+                            photoId, loaded.data.length,
+                            loaded.width, loaded.height,
+                            loaded.contentHash, now
+                    );
                     GuaniaoNetwork.sendToPlayer(new PhotoDownloadStartPacket(
                             photoId, true, loaded.data.length,
-                            PhotoTransferLimits.IMAGE_WIDTH, PhotoTransferLimits.IMAGE_HEIGHT,
+                            loaded.width, loaded.height,
                             loaded.contentHash
                     ), online);
                     DOWNLOADS.put(playerId, new DownloadSession(photoId, loaded.data, loaded.contentHash, gameTime(server)));
@@ -219,7 +224,7 @@ public final class PhotoUploadManager {
             }
             DownloadSession session = DOWNLOADS.get(playerId);
             ServerPlayer player = server.getPlayerList().getPlayer(playerId);
-            if (session == null || player == null || now - session.startedAt > PhotoTransferLimits.DOWNLOAD_TIMEOUT_TICKS) {
+            if (session == null || player == null || now - session.lastProgressAt > PhotoTransferLimits.DOWNLOAD_TIMEOUT_TICKS) {
                 DOWNLOADS.remove(playerId);
                 continue;
             }
@@ -230,6 +235,9 @@ public final class PhotoUploadManager {
             }
             GuaniaoNetwork.sendToPlayer(session.nextPacket(), player);
             budget -= chunkBytes;
+            // A session that keeps making progress must not be dropped while it waits in a
+            // legitimate high-concurrency queue; measure timeout from the last successful chunk.
+            session.lastProgressAt = now;
             if (session.complete()) {
                 DOWNLOADS.remove(playerId);
             } else {
@@ -335,7 +343,8 @@ public final class PhotoUploadManager {
         if (!expectedHash.isEmpty() && !expectedHash.equals(hash)) {
             throw new IOException("Photograph hash mismatch");
         }
-        return new LoadedDownload(data, hash);
+        PhotoImageCodec.Dimensions dimensions = PhotoImageCodec.validateJpeg(data);
+        return new LoadedDownload(data, hash, dimensions.width(), dimensions.height());
     }
 
     private static boolean canUpload(ServerPlayer player) {
@@ -428,7 +437,7 @@ public final class PhotoUploadManager {
     private record CaptureJobResult(String photoId, int bytes, int width, int height, String contentHash) {
     }
 
-    private record LoadedDownload(byte[] data, String contentHash) {
+    private record LoadedDownload(byte[] data, String contentHash, int width, int height) {
     }
 
     private static final class RequestWindow {
@@ -487,7 +496,7 @@ public final class PhotoUploadManager {
         private final String photoId;
         private final byte[] data;
         private final String contentHash;
-        private final long startedAt;
+        private long lastProgressAt;
         private int offset;
         private int chunkIndex;
 
@@ -495,7 +504,7 @@ public final class PhotoUploadManager {
             this.photoId = photoId;
             this.data = data;
             this.contentHash = contentHash;
-            this.startedAt = startedAt;
+            this.lastProgressAt = startedAt;
         }
 
         private int nextChunkBytes() {

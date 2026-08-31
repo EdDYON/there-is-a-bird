@@ -159,8 +159,8 @@ public final class PhotoRepository {
         Path temporary = target.resolveSibling(target.getFileName() + ".tmp");
         try (DataOutputStream output = new DataOutputStream(new BufferedOutputStream(
                 new GZIPOutputStream(Files.newOutputStream(temporary, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING))))) {
-            output.writeInt(PhotoTransferLimits.IMAGE_WIDTH);
-            output.writeInt(PhotoTransferLimits.IMAGE_HEIGHT);
+            output.writeInt(PhotoTransferLimits.LEGACY_IMAGE_WIDTH);
+            output.writeInt(PhotoTransferLimits.LEGACY_IMAGE_HEIGHT);
             output.writeInt(pixels.length);
             for (int pixel : pixels) {
                 output.writeInt(pixel);

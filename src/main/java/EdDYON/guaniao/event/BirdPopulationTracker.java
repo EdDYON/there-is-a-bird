@@ -26,12 +26,8 @@ import java.util.WeakHashMap;
 @Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
 public final class BirdPopulationTracker {
     private static final String LAST_NEARBY_PLAYER_TIME = "GuaniaoLastNearbyPlayerTime";
-    private static final String EXCESS_POPULATION_SINCE = "GuaniaoExcessPopulationSince";
     private static final String TRANSIENT_FLYBY_SPAWN_TIME = "GuaniaoTransientFlybySpawnTime";
     private static final int TRACK_INTERVAL_TICKS = 100;
-    private static final long EXCESS_POPULATION_GRACE_TICKS = 1200L;
-    private static final long UNOBSERVED_LIFETIME_TICKS = 24000L;
-    private static final long TRANSIENT_FLYBY_LIFETIME_TICKS = 3600L;
     private static final double EXCESS_CULL_DISTANCE_SQR = 32.0D * 32.0D;
     private static final double NEARBY_PLAYER_DISTANCE_SQR = 32.0D * 32.0D;
     private static final double UNOBSERVED_CULL_DISTANCE_SQR = 48.0D * 48.0D;
@@ -156,25 +152,13 @@ public final class BirdPopulationTracker {
         }
 
         if (data.contains(TRANSIENT_FLYBY_SPAWN_TIME, Tag.TAG_LONG)
-                && elapsed(now, data.getLong(TRANSIENT_FLYBY_SPAWN_TIME)) >= TRANSIENT_FLYBY_LIFETIME_TICKS
+                && elapsed(now, data.getLong(TRANSIENT_FLYBY_SPAWN_TIME)) >= BirdConfigManager.flybyBirdLifetimeTicks()
                 && canCullQuietly(level, mob, nearestPlayerDistanceSqr)) {
             return true;
         }
 
-        BirdSpecies species = BirdSpecies.from(mob);
-        if (isOverCapacity(level, mob, species)) {
-            if (!data.contains(EXCESS_POPULATION_SINCE, Tag.TAG_LONG)) {
-                data.putLong(EXCESS_POPULATION_SINCE, now);
-            } else if (elapsed(now, data.getLong(EXCESS_POPULATION_SINCE)) >= EXCESS_POPULATION_GRACE_TICKS
-                    && canCullQuietly(level, mob, nearestPlayerDistanceSqr)) {
-                return true;
-            }
-        } else {
-            data.remove(EXCESS_POPULATION_SINCE);
-        }
-
         return nearestPlayerDistanceSqr > UNOBSERVED_CULL_DISTANCE_SQR
-                && elapsed(now, data.getLong(LAST_NEARBY_PLAYER_TIME)) >= UNOBSERVED_LIFETIME_TICKS
+                && elapsed(now, data.getLong(LAST_NEARBY_PLAYER_TIME)) >= BirdConfigManager.wildBirdDespawnTicks()
                 && canCullQuietly(level, mob, nearestPlayerDistanceSqr);
     }
 
@@ -192,17 +176,6 @@ public final class BirdPopulationTracker {
     private static void clearLifecycleTimers(Mob mob) {
         CompoundTag data = mob.getPersistentData();
         data.remove(LAST_NEARBY_PLAYER_TIME);
-        data.remove(EXCESS_POPULATION_SINCE);
-    }
-
-    private static boolean isOverCapacity(ServerLevel level, Mob mob, BirdSpecies species) {
-        int nearbyLimit = BirdConfigManager.maxBirdsNearby();
-        int regionalLimit = BirdConfigManager.maxWildBirdsPerRegion();
-        int speciesLimit = BirdConfigManager.maxWildNearby(species);
-        return nearbyLimit <= 0 || totalAt(level, mob.getX(), mob.getZ()) > nearbyLimit
-                || (regionalLimit > 0 && totalInRegionAt(level, mob.getX(), mob.getZ()) > regionalLimit)
-                || speciesLimit <= 0
-                || speciesAt(level, mob.getX(), mob.getZ(), species) > speciesLimit;
     }
 
     private static double nearestPlayerDistanceSqr(ServerLevel level, Mob mob) {

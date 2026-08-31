@@ -1,5 +1,6 @@
 package EdDYON.guaniao.client.entity.columbid;
 
+import EdDYON.guaniao.client.entity.mutation.BirdMutationTextureFactory;
 import EdDYON.guaniao.content.bird.columbid.AbstractColumbidEntity;
 import EdDYON.guaniao.content.bird.columbid.ColumbidDefinition;
 import net.minecraft.resources.ResourceLocation;
@@ -13,7 +14,7 @@ public class ColumbidModel<T extends AbstractColumbidEntity> extends GeoModel<T>
 
     @Override
     public ResourceLocation getTextureResource(T animatable) {
-        return animatable.getTextureResource();
+        return BirdMutationTextureFactory.textureFor(animatable.getTextureResource(), animatable);
     }
 
     @Override

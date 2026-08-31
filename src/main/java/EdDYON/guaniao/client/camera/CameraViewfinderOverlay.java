@@ -1,5 +1,6 @@
 package EdDYON.guaniao.client.camera;
 
+import EdDYON.guaniao.content.camera.CameraFilter;
 import EdDYON.guaniao.content.camera.PhotographData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -7,6 +8,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 
 final class CameraViewfinderOverlay {
+    private static final int APERTURE_PERCENT = 72;
     private static final int MASK_COLOR = 0x9A02070A;
     private static final int FRAME_COLOR = 0xDDE8F6FF;
     private static final int SOFT_FRAME_COLOR = 0x6699BCD0;
@@ -15,12 +17,12 @@ final class CameraViewfinderOverlay {
     private CameraViewfinderOverlay() {
     }
 
-    static void render(GuiGraphics graphics, double focalLength, double fov) {
+    static void render(GuiGraphics graphics, double focalLength, double fov, CameraFilter filter) {
         Minecraft minecraft = Minecraft.getInstance();
         Font font = minecraft.font;
         int width = minecraft.getWindow().getGuiScaledWidth();
         int height = minecraft.getWindow().getGuiScaledHeight();
-        int apertureSize = Math.min(width, height) * 72 / 100;
+        int apertureSize = apertureSize(width, height);
         int left = (width - apertureSize) / 2;
         int top = (height - apertureSize) / 2;
         int right = left + apertureSize;
@@ -39,6 +41,17 @@ final class CameraViewfinderOverlay {
                 (int)Math.round(focalLength),
                 (int)Math.round(fov));
         graphics.drawCenteredString(font, modeLine, width / 2, Math.max(8, top - 22), TEXT_COLOR);
+
+        Component filterLine = Component.translatable(
+                "gui.guaniao.camera_viewfinder.filter_line",
+                Component.translatable(filter.translationKey()));
+        graphics.drawCenteredString(font, filterLine, width / 2, Math.min(height - 22, bottom + 8), TEXT_COLOR);
+        Component hint = Component.translatable("gui.guaniao.camera_viewfinder.hint");
+        graphics.drawCenteredString(font, hint, width / 2, Math.min(height - 10, bottom + 20), 0xAABBD4DF);
+    }
+
+    static int apertureSize(int width, int height) {
+        return Math.max(1, Math.min(width, height) * APERTURE_PERCENT / 100);
     }
 
     private static void drawFrame(GuiGraphics graphics, int left, int top, int right, int bottom) {

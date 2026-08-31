@@ -28,7 +28,9 @@ public final class GuaniaoBirdSpawnRegistry {
             new SpawnRule(BirdSpecies.SPOTTED_DOVE, GuaniaoEntityTypes.SPOTTED_DOVE, 3),
             new SpawnRule(BirdSpecies.PIGEON, GuaniaoEntityTypes.PIGEON, 5),
             new SpawnRule(BirdSpecies.CROW, GuaniaoEntityTypes.CROW, 3),
-            new SpawnRule(BirdSpecies.SEAGULL, GuaniaoEntityTypes.SEAGULL, 4)
+            new SpawnRule(BirdSpecies.SEAGULL, GuaniaoEntityTypes.SEAGULL, 4),
+            new SpawnRule(BirdSpecies.KIWI, GuaniaoEntityTypes.KIWI, 2),
+            new SpawnRule(BirdSpecies.MYNA, GuaniaoEntityTypes.MYNA, 4)
     );
 
     private GuaniaoBirdSpawnRegistry() {

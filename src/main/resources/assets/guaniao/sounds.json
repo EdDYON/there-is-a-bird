@@ -153,9 +153,8 @@
   "entity.spotted_dove.ambient": {
     "subtitle": "subtitles.guaniao.entity.spotted_dove.ambient",
     "sounds": [
-      "guaniao:entity/spotted_dove/ambient_01",
-      "guaniao:entity/spotted_dove/ambient_02",
-      "guaniao:entity/spotted_dove/ambient_03"
+      "guaniao:entity/spotted_dove/idle",
+      "guaniao:entity/spotted_dove/idle2"
     ]
   },
   "entity.spotted_dove.hurt": {
@@ -175,17 +174,21 @@
   "entity.spotted_dove.mate": {
     "subtitle": "subtitles.guaniao.entity.spotted_dove.mate",
     "sounds": [
-      {
-        "name": "guaniao:entity/spotted_dove/mate_loop",
-        "stream": true
-      }
+      "guaniao:entity/spotted_dove/mate"
     ]
   },
   "entity.pigeon.ambient": {
     "subtitle": "subtitles.guaniao.entity.pigeon.ambient",
     "sounds": [
-      "guaniao:entity/pigeon/pigeon_call_1",
-      "guaniao:entity/pigeon/pigeon_coo_1"
+      "guaniao:entity/pigeon/pigeon_call_1"
+    ]
+  },
+  "entity.kiwi.ambient": {
+    "subtitle": "subtitles.guaniao.entity.kiwi.ambient",
+    "sounds": [
+      "guaniao:entity/kiwi/ambient_01",
+      "guaniao:entity/kiwi/ambient_02",
+      "guaniao:entity/kiwi/ambient_03"
     ]
   },
   "entity.long_tailed_tit.ambient": {
@@ -268,6 +271,122 @@
         "volume": 0.8,
         "pitch": 0.72
       }
+    ]
+  },
+  "item.feather_fan.burial_vortex": {
+    "subtitle": "subtitles.guaniao.item.feather_fan.burial_vortex",
+    "sounds": [
+      "guaniao:item/feather_fan/burial_vortex"
+    ]
+  },
+  "item.feather_fan.burial_slash": {
+    "subtitle": "subtitles.guaniao.item.feather_fan.burial_slash",
+    "sounds": [
+      "guaniao:item/feather_fan/burial_slash"
+    ]
+  },
+  "item.feather_fan.riven_pin": {
+    "subtitle": "subtitles.guaniao.item.feather_fan.riven_pin",
+    "sounds": [
+      "guaniao:item/feather_fan/riven_pin"
+    ]
+  },
+  "item.feather_fan.riven_split": {
+    "subtitle": "subtitles.guaniao.item.feather_fan.riven_split",
+    "sounds": [
+      "guaniao:item/feather_fan/riven_split"
+    ]
+  },
+  "item.feather_fan.riven_lock": {
+    "subtitle": "subtitles.guaniao.item.feather_fan.riven_lock",
+    "sounds": [
+      "guaniao:item/feather_fan/riven_lock"
+    ]
+  },
+  "item.feather_fan.riven_burst": {
+    "subtitle": "subtitles.guaniao.item.feather_fan.riven_burst",
+    "sounds": [
+      "guaniao:item/feather_fan/riven_burst"
+    ]
+  },
+  "item.feather_fan.hunt_lock": {
+    "subtitle": "subtitles.guaniao.item.feather_fan.hunt_lock",
+    "sounds": [
+      "guaniao:item/feather_fan/hunt_lock"
+    ]
+  },
+  "item.feather_fan.hunt_start": {
+    "subtitle": "subtitles.guaniao.item.feather_fan.hunt_start",
+    "sounds": [
+      "guaniao:item/feather_fan/hunt_start"
+    ]
+  },
+  "item.feather_fan.hunt_turn": {
+    "subtitle": "subtitles.guaniao.item.feather_fan.hunt_turn",
+    "sounds": [
+      "guaniao:item/feather_fan/hunt_turn"
+    ]
+  },
+  "item.feather_fan.hunt_hit": {
+    "subtitle": "subtitles.guaniao.item.feather_fan.hunt_hit",
+    "sounds": [
+      "guaniao:item/feather_fan/hunt_hit"
+    ]
+  },
+  "entity.myna.mimic.whistle_short": {
+    "subtitle": "subtitles.guaniao.entity.myna.mimic",
+    "sounds": [
+      "guaniao:entity/myna/mimic/whistle_short_01",
+      "guaniao:entity/myna/mimic/whistle_short_02"
+    ]
+  },
+  "entity.myna.mimic.whistle_rise": {
+    "subtitle": "subtitles.guaniao.entity.myna.mimic",
+    "sounds": [
+      "guaniao:entity/myna/mimic/whistle_rise_01",
+      "guaniao:entity/myna/mimic/whistle_rise_02"
+    ]
+  },
+  "entity.myna.mimic.whistle_fall": {
+    "subtitle": "subtitles.guaniao.entity.myna.mimic",
+    "sounds": [
+      "guaniao:entity/myna/mimic/whistle_fall_01",
+      "guaniao:entity/myna/mimic/whistle_fall_02"
+    ]
+  },
+  "entity.myna.mimic.rasp": {
+    "subtitle": "subtitles.guaniao.entity.myna.mimic",
+    "sounds": [
+      "guaniao:entity/myna/mimic/rasp_01",
+      "guaniao:entity/myna/mimic/rasp_02"
+    ]
+  },
+  "entity.myna.mimic.click": {
+    "subtitle": "subtitles.guaniao.entity.myna.mimic",
+    "sounds": [
+      "guaniao:entity/myna/mimic/click_01",
+      "guaniao:entity/myna/mimic/click_02"
+    ]
+  },
+  "entity.myna.mimic.trill": {
+    "subtitle": "subtitles.guaniao.entity.myna.mimic",
+    "sounds": [
+      "guaniao:entity/myna/mimic/trill_01",
+      "guaniao:entity/myna/mimic/trill_02"
+    ]
+  },
+  "entity.myna.mimic.hiss": {
+    "subtitle": "subtitles.guaniao.entity.myna.mimic",
+    "sounds": [
+      "guaniao:entity/myna/mimic/hiss_01",
+      "guaniao:entity/myna/mimic/hiss_02"
+    ]
+  },
+  "entity.myna.mimic.burst": {
+    "subtitle": "subtitles.guaniao.entity.myna.mimic",
+    "sounds": [
+      "guaniao:entity/myna/mimic/burst_01",
+      "guaniao:entity/myna/mimic/burst_02"
     ]
   }
 }

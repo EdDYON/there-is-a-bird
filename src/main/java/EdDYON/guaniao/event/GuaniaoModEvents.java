@@ -6,6 +6,8 @@ import EdDYON.guaniao.content.bird.columbid.SpottedDoveEntity;
 import EdDYON.guaniao.content.bird.crow.CrowEntity;
 import EdDYON.guaniao.content.bird.nightheron.NightHeronEntity;
 import EdDYON.guaniao.content.bird.seagull.SeagullEntity;
+import EdDYON.guaniao.content.bird.kiwi.KiwiEntity;
+import EdDYON.guaniao.content.bird.myna.MynaEntity;
 import EdDYON.guaniao.content.bird.sparrow.SparrowEntity;
 import EdDYON.guaniao.content.bird.longtailedtit.LongTailedTitEntity;
 import EdDYON.guaniao.content.bird.cockatiel.CockatielEntity;
@@ -47,6 +49,8 @@ public final class GuaniaoModEvents {
         event.put((EntityType)GuaniaoEntityTypes.PIGEON.get(), PigeonEntity.createAttributes().build());
         event.put((EntityType)GuaniaoEntityTypes.CROW.get(), CrowEntity.createAttributes().build());
         event.put((EntityType)GuaniaoEntityTypes.SEAGULL.get(), SeagullEntity.createAttributes().build());
+        event.put((EntityType)GuaniaoEntityTypes.KIWI.get(), KiwiEntity.createAttributes().build());
+        event.put((EntityType)GuaniaoEntityTypes.MYNA.get(), MynaEntity.createAttributes().build());
     }
 
     @SubscribeEvent
@@ -61,6 +65,8 @@ public final class GuaniaoModEvents {
         event.register((EntityType)GuaniaoEntityTypes.PIGEON.get(), SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, PigeonEntity::canSpawn, SpawnPlacementRegisterEvent.Operation.REPLACE);
         event.register((EntityType)GuaniaoEntityTypes.CROW.get(), SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, CrowEntity::canSpawn, SpawnPlacementRegisterEvent.Operation.REPLACE);
         event.register((EntityType)GuaniaoEntityTypes.SEAGULL.get(), SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, SeagullEntity::canSpawn, SpawnPlacementRegisterEvent.Operation.REPLACE);
+        event.register((EntityType)GuaniaoEntityTypes.KIWI.get(), SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, KiwiEntity::canSpawn, SpawnPlacementRegisterEvent.Operation.REPLACE);
+        event.register(GuaniaoEntityTypes.MYNA.get(), SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, MynaEntity::canMynaSpawn, SpawnPlacementRegisterEvent.Operation.REPLACE);
     }
 
     @SubscribeEvent
@@ -76,6 +82,8 @@ public final class GuaniaoModEvents {
             event.accept((ItemLike)GuaniaoItems.PIGEON_SPAWN_EGG.get());
             event.accept((ItemLike)GuaniaoItems.CROW_SPAWN_EGG.get());
             event.accept((ItemLike)GuaniaoItems.SEAGULL_SPAWN_EGG.get());
+            event.accept((ItemLike)GuaniaoItems.KIWI_SPAWN_EGG.get());
+            event.accept((ItemLike)GuaniaoItems.MYNA_SPAWN_EGG.get());
         }
     }
 }
