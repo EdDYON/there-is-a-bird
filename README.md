@@ -27,7 +27,9 @@
 
 ## 下载与安装
 
-正式版本只会发布在本仓库的 [Releases](https://github.com/EdDYON/there-is-a-bird/releases) 或作者明确标注的官方渠道。
+mc百科：https://center.mcmod.cn/1346649 
+cf：https://www.curseforge.com/minecraft/mc-mods/bird-watching
+ms：https://modrinth.com/mod/bird-watching
 
 1. 安装 Minecraft 1.20.1 对应的 Forge 47.2.x。
 2. 安装与 1.20.1 兼容的 GeckoLib 4.4.x。
