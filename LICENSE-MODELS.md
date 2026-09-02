@@ -22,6 +22,18 @@
 
 除上述有限许可外，本协议不授予对模型资产的任何其他权利。
 
+### 2.1 代码贡献例外
+
+为了向本项目提交代码修复或版本迁移贡献，你可以 Fork 本项目的官方 GitHub 仓库，并在本地编译、运行仅用于开发和测试的临时 JAR，但必须同时满足：
+
+- 目的仅限于向本项目提交 Issue、Pull Request 或经 EdDYON 同意的代码贡献；
+- 不提取、修改、复用、移植或单独传播模型资产；
+- 不上传、分享、出售或发布本地生成的测试 JAR；
+- 不将 Fork 或测试构建描述为官方版本或独立发行版；
+- 不用于任何商业用途。
+
+此例外只允许完成代码贡献所必需的技术性复制和本地测试，不授予模型资产的修改权、再分发权或其他使用权。
+
 ## 3. 明确禁止的行为
 
 未经 EdDYON 事先书面许可，不得对模型资产实施下列任何行为：
@@ -62,6 +74,8 @@ This is not an open-source license. The MIT License in the repository root appli
 “Model Assets” include all project models, geometry, meshes, bones, rigs, UV data, animations, keyframes, model-specific textures and materials, their source files and exported forms, including resources under `assets/guaniao/geo/`, `assets/guaniao/animations/`, `assets/guaniao/models/`, and directly associated model textures.
 
 You may download, install, and run an official, unmodified release of the mod for personal, non-commercial gameplay. Technical copies automatically created during ordinary installation, loading, and execution are permitted.
+
+For the sole purpose of contributing code fixes or version ports back to this project, you may fork the official GitHub repository and build temporary JAR files for local development and testing. This exception does not permit extracting or modifying Model Assets, distributing test JAR files, presenting a fork as an official or independent release, or making any commercial use.
 
 Without EdDYON's prior written permission, you may not:
 
