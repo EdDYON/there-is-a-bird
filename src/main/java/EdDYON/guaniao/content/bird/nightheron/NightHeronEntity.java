@@ -1298,6 +1298,7 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
     }
 
     private <T extends NightHeronEntity> PlayState movementController(AnimationState<T> animationState) {
+        animationState.getController().setAnimationSpeed(1.0D);
         RawAnimation guidePreviewRawAnimation = this.guidePreviewAnimation.animation();
         if (guidePreviewRawAnimation != null) {
             return animationState.setAndContinue(guidePreviewRawAnimation);
@@ -1315,9 +1316,12 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
         double horizontalSpeed = this.getDeltaMovement().horizontalDistanceSqr();
         if (BirdGroundAnimation.canPlayWalk(this)
                 && (state == NightHeronBehaviorState.RUN_ESCAPE || horizontalSpeed > RUNNING_SPEED_THRESHOLD)) {
+            animationState.getController().setAnimationSpeed(
+                    Math.max(1.20D, BirdGroundAnimation.walkAnimationSpeed(this)));
             return animationState.setAndContinue(RUN_ANIMATION);
         }
         if (this.shouldPlayWalkAnimation(state, animationState.isMoving())) {
+            animationState.getController().setAnimationSpeed(BirdGroundAnimation.walkAnimationSpeed(this));
             return animationState.setAndContinue(WALK_ANIMATION);
         }
         return animationState.setAndContinue(this.pickIdleAnimation());

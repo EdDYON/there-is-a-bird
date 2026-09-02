@@ -39,6 +39,15 @@ public final class GuaniaoSoundEvents {
     public static final RegistryObject<SoundEvent> PIGEON_AMBIENT = register("entity.pigeon.ambient");
     public static final RegistryObject<SoundEvent> KIWI_AMBIENT = register("entity.kiwi.ambient");
     public static final RegistryObject<SoundEvent> SEAGULL_AMBIENT = register("entity.seagull.ambient");
+    public static final RegistryObject<SoundEvent> MYNA_CALL_03 = register("entity.myna.call_03");
+    public static final RegistryObject<SoundEvent> MYNA_CALL_04 = register("entity.myna.call_04");
+    public static final RegistryObject<SoundEvent> MYNA_CALL_05 = register("entity.myna.call_05");
+    public static final RegistryObject<SoundEvent> MYNA_CALL_07 = register("entity.myna.call_07");
+    public static final RegistryObject<SoundEvent> MYNA_CALL_08 = register("entity.myna.call_08");
+    public static final RegistryObject<SoundEvent> MYNA_CALL_10 = register("entity.myna.call_10");
+    public static final RegistryObject<SoundEvent> MYNA_CALL_11 = register("entity.myna.call_11");
+    public static final RegistryObject<SoundEvent> MYNA_CALL_12 = register("entity.myna.call_12");
+    public static final RegistryObject<SoundEvent> MYNA_CALL_13 = register("entity.myna.call_13");
     public static final RegistryObject<SoundEvent> MYNA_MIMIC_WHISTLE_SHORT = register("entity.myna.mimic.whistle_short");
     public static final RegistryObject<SoundEvent> MYNA_MIMIC_WHISTLE_RISE = register("entity.myna.mimic.whistle_rise");
     public static final RegistryObject<SoundEvent> MYNA_MIMIC_WHISTLE_FALL = register("entity.myna.mimic.whistle_fall");

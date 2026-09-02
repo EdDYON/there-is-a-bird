@@ -11,7 +11,7 @@ import software.bernie.geckolib.renderer.GeoEntityRenderer;
 public class SpottedDoveRenderer extends GeoEntityRenderer<SpottedDoveEntity> {
     public SpottedDoveRenderer(EntityRendererProvider.Context renderManager) {
         super(renderManager, new ColumbidModel<>());
-        this.shadowRadius = 0.30F;
+        this.shadowRadius = 0.22F;
     }
 
     @Override

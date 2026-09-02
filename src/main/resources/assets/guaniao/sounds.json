@@ -333,6 +333,42 @@
       "guaniao:item/feather_fan/hunt_hit"
     ]
   },
+  "entity.myna.call_03": {
+    "subtitle": "subtitles.guaniao.entity.myna.ambient",
+    "sounds": ["guaniao:entity/myna/call_03"]
+  },
+  "entity.myna.call_04": {
+    "subtitle": "subtitles.guaniao.entity.myna.ambient",
+    "sounds": ["guaniao:entity/myna/call_04"]
+  },
+  "entity.myna.call_05": {
+    "subtitle": "subtitles.guaniao.entity.myna.ambient",
+    "sounds": ["guaniao:entity/myna/call_05"]
+  },
+  "entity.myna.call_07": {
+    "subtitle": "subtitles.guaniao.entity.myna.ambient",
+    "sounds": ["guaniao:entity/myna/call_07"]
+  },
+  "entity.myna.call_08": {
+    "subtitle": "subtitles.guaniao.entity.myna.ambient",
+    "sounds": ["guaniao:entity/myna/call_08"]
+  },
+  "entity.myna.call_10": {
+    "subtitle": "subtitles.guaniao.entity.myna.ambient",
+    "sounds": ["guaniao:entity/myna/call_10"]
+  },
+  "entity.myna.call_11": {
+    "subtitle": "subtitles.guaniao.entity.myna.ambient",
+    "sounds": ["guaniao:entity/myna/call_11"]
+  },
+  "entity.myna.call_12": {
+    "subtitle": "subtitles.guaniao.entity.myna.ambient",
+    "sounds": ["guaniao:entity/myna/call_12"]
+  },
+  "entity.myna.call_13": {
+    "subtitle": "subtitles.guaniao.entity.myna.ambient",
+    "sounds": ["guaniao:entity/myna/call_13"]
+  },
   "entity.myna.mimic.whistle_short": {
     "subtitle": "subtitles.guaniao.entity.myna.mimic",
     "sounds": [

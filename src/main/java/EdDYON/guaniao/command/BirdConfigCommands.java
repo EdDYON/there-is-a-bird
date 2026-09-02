@@ -8,8 +8,10 @@ import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import EdDYON.guaniao.GuaniaoMod;
 import EdDYON.guaniao.config.BirdConfigData;
 import EdDYON.guaniao.config.BirdConfigManager;
+import EdDYON.guaniao.config.BirdSpecies;
 import EdDYON.guaniao.content.bird.mutation.BirdMutation;
 import EdDYON.guaniao.content.bird.mutation.BirdMutationHolder;
+import EdDYON.guaniao.content.bird.scale.ScalableBirdModel;
 import EdDYON.guaniao.content.note.BirdNoteContent;
 import EdDYON.guaniao.network.GuaniaoNetwork;
 import EdDYON.guaniao.network.OpenBirdConfigPacket;
@@ -73,7 +75,9 @@ public final class BirdConfigCommands {
                                 .executes(context -> spawnAllMutations(context.getSource(),
                                         StringArgumentType.getString(context, "species")))))
                 .then(Commands.literal("birdNotes")
-                        .executes(context -> birdNotes(context.getSource()))));
+                        .executes(context -> birdNotes(context.getSource())))
+                .then(Commands.literal("birdSizeComparison")
+                        .executes(context -> birdSizeComparison(context.getSource()))));
     }
 
     private static int open(CommandSourceStack source) throws CommandSyntaxException {
@@ -103,6 +107,12 @@ public final class BirdConfigCommands {
     private static final String[] MUTATION_CHOICES = {"leucistic", "melanistic", "golden", "puregold", "rainbow", "random"};
     private static final BirdMutation[] ALL_MUTATIONS = {
             BirdMutation.LEUCISTIC, BirdMutation.MELANISTIC, BirdMutation.GOLDEN, BirdMutation.GOLDEN_PURE, BirdMutation.RAINBOW
+    };
+    private static final String SIZE_COMPARISON_TAG = "guaniao.bird_size_comparison";
+    private static final BirdSpecies[] SIZE_COMPARISON_ORDER = {
+            BirdSpecies.BUDGERIGAR, BirdSpecies.LONG_TAILED_TIT, BirdSpecies.SPARROW, BirdSpecies.COCKATIEL,
+            BirdSpecies.KIWI, BirdSpecies.SPOTTED_DOVE, BirdSpecies.PIGEON, BirdSpecies.MACAW,
+            BirdSpecies.MYNA, BirdSpecies.CROW, BirdSpecies.NIGHT_HERON, BirdSpecies.SEAGULL
     };
 
     // Lazily built: this class is a @Mod.EventBusSubscriber, so Forge loads it during mod
@@ -239,6 +249,82 @@ public final class BirdConfigCommands {
         // and no gravity so it never sinks or falls even if the ground is uneven.
         mob.setNoAi(true);
         mob.setNoGravity(true);
+        level.addFreshEntity(mob);
+        return true;
+    }
+
+    private static int birdSizeComparison(CommandSourceStack source) {
+        ServerPlayer player;
+        try {
+            player = source.getPlayerOrException();
+        } catch (CommandSyntaxException e) {
+            source.sendFailure(Component.literal("This command must be run by a player."));
+            return 0;
+        }
+
+        ServerLevel level = player.serverLevel();
+        Vec3 forward = player.getLookAngle().multiply(1.0D, 0.0D, 1.0D);
+        if (forward.lengthSqr() < 1.0E-4D) {
+            forward = new Vec3(0.0D, 0.0D, 1.0D);
+        } else {
+            forward = forward.normalize();
+        }
+        Vec3 right = new Vec3(-forward.z, 0.0D, forward.x);
+        Vec3 base = player.position().add(forward.scale(7.0D));
+
+        int spawned = 0;
+        for (int index = 0; index < SIZE_COMPARISON_ORDER.length; index++) {
+            BirdSpecies species = SIZE_COMPARISON_ORDER[index];
+            int column = index % 4;
+            int row = index / 4;
+            Vec3 groupCenter = base
+                    .add(right.scale((column - 1.5D) * 4.0D))
+                    .add(forward.scale(row * 3.25D));
+
+            if (spawnSizeComparisonBird(level, player, species, groupCenter.subtract(right.scale(0.8D)), true)) {
+                spawned++;
+            }
+            if (spawnSizeComparisonBird(level, player, species, groupCenter.add(right.scale(0.8D)), false)) {
+                spawned++;
+            }
+        }
+        return spawned;
+    }
+
+    private static boolean spawnSizeComparisonBird(ServerLevel level, ServerPlayer player, BirdSpecies species,
+                                                     Vec3 position, boolean minimum) {
+        EntityType<?> type = species.entityType();
+        if (type == null) {
+            return false;
+        }
+        Entity entity = type.create(level);
+        if (!(entity instanceof Mob mob) || !(entity instanceof ScalableBirdModel scalable)) {
+            return false;
+        }
+
+        Vec3 toPlayer = player.position().subtract(position);
+        float yaw = (float) Math.toDegrees(Math.atan2(toPlayer.z, toPlayer.x)) - 90.0F;
+        mob.moveTo(position.x, player.getY(), position.z, yaw, 0.0F);
+        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.COMMAND, null, null);
+
+        float comparisonScale = minimum
+                ? scalable.modelScaleProfile().minIndividualScale()
+                : scalable.modelScaleProfile().maxIndividualScale();
+        scalable.setIndividualModelScale(comparisonScale);
+
+        mob.setNoAi(true);
+        mob.setNoGravity(true);
+        mob.setSilent(true);
+        mob.setInvulnerable(true);
+        mob.setPersistenceRequired();
+        mob.setDeltaMovement(Vec3.ZERO);
+        mob.setYRot(yaw);
+        mob.setYHeadRot(yaw);
+        mob.yBodyRot = yaw;
+        mob.addTag(SIZE_COMPARISON_TAG);
+        mob.setCustomName(Component.translatable(species.translationKey())
+                .append(Component.literal(minimum ? " · MIN" : " · MAX")));
+        mob.setCustomNameVisible(true);
         level.addFreshEntity(mob);
         return true;
     }

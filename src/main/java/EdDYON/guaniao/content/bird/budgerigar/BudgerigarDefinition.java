@@ -7,8 +7,8 @@ public final class BudgerigarDefinition {
     public static final String SPAWN_EGG_ID = "budgerigar_spawn_egg";
     public static final int SPAWN_EGG_BASE_COLOR = 0x6FBF45;
     public static final int SPAWN_EGG_SPOT_COLOR = 0xF5D84A;
-    public static final float WIDTH = 0.204F;
-    public static final float HEIGHT = 0.252F;
+    public static final float WIDTH = 0.19F;
+    public static final float HEIGHT = 0.24F;
     public static final double MAX_HEALTH = 6.0D;
     public static final double WALK_SPEED = 0.24D;
     public static final double FLYING_SPEED = 0.32D;

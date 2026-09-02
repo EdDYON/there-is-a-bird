@@ -1980,6 +1980,7 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
     }
 
     private <T extends SparrowEntity> PlayState movementController(AnimationState<T> animationState) {
+        animationState.getController().setAnimationSpeed(1.0D);
         RawAnimation guidePreviewRawAnimation = this.guidePreviewAnimation.animation();
         if (guidePreviewRawAnimation != null) {
             return animationState.setAndContinue(guidePreviewRawAnimation);
@@ -1989,6 +1990,7 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
             return animationState.setAndContinue(FLY_ANIMATION);
         }
         if (this.shouldPlayWalkAnimation(state, animationState.isMoving())) {
+            animationState.getController().setAnimationSpeed(BirdGroundAnimation.walkAnimationSpeed(this));
             return animationState.setAndContinue(WALK_ANIMATION);
         }
         if (state == SparrowBehaviorState.PECKING) {

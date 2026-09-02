@@ -1521,6 +1521,7 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
     }
 
     private <T extends BudgerigarEntity> PlayState movementController(AnimationState<T> animationState) {
+        animationState.getController().setAnimationSpeed(1.0D);
         RawAnimation guidePreviewRawAnimation = this.guidePreviewAnimation.animation();
         if (guidePreviewRawAnimation != null) {
             return animationState.setAndContinue(guidePreviewRawAnimation);
@@ -1539,6 +1540,7 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
             return animationState.setAndContinue(DANCE_ANIMATION);
         }
         if (this.shouldPlayWalkAnimation(state, animationState.isMoving())) {
+            animationState.getController().setAnimationSpeed(BirdGroundAnimation.walkAnimationSpeed(this));
             return animationState.setAndContinue(WALK_ANIMATION);
         }
         if (state == BudgerigarBehaviorState.PREENING) {

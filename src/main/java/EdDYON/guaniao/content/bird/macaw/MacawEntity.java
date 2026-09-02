@@ -176,6 +176,7 @@ public class MacawEntity extends BudgerigarEntity {
     }
 
     private <T extends MacawEntity> PlayState movementController(AnimationState<T> animationState) {
+        animationState.getController().setAnimationSpeed(1.0D);
         RawAnimation preview = this.macawPreviewAnimation.animation;
         if (preview != null) {
             return animationState.setAndContinue(preview);
@@ -194,6 +195,7 @@ public class MacawEntity extends BudgerigarEntity {
             return animationState.setAndContinue(DANCE_ANIMATION);
         }
         if (shouldWalk(state, animationState.isMoving())) {
+            animationState.getController().setAnimationSpeed(BirdGroundAnimation.walkAnimationSpeed(this));
             return animationState.setAndContinue(WALK_ANIMATION);
         }
         if (state == BudgerigarBehaviorState.PREENING) {

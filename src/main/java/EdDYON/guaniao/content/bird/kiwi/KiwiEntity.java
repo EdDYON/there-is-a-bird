@@ -476,7 +476,7 @@ public class KiwiEntity extends PathfinderMob
         this.setBehaviorState(KiwiBehaviorState.AWAKE, 0);
     }
 
-    KiwiConflictState getConflictState() {
+    public KiwiConflictState getConflictState() {
         return KiwiConflictState.byId(this.entityData.get(CONFLICT_STATE));
     }
 
@@ -718,8 +718,9 @@ public class KiwiEntity extends PathfinderMob
     }
 
     private <T extends KiwiEntity> PlayState movementController(AnimationState<T> animationState) {
-        animationState.getController().setAnimationSpeed(this.movementAnimationSpeed());
+        animationState.getController().setAnimationSpeed(1.0D);
         if (this.getConflictState() == KiwiConflictState.FIGHTING) {
+            animationState.getController().setAnimationSpeed(this.movementAnimationSpeed());
             return animationState.setAndContinue(WALK_ANIMATION);
         }
         return switch (this.getBehaviorState()) {
@@ -727,29 +728,33 @@ public class KiwiEntity extends PathfinderMob
             case SLEEPING -> animationState.setAndContinue(SLEEP_LOOP_ANIMATION);
             case PECKING -> animationState.setAndContinue(PECK_ANIMATION);
             case IDLE_VARIATION -> animationState.setAndContinue(IDLE_DIFF_1_ANIMATION);
-            case AWAKE, LISTENING, FORAGING, RETURNING_HOME, SEEKING_SHELTER, GROUND_ESCAPE ->
-                    BirdGroundAnimation.hasWalkMotion(this, animationState.isMoving())
-                    ? animationState.setAndContinue(WALK_ANIMATION)
-                    : animationState.setAndContinue(IDLE_ANIMATION);
+            case AWAKE, LISTENING, FORAGING, RETURNING_HOME, SEEKING_SHELTER, GROUND_ESCAPE -> {
+                if (BirdGroundAnimation.hasWalkMotion(this, animationState.isMoving())) {
+                    animationState.getController().setAnimationSpeed(this.movementAnimationSpeed());
+                    yield animationState.setAndContinue(WALK_ANIMATION);
+                }
+                yield animationState.setAndContinue(IDLE_ANIMATION);
+            }
         };
     }
 
     private double movementAnimationSpeed() {
+        double measuredSpeed = BirdGroundAnimation.walkAnimationSpeed(this);
         if (this.getBehaviorState() == KiwiBehaviorState.GROUND_ESCAPE
                 || this.getConflictState() == KiwiConflictState.CHASING
                 || this.getConflictState() == KiwiConflictState.FLEEING) {
-            return 1.55D;
+            return Math.max(measuredSpeed, 1.55D);
         }
         if (this.getConflictState() == KiwiConflictState.FIGHTING) {
             return 2.25D;
         }
         if (this.getConflictState() == KiwiConflictState.APPROACH) {
-            return 1.25D;
+            return Math.max(measuredSpeed, 1.25D);
         }
         if (this.getBehaviorState() == KiwiBehaviorState.FORAGING) {
-            return 0.88D;
+            return Math.min(measuredSpeed, 0.95D);
         }
-        return 1.0D;
+        return measuredSpeed;
     }
 
     @Override

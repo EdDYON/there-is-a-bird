@@ -9,7 +9,7 @@ import software.bernie.geckolib.renderer.GeoEntityRenderer;
 public class BudgerigarRenderer extends GeoEntityRenderer<BudgerigarEntity> {
     public BudgerigarRenderer(EntityRendererProvider.Context renderManager) {
         super(renderManager, (GeoModel)new BudgerigarModel());
-        this.shadowRadius = 0.12F;
+        this.shadowRadius = 0.11F;
     }
 
     @Override

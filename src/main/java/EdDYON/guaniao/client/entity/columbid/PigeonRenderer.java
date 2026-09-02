@@ -11,7 +11,7 @@ import software.bernie.geckolib.renderer.GeoEntityRenderer;
 public class PigeonRenderer extends GeoEntityRenderer<PigeonEntity> {
     public PigeonRenderer(EntityRendererProvider.Context renderManager) {
         super(renderManager, new ColumbidModel<>());
-        this.shadowRadius = 0.28F;
+        this.shadowRadius = 0.23F;
     }
 
     @Override

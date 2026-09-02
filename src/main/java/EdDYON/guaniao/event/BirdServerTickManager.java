@@ -2,6 +2,7 @@ package EdDYON.guaniao.event;
 
 import EdDYON.guaniao.GuaniaoMod;
 import EdDYON.guaniao.config.BirdSpecies;
+import EdDYON.guaniao.content.bird.BirdGroundLocomotion;
 import EdDYON.guaniao.content.bird.flight.BirdFlightLock;
 import EdDYON.guaniao.content.dropping.BirdDroppingPrankHandler;
 import java.util.ArrayList;
@@ -65,10 +66,12 @@ public final class BirdServerTickManager {
             Iterator<Mob> iterator = birds.values().iterator();
             while (iterator.hasNext()) {
                 Mob bird = iterator.next();
-                if (bird.isRemoved() || bird.level() != level || BirdSpecies.from(bird) == null) {
+                BirdSpecies species = BirdSpecies.from(bird);
+                if (bird.isRemoved() || bird.level() != level || species == null) {
                     iterator.remove();
                     continue;
                 }
+                BirdGroundLocomotion.tickBird(bird, species);
                 BirdDroppingEvents.tickBird(bird);
                 BirdMoltEvents.tickBird(bird);
                 BirdFlightLock.tickBird(bird);

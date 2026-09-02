@@ -250,6 +250,7 @@ public class CockatielEntity extends BudgerigarEntity {
     }
 
     private <T extends CockatielEntity> PlayState movementController(AnimationState<T> animationState) {
+        animationState.getController().setAnimationSpeed(1.0D);
         RawAnimation preview = this.cockatielPreviewAnimation.animation;
         if (preview != null) {
             return animationState.setAndContinue(preview);
@@ -279,6 +280,7 @@ public class CockatielEntity extends BudgerigarEntity {
         }
         if (shouldWalk(state, animationState.isMoving())) {
             this.happyDanceUntilTick = 0L;
+            animationState.getController().setAnimationSpeed(BirdGroundAnimation.walkAnimationSpeed(this));
             return animationState.setAndContinue(WALK_ANIMATION);
         }
         if (state == BudgerigarBehaviorState.PREENING) {

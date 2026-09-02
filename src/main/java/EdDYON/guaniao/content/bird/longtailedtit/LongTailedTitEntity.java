@@ -259,6 +259,7 @@ public class LongTailedTitEntity extends SparrowEntity {
     }
 
     private <T extends LongTailedTitEntity> PlayState movementController(AnimationState<T> state) {
+        state.getController().setAnimationSpeed(1.0D);
         RawAnimation preview = this.guidePreviewAnimation.animation;
         if (preview != null) {
             return state.setAndContinue(preview);
@@ -277,6 +278,7 @@ public class LongTailedTitEntity extends SparrowEntity {
                 && !behavior.isAirborne()
                 && behavior != SparrowBehaviorState.ROOSTING
                 && behavior != SparrowBehaviorState.PERCHING) {
+            state.getController().setAnimationSpeed(BirdGroundAnimation.walkAnimationSpeed(this));
             return state.setAndContinue(WALK_ANIMATION);
         }
         if (behavior == SparrowBehaviorState.PECKING) {

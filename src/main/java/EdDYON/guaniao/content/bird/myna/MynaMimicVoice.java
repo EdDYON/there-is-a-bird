@@ -19,19 +19,6 @@ public final class MynaMimicVoice {
     private MynaMimicVoice() {
     }
 
-    public static Phrase nativeCall(RandomSource random) {
-        float variation = 0.96F + random.nextFloat() * 0.08F;
-        Builder phrase = new Builder();
-        if (random.nextBoolean()) {
-            phrase.add(0, GuaniaoSoundEvents.MYNA_MIMIC_WHISTLE_SHORT.get(), 0.66F, 1.04F * variation)
-                    .add(5, GuaniaoSoundEvents.MYNA_MIMIC_TRILL.get(), 0.61F, 0.98F * variation);
-        } else {
-            phrase.add(0, GuaniaoSoundEvents.MYNA_MIMIC_WHISTLE_RISE.get(), 0.64F, variation)
-                    .add(8, GuaniaoSoundEvents.MYNA_MIMIC_WHISTLE_FALL.get(), 0.62F, 0.94F * variation);
-        }
-        return phrase.build();
-    }
-
     public static Phrase imitation(MynaMimicCue cue, float rememberedPitch,
                                    int rememberedTempo, RandomSource random) {
         float pitch = voicePitch(rememberedPitch) * (0.97F + random.nextFloat() * 0.06F);

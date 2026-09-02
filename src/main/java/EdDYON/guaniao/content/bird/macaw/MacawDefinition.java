@@ -7,8 +7,8 @@ public final class MacawDefinition {
     public static final String SPAWN_EGG_ID = "macaw_spawn_egg";
     public static final int SPAWN_EGG_BASE_COLOR = 0xC82E32;
     public static final int SPAWN_EGG_SPOT_COLOR = 0xF2C94C;
-    public static final float WIDTH = 0.68F;
-    public static final float HEIGHT = 0.92F;
+    public static final float WIDTH = 0.42F;
+    public static final float HEIGHT = 0.56F;
     public static final double MAX_HEALTH = 14.0D;
     public static final double WALK_SPEED = 0.22D;
     public static final double FLYING_SPEED = 0.38D;

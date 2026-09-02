@@ -9,8 +9,8 @@ public final class MynaDefinition {
     public static final int SPAWN_EGG_BASE_COLOR = 0x211E1A;
     public static final int SPAWN_EGG_SPOT_COLOR = 0xE5A62A;
 
-    public static final float WIDTH = 0.42F;
-    public static final float HEIGHT = 0.62F;
+    public static final float WIDTH = 0.49F;
+    public static final float HEIGHT = 0.68F;
     public static final double MAX_HEALTH = 8.0D;
     public static final double WALK_SPEED = 0.24D;
     public static final double FLYING_SPEED = 0.31D;

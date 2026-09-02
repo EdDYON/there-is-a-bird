@@ -1860,6 +1860,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
     }
 
     private <T extends CrowEntity> PlayState movementController(AnimationState<T> animationState) {
+        animationState.getController().setAnimationSpeed(1.0D);
         CrowBehaviorState state = this.getBehaviorState();
         // A real flight must cancel guide/action poses instead of blending with them during take-off.
         if (this.shouldPlayFlyAnimation()) {
@@ -1873,6 +1874,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
             return animationState.setAndContinue(this.sleepAnimation());
         }
         if (this.shouldPlayWalkAnimation(state, animationState.isMoving())) {
+            animationState.getController().setAnimationSpeed(BirdGroundAnimation.walkAnimationSpeed(this));
             return animationState.setAndContinue(WALK_ANIMATION);
         }
         if (state == CrowBehaviorState.WATCHING || state == CrowBehaviorState.ALERT) {

@@ -7,8 +7,8 @@ public final class CockatielDefinition {
     public static final String SPAWN_EGG_ID = "cockatiel_spawn_egg";
     public static final int SPAWN_EGG_BASE_COLOR = 0x8C8983;
     public static final int SPAWN_EGG_SPOT_COLOR = 0xF2D45C;
-    public static final float WIDTH = 0.40F;
-    public static final float HEIGHT = 0.54F;
+    public static final float WIDTH = 0.30F;
+    public static final float HEIGHT = 0.42F;
     public static final double MAX_HEALTH = 8.0D;
     public static final double WALK_SPEED = 0.24D;
     public static final double FLYING_SPEED = 0.34D;

@@ -8,7 +8,7 @@ import software.bernie.geckolib.renderer.GeoEntityRenderer;
 public class MacawRenderer extends GeoEntityRenderer<MacawEntity> {
     public MacawRenderer(EntityRendererProvider.Context context) {
         super(context, new MacawModel());
-        this.shadowRadius = 0.28F;
+        this.shadowRadius = 0.24F;
     }
 
     @Override
