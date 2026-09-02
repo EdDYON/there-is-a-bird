@@ -3,7 +3,7 @@
 
 # Bird Watching / 哪来的鸟？
 
-一个为 Minecraft Forge 1.20.1 制作的鸟类生态、观鸟摄影与羽扇战斗模组。
+一个为 Minecraft制作的鸟类生态模组。
 
 [![Build](https://github.com/EdDYON/there-is-a-bird/actions/workflows/build.yml/badge.svg)](https://github.com/EdDYON/there-is-a-bird/actions/workflows/build.yml)
 ![Minecraft](https://img.shields.io/badge/Minecraft-1.20.1-62B47A)
@@ -12,14 +12,6 @@
 
 </div>
 
-## 模组特色
-
-- 12 种具有独立模型、动画、声音与生态行为的鸟类。
-- 栖息地、迁徙、觅食、睡眠、种群与个体性格等动态生态系统。
-- 可变焦相机、离屏世界渲染、照片保存与服务端照片管理。
-- 八哥学舌、几维鸟领地争斗等物种专属行为。
-- 风翎扇及葬翎、裂翎、猎归三种专属形态与技能。
-- 面向多人服务器的照片、临时实体和自然掉落保护。
 
 ## 当前支持
 
@@ -35,26 +27,13 @@
 
 ## 下载与安装
 
-正式版本只会发布在本仓库的 [Releases](https://github.com/EdDYON/there-is-a-bird/releases) 或作者明确标注的官方渠道。Releases 页面为空时，表示当前还没有可公开下载的正式构建。
+正式版本只会发布在本仓库的 [Releases](https://github.com/EdDYON/there-is-a-bird/releases) 或作者明确标注的官方渠道。
 
 1. 安装 Minecraft 1.20.1 对应的 Forge 47.2.x。
 2. 安装与 1.20.1 兼容的 GeckoLib 4.4.x。
 3. 将官方发布的模组 JAR 放入游戏的 `mods` 目录。
 4. 启动前备份重要世界；服务端与客户端应使用相同版本。
 
-## 从源码构建
-
-```powershell
-# Windows
-.\gradlew.bat build
-```
-
-```bash
-# Linux / macOS
-./gradlew build
-```
-
-构建结果位于 `build/libs/`。本地构建仅用于开发、测试和提交贡献；包含受限模型资产的测试 JAR 不得对外分发。
 
 ## 文档与贡献
 
