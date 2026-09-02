@@ -1,0 +1,73 @@
+name: Bug 报告
+description: 报告可复现的崩溃、行为错误或兼容性问题。
+title: "[Bug] "
+labels:
+  - bug
+  - triage
+body:
+  - type: markdown
+    attributes:
+      value: 感谢报告。请先搜索现有 Issue，并删除日志中的令牌、IP 和个人路径。
+  - type: input
+    id: mod_version
+    attributes:
+      label: 模组版本
+      placeholder: 例如 2.1.4 或 commit SHA
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Minecraft / Forge / Java
+      placeholder: 例如 Minecraft 1.20.1、Forge 47.2.0、Java 17
+    validations:
+      required: true
+  - type: dropdown
+    id: side
+    attributes:
+      label: 发生环境
+      options:
+        - 单人游戏
+        - 局域网联机
+        - 独立服务端
+        - 客户端启动或渲染
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: 问题描述
+      description: 说明预期结果和实际结果。
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |-
+        1. 创建……
+        2. 使用……
+        3. 观察到……
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志、崩溃报告或截图
+      description: 可拖入文件；请不要只粘贴被截断的最后几行。
+  - type: textarea
+    id: other_mods
+    attributes:
+      label: 其他模组与复现范围
+      description: 是否在仅安装 Forge、GeckoLib 与本模组时仍可复现？
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: 确认
+      options:
+        - label: 我已搜索现有 Issue，未发现相同报告。
+          required: true
+        - label: 我使用的是官方构建或可定位的源码 commit。
+          required: true
+        - label: 我已从日志中移除敏感信息。
+          required: true

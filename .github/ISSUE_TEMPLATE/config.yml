@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 讨论与玩法建议
+    url: https://github.com/EdDYON/there-is-a-bird/discussions
+    about: 不确定是否属于 Bug 时，可以先在 Discussions 中交流。
+  - name: 私密安全漏洞报告
+    url: https://github.com/EdDYON/there-is-a-bird/security/advisories/new
+    about: 请勿公开披露可利用的安全问题。

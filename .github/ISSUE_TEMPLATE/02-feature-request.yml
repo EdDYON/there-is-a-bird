@@ -1,0 +1,35 @@
+name: 功能与生态建议
+description: 提议新的行为、物种、玩法或开发体验改进。
+title: "[建议] "
+labels:
+  - enhancement
+  - triage
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 想解决的问题
+      description: 先说明现有体验的缺口，而不是只给出实现细节。
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议方案
+      description: 描述玩家能观察到的最终行为、触发条件和边界。
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 替代方案与兼容性
+      description: 是否影响现有鸟类、世界存档、服务端或其他模组？
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: 确认
+      options:
+        - label: 我已搜索现有 Issue 和 Discussions。
+          required: true
+        - label: 若建议包含素材，我能说明其来源与授权。
+          required: true

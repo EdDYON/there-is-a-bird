@@ -1,0 +1,60 @@
+name: 版本迁移任务
+description: 认领或报告 Minecraft 1.21.1 迁移中的一个独立模块。
+title: "[Port 1.21.1] "
+labels:
+  - port:1.21.1
+  - triage
+body:
+  - type: dropdown
+    id: module
+    attributes:
+      label: 迁移模块
+      options:
+        - 构建脚本与依赖
+        - 注册链与数据生成
+        - 鸟类基类与 AI
+        - 单个鸟类物种
+        - 相机与照片系统
+        - 风翎扇与附魔
+        - 客户端渲染与 GUI
+        - 数据包、资源与语言
+        - 其他
+    validations:
+      required: true
+  - type: input
+    id: loader
+    attributes:
+      label: 目标加载器与版本
+      description: 必须与维护者已经确定的迁移目标一致。
+      placeholder: 例如 NeoForge x.x.x（待维护者确认）
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 范围与不包含项
+      description: 列出计划修改的注册、类、资源和明确不处理的内容。
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: 前置任务与阻塞项
+  - type: textarea
+    id: verification
+    attributes:
+      label: 计划验证方式
+      description: 至少包含编译、客户端启动和独立服务端边界。
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: 确认
+      options:
+        - label: 我已阅读版本迁移指南，并会以 port/1.21.1 为目标分支。
+          required: true
+        - label: 我不会混用未经确认的 Forge 与 NeoForge API。
+          required: true
+        - label: 我不会解包、修改或公开分发受限模型资产与测试 JAR。
+          required: true
