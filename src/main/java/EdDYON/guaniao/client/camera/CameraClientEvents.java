@@ -37,18 +37,39 @@ public final class CameraClientEvents {
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase == TickEvent.Phase.END) {
             CameraClientCapture.tickViewfinder();
-            while (CameraKeyMappings.CYCLE_FILTER.consumeClick()) {
-                CameraClientCapture.cycleFilter();
+            while (CameraKeyMappings.OPEN_FILTER_LIBRARY.consumeClick()) {
+                Minecraft minecraft = Minecraft.getInstance();
+                if (minecraft.screen == null
+                        && CameraClientCapture.isViewfinderOpen()
+                        && !CameraClientCapture.isCleanCapturePending()) {
+                    CameraFilterPickerScreen.open();
+                }
+            }
+            while (CameraKeyMappings.OPEN_CREATIVE_CONTROLS.consumeClick()) {
+                Minecraft minecraft = Minecraft.getInstance();
+                if (minecraft.screen == null
+                        && CameraClientCapture.isViewfinderOpen()
+                        && !CameraClientCapture.isCleanCapturePending()) {
+                    CameraCreativeControlsScreen.open();
+                }
+            }
+            while (CameraKeyMappings.FOCUS.consumeClick()) {
+                if (Minecraft.getInstance().screen == null) {
+                    CameraClientCapture.focusAtCrosshair();
+                }
             }
         }
     }
 
     @SubscribeEvent
     public static void onRenderTick(TickEvent.RenderTickEvent event) {
-        if (event.phase == TickEvent.Phase.END) {
-            PhotographTextureCache.pumpUploads();
-            CameraClientCapture.onRenderTickEnd();
+        if (event.phase == TickEvent.Phase.START) {
+            CameraClientCapture.onRenderTickStart();
+            return;
         }
+
+        PhotographTextureCache.pumpUploads();
+        CameraClientCapture.onRenderTickEnd();
     }
 
     @SubscribeEvent
@@ -74,7 +95,7 @@ public final class CameraClientEvents {
 
     @SubscribeEvent
     public static void onRenderGuiOverlay(RenderGuiOverlayEvent.Pre event) {
-        if (CameraClientCapture.isViewfinderOpen()) {
+        if (CameraClientCapture.isViewfinderOpen() || CameraClientCapture.isCleanCapturePending()) {
             event.setCanceled(true);
         }
     }
@@ -86,13 +107,16 @@ public final class CameraClientEvents {
 
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES) {
-            CameraClientCapture.rebindOffscreenCaptureTarget();
+        if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_LEVEL) {
+            CameraPreviewPostEffect.prepare(event.getPartialTick());
         }
     }
 
     @SubscribeEvent
     public static void onMouseScroll(InputEvent.MouseScrollingEvent event) {
+        if (isCameraControlScreenOpen()) {
+            return;
+        }
         if (CameraClientCapture.handleMouseScroll(event.getScrollDelta())) {
             event.setCanceled(true);
         }
@@ -100,6 +124,9 @@ public final class CameraClientEvents {
 
     @SubscribeEvent
     public static void onMouseButton(InputEvent.MouseButton.Pre event) {
+        if (isCameraControlScreenOpen()) {
+            return;
+        }
         if (CameraClientCapture.handleMouseButton(event.getButton(), event.getAction())) {
             event.setCanceled(true);
         }
@@ -107,7 +134,13 @@ public final class CameraClientEvents {
 
     @SubscribeEvent
     public static void onKey(InputEvent.Key event) {
-        if (event.getAction() == GLFW.GLFW_PRESS && event.getKey() == GLFW.GLFW_KEY_ESCAPE && CameraClientCapture.isViewfinderOpen()) {
+        if (event.getAction() != GLFW.GLFW_PRESS) {
+            return;
+        }
+        if (isCameraControlScreenOpen()) {
+            return;
+        }
+        if (event.getKey() == GLFW.GLFW_KEY_ESCAPE && CameraClientCapture.isViewfinderOpen()) {
             CameraClientCapture.closeViewfinder();
         }
     }
@@ -122,6 +155,11 @@ public final class CameraClientEvents {
     private static boolean holdsCamera(LocalPlayer player) {
         return player.getMainHandItem().is(GuaniaoItems.NIKON_D750.get())
                 || player.getOffhandItem().is(GuaniaoItems.NIKON_D750.get());
+    }
+
+    private static boolean isCameraControlScreenOpen() {
+        return Minecraft.getInstance().screen instanceof CameraFilterPickerScreen
+                || Minecraft.getInstance().screen instanceof CameraCreativeControlsScreen;
     }
 
     private static boolean isCameraHand(LocalPlayer player, InteractionHand hand) {

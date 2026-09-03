@@ -3,7 +3,6 @@ package EdDYON.guaniao.command;
 import EdDYON.guaniao.GuaniaoMod;
 import EdDYON.guaniao.content.bird.kiwi.KiwiConflictState;
 import EdDYON.guaniao.content.bird.kiwi.KiwiEntity;
-import EdDYON.guaniao.content.bird.myna.MynaEntity;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import java.util.ArrayList;
@@ -207,11 +206,7 @@ public final class KiwiFightCommands {
     }
 
     private static void playAudienceCall(Mob mob) {
-        if (mob instanceof MynaEntity myna) {
-            myna.startAudienceCheerCall();
-        } else {
-            mob.playAmbientSound();
-        }
+        mob.playAmbientSound();
     }
 
     private static boolean isResolvedState(KiwiConflictState state) {

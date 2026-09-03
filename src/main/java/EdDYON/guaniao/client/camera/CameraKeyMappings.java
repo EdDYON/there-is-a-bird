@@ -10,9 +10,19 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class CameraKeyMappings {
-    public static final KeyMapping CYCLE_FILTER = new KeyMapping(
+    public static final KeyMapping OPEN_FILTER_LIBRARY = new KeyMapping(
             "key.guaniao.camera.cycle_filter",
             GLFW.GLFW_KEY_V,
+            "key.categories.guaniao"
+    );
+    public static final KeyMapping OPEN_CREATIVE_CONTROLS = new KeyMapping(
+            "key.guaniao.camera.open_creative_controls",
+            GLFW.GLFW_KEY_C,
+            "key.categories.guaniao"
+    );
+    public static final KeyMapping FOCUS = new KeyMapping(
+            "key.guaniao.camera.focus",
+            GLFW.GLFW_KEY_R,
             "key.categories.guaniao"
     );
 
@@ -21,6 +31,8 @@ public final class CameraKeyMappings {
 
     @SubscribeEvent
     public static void register(RegisterKeyMappingsEvent event) {
-        event.register(CYCLE_FILTER);
+        event.register(OPEN_FILTER_LIBRARY);
+        event.register(OPEN_CREATIVE_CONTROLS);
+        event.register(FOCUS);
     }
 }

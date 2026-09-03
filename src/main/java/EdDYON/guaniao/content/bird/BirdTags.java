@@ -36,6 +36,7 @@ public final class BirdTags {
 
     public static final TagKey<Block> BIRD_PERCHES = block("bird_perches");
     public static final TagKey<Block> KIWI_FORAGE_GROUND = block("kiwi_forage_ground");
+    public static final TagKey<EntityType<?>> BIRDS = entityType("birds");
     public static final TagKey<EntityType<?>> NIGHT_HERON_PREY = entityType("night_heron_prey");
 
     private BirdTags() {

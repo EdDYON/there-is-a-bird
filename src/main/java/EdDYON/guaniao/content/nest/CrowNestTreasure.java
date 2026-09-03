@@ -1,6 +1,7 @@
 package EdDYON.guaniao.content.nest;
 
 import EdDYON.guaniao.content.bird.BirdItemSafety;
+import EdDYON.guaniao.content.enchantment.FeatherFanEnchantmentBooks;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
@@ -14,7 +15,8 @@ public final class CrowNestTreasure {
 
     /** Items that may be present in a rummage nest, including harmless bits of crow junk. */
     public static boolean isAllowedNestLoot(ItemStack stack) {
-        return !stack.isEmpty() && !stack.hasTag() && (isAccepted(stack) || isLegacyShiny(stack) || isJunk(stack));
+        return FeatherFanEnchantmentBooks.isBook(stack)
+                || (!stack.isEmpty() && !stack.hasTag() && (isAccepted(stack) || isLegacyShiny(stack) || isJunk(stack)));
     }
 
     public static boolean isShiny(ItemStack stack) {

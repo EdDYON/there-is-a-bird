@@ -20,13 +20,11 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.Mth;
@@ -43,7 +41,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Blocks;
@@ -56,7 +53,6 @@ import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.WallBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import software.bernie.geckolib.core.animatable.GeoAnimatable;
 import software.bernie.geckolib.core.animation.AnimatableManager;
@@ -67,14 +63,10 @@ import software.bernie.geckolib.core.object.PlayState;
 
 /**
  * Crested myna using the shared small-bird flight foundation with its own
- * server-authoritative decorative, vocal and sleep state machines.
+ * server-authoritative decorative and sleep states.
  */
 public class MynaEntity extends SparrowEntity implements FlyingAnimal, BirdSleepWakeable {
     private static final EntityDataAccessor<Integer> ACTION_STATE =
-            SynchedEntityData.defineId(MynaEntity.class, EntityDataSerializers.INT);
-    private static final EntityDataAccessor<Integer> VOCAL_STATE =
-            SynchedEntityData.defineId(MynaEntity.class, EntityDataSerializers.INT);
-    private static final EntityDataAccessor<Integer> CURRENT_MIMIC_CUE =
             SynchedEntityData.defineId(MynaEntity.class, EntityDataSerializers.INT);
 
     private static final RawAnimation IDLE_ANIMATION = RawAnimation.begin().thenLoop("animation.idle");
@@ -82,58 +74,34 @@ public class MynaEntity extends SparrowEntity implements FlyingAnimal, BirdSleep
     private static final RawAnimation FLY_ANIMATION = RawAnimation.begin().thenLoop("animation.fly");
     private static final RawAnimation IDLE_1_ANIMATION = RawAnimation.begin().thenPlay("animation.idle_diff_1");
     private static final RawAnimation IDLE_2_ANIMATION = RawAnimation.begin().thenPlay("animation.idle_diff_2");
-    private static final RawAnimation SPEAK_START_ANIMATION = RawAnimation.begin().thenPlay("animation.speak");
-    // These source animations use Molang-driven poses with no numeric length. They must remain explicit loops.
-    private static final RawAnimation SPEAK_LOOP_ANIMATION = RawAnimation.begin().thenLoop("animation.speak_loop");
-    private static final RawAnimation SPEAK_END_ANIMATION = RawAnimation.begin().thenPlay("animation.speak2");
     // The bbmodel marks sleep as looped, but its semantic role is a one-shot entrance.
     private static final RawAnimation SLEEP_ENTER_ANIMATION = RawAnimation.begin().thenPlay("animation.sleep");
     private static final RawAnimation SLEEP_LOOP_ANIMATION = RawAnimation.begin().thenLoop("animation.sleep_loop");
 
     private static final int IDLE_1_TICKS = 60;
     private static final int IDLE_2_TICKS = 55;
-    private static final int SPEAK_START_TICKS = 7;
-    private static final int SPEAK_END_TICKS = 7;
-    private static final int MIN_SPEAK_COOLDOWN = 520;
-    private static final int MAX_SPEAK_COOLDOWN = 1500;
-    private static final int MIN_PEAK_SPEAK_COOLDOWN = 240;
-    private static final int MAX_PEAK_SPEAK_COOLDOWN = 620;
-    private static final float MIMIC_RECALL_CHANCE = 0.42F;
     private static final int SLEEP_ENTER_TICKS = 15;
-    private static final int MIMIC_SHOWCASE_GAP_TICKS = 12;
-    public static final double MIMIC_LEARNING_RANGE = 16.0D;
 
-    private static final NativeCall[] NATIVE_CALLS = {
-            new NativeCall(GuaniaoSoundEvents.MYNA_CALL_03, 19),
-            new NativeCall(GuaniaoSoundEvents.MYNA_CALL_04, 44),
-            new NativeCall(GuaniaoSoundEvents.MYNA_CALL_05, 31),
-            new NativeCall(GuaniaoSoundEvents.MYNA_CALL_07, 33),
-            new NativeCall(GuaniaoSoundEvents.MYNA_CALL_08, 24),
-            new NativeCall(GuaniaoSoundEvents.MYNA_CALL_10, 83),
-            new NativeCall(GuaniaoSoundEvents.MYNA_CALL_11, 48),
-            new NativeCall(GuaniaoSoundEvents.MYNA_CALL_12, 19),
-            new NativeCall(GuaniaoSoundEvents.MYNA_CALL_13, 44)
-    };
+    private static final List<Supplier<SoundEvent>> NATIVE_CALLS = List.of(
+            GuaniaoSoundEvents.MYNA_CALL_03,
+            GuaniaoSoundEvents.MYNA_CALL_04,
+            GuaniaoSoundEvents.MYNA_CALL_05,
+            GuaniaoSoundEvents.MYNA_CALL_07,
+            GuaniaoSoundEvents.MYNA_CALL_08,
+            GuaniaoSoundEvents.MYNA_CALL_10,
+            GuaniaoSoundEvents.MYNA_CALL_11,
+            GuaniaoSoundEvents.MYNA_CALL_12,
+            GuaniaoSoundEvents.MYNA_CALL_13
+    );
 
-    private final MynaMimicMemory mimicMemory = new MynaMimicMemory();
     private int actionTicks;
-    private int vocalTicks;
     private int idleCooldown;
-    private int vocalCooldown;
     private int restInterruptionTicks;
-    private boolean mimicShowcase;
-    private int mimicShowcaseCueIndex;
-    private int mimicShowcaseGapTicks;
-    @Nullable
-    private MynaMimicVoice.Phrase activeMimicPhrase;
-    private int mimicPhraseTick;
-    private int mimicPhraseStepIndex;
     private GuidePreviewAnimation guidePreviewAnimation = GuidePreviewAnimation.NONE;
 
     public MynaEntity(EntityType<? extends MynaEntity> entityType, Level level) {
         super(entityType, level, MynaProfile.INSTANCE);
         this.idleCooldown = this.randomBetween(220, 620);
-        this.vocalCooldown = this.nextVocalCooldown();
     }
 
     public static AttributeSupplier.Builder createAttributes() {
@@ -230,8 +198,6 @@ public class MynaEntity extends SparrowEntity implements FlyingAnimal, BirdSleep
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(ACTION_STATE, MynaActionState.NONE.ordinal());
-        this.entityData.define(VOCAL_STATE, MynaVocalState.NONE.ordinal());
-        this.entityData.define(CURRENT_MIMIC_CUE, -1);
     }
 
     @Override
@@ -244,27 +210,16 @@ public class MynaEntity extends SparrowEntity implements FlyingAnimal, BirdSleep
         if (this.idleCooldown > 0) {
             --this.idleCooldown;
         }
-        if (this.vocalCooldown > 0) {
-            --this.vocalCooldown;
-        }
         if (this.restInterruptionTicks > 0) {
             --this.restInterruptionTicks;
         }
 
-        if (this.mimicShowcase) {
-            this.tickMimicShowcase();
-            return;
-        }
         if (this.mustInterruptDecorativeState()) {
             this.interruptDecorativeState();
             return;
         }
         if (this.isBirdSleeping()) {
             this.tickSleepState();
-            return;
-        }
-        if (this.getVocalState() != MynaVocalState.NONE) {
-            this.tickSpeaking();
             return;
         }
         if (this.getActionState() == MynaActionState.IDLE_1
@@ -276,13 +231,6 @@ public class MynaEntity extends SparrowEntity implements FlyingAnimal, BirdSleep
             return;
         }
 
-        if (this.vocalCooldown <= 0) {
-            if (this.canStartCalmAction()) {
-                this.startSpeaking();
-                return;
-            }
-            this.vocalCooldown = this.randomBetween(50, 110);
-        }
         if (this.idleCooldown <= 0) {
             if (this.canStartCalmAction()) {
                 this.startIdleVariation();
@@ -305,9 +253,7 @@ public class MynaEntity extends SparrowEntity implements FlyingAnimal, BirdSleep
             this.restInterruptionTicks = Math.max(this.restInterruptionTicks, 240);
         }
         this.setActionState(MynaActionState.NONE, 0);
-        this.setVocalState(MynaVocalState.NONE, 0);
         this.idleCooldown = Math.max(this.idleCooldown, 120);
-        this.vocalCooldown = Math.max(this.vocalCooldown, 240);
     }
 
     private boolean canStartCalmAction() {
@@ -319,7 +265,6 @@ public class MynaEntity extends SparrowEntity implements FlyingAnimal, BirdSleep
                 && this.hurtTime <= 0
                 && this.getTarget() == null
                 && this.getActionState() == MynaActionState.NONE
-                && this.getVocalState() == MynaVocalState.NONE
                 && (movementState == SparrowBehaviorState.IDLE || movementState == SparrowBehaviorState.LOOK_AROUND)
                 && (intent == BirdIntent.IDLE || intent == BirdIntent.WATCH)
                 && BirdActivitySchedule.DIURNAL.isActiveTime(this.level().getDayTime())
@@ -335,117 +280,8 @@ public class MynaEntity extends SparrowEntity implements FlyingAnimal, BirdSleep
         }
     }
 
-    private void startSpeaking() {
-        MynaMimicCue cue = this.getRandom().nextFloat() < MIMIC_RECALL_CHANCE
-                ? this.mimicMemory.selectForRecall(this.getRandom(), this.level().getGameTime())
-                : null;
-        this.startSpeaking(cue);
-    }
-
-    private void startSpeaking(@Nullable MynaMimicCue cue) {
-        this.getNavigation().stop();
-        this.setActionState(MynaActionState.NONE, 0);
-        this.setCurrentMimicCue(cue);
-        this.setVocalState(MynaVocalState.STARTING, SPEAK_START_TICKS);
-    }
-
-    private void tickMimicShowcase() {
-        this.getNavigation().stop();
-        this.setDeltaMovement(Vec3.ZERO);
-        if (this.getVocalState() != MynaVocalState.NONE) {
-            this.tickSpeaking();
-            return;
-        }
-        if (this.mimicShowcaseGapTicks > 0) {
-            --this.mimicShowcaseGapTicks;
-            return;
-        }
-
-        MynaMimicCue[] cues = MynaMimicCue.values();
-        if (this.mimicShowcaseCueIndex >= cues.length) {
-            this.mimicShowcase = false;
-            this.vocalCooldown = this.nextVocalCooldown();
-            return;
-        }
-        this.startSpeaking(cues[this.mimicShowcaseCueIndex++]);
-    }
-
-    private void tickSpeaking() {
-        this.getNavigation().stop();
-        MynaVocalState state = this.getVocalState();
-        if (state == MynaVocalState.SPEAKING) {
-            this.tickMimicPhrase();
-        }
-        if (--this.vocalTicks > 0) {
-            return;
-        }
-        switch (state) {
-            case STARTING -> {
-                MynaMimicCue cue = this.getCurrentMimicCue();
-                NativeCall nativeCall = null;
-                MynaMimicVoice.Phrase phrase = null;
-                int baseDuration;
-                if (cue == null) {
-                    nativeCall = NATIVE_CALLS[this.getRandom().nextInt(NATIVE_CALLS.length)];
-                    baseDuration = nativeCall.durationTicks();
-                } else {
-                    phrase = MynaMimicVoice.imitation(
-                            cue,
-                            this.mimicMemory.rememberedPitch(cue),
-                            this.mimicMemory.rememberedTempo(cue),
-                            this.getRandom());
-                    baseDuration = cue.randomVocalTicks(this.getRandom());
-                }
-                this.setVocalState(
-                        MynaVocalState.SPEAKING,
-                        phrase == null ? baseDuration : Math.max(baseDuration, phrase.minimumDurationTicks()));
-                this.activeMimicPhrase = phrase;
-                this.mimicPhraseTick = 0;
-                this.mimicPhraseStepIndex = 0;
-                if (nativeCall != null) {
-                    nativeCall.play(this);
-                }
-            }
-            case SPEAKING -> {
-                MynaMimicCue cue = this.getCurrentMimicCue();
-                if (cue != null) {
-                    this.mimicMemory.markRecalled(cue, this.level().getGameTime());
-                }
-                this.setVocalState(MynaVocalState.ENDING, SPEAK_END_TICKS);
-            }
-            case ENDING -> {
-                this.setVocalState(MynaVocalState.NONE, 0);
-                if (this.mimicShowcase) {
-                    this.mimicShowcaseGapTicks = MIMIC_SHOWCASE_GAP_TICKS;
-                    this.vocalCooldown = 0;
-                } else {
-                    this.vocalCooldown = this.nextVocalCooldown();
-                }
-                this.idleCooldown = Math.max(this.idleCooldown, 160);
-            }
-            default -> this.setVocalState(MynaVocalState.NONE, 0);
-        }
-    }
-
-    private void tickMimicPhrase() {
-        if (this.activeMimicPhrase == null) {
-            return;
-        }
-        List<MynaMimicVoice.Syllable> syllables = this.activeMimicPhrase.syllables();
-        while (this.mimicPhraseStepIndex < syllables.size()) {
-            MynaMimicVoice.Syllable syllable = syllables.get(this.mimicPhraseStepIndex);
-            if (syllable.tick() > this.mimicPhraseTick) {
-                break;
-            }
-            syllable.play(this);
-            ++this.mimicPhraseStepIndex;
-        }
-        ++this.mimicPhraseTick;
-    }
-
     private void tickSleepState() {
         this.getNavigation().stop();
-        this.setVocalState(MynaVocalState.NONE, 0);
         if (this.getActionState() == MynaActionState.ENTERING_SLEEP && --this.actionTicks <= 0) {
             this.setActionState(MynaActionState.SLEEPING, 0);
             return;
@@ -457,7 +293,6 @@ public class MynaEntity extends SparrowEntity implements FlyingAnimal, BirdSleep
 
     private void beginSleep() {
         this.getNavigation().stop();
-        this.setVocalState(MynaVocalState.NONE, 0);
         this.setActionState(MynaActionState.ENTERING_SLEEP, SLEEP_ENTER_TICKS);
     }
 
@@ -466,95 +301,13 @@ public class MynaEntity extends SparrowEntity implements FlyingAnimal, BirdSleep
         this.actionTicks = Math.max(0, ticks);
     }
 
-    private void setVocalState(MynaVocalState state, int ticks) {
-        this.entityData.set(VOCAL_STATE, state.ordinal());
-        this.vocalTicks = Math.max(0, ticks);
-        if (state != MynaVocalState.SPEAKING) {
-            this.activeMimicPhrase = null;
-            this.mimicPhraseTick = 0;
-            this.mimicPhraseStepIndex = 0;
-        }
-        if (state == MynaVocalState.NONE) {
-            this.setCurrentMimicCue(null);
-        }
-    }
-
     public MynaActionState getActionState() {
         return MynaActionState.byId(this.entityData.get(ACTION_STATE));
     }
 
-    public MynaVocalState getVocalState() {
-        return MynaVocalState.byId(this.entityData.get(VOCAL_STATE));
-    }
-
-    @Nullable
-    public MynaMimicCue getCurrentMimicCue() {
-        return MynaMimicCue.byNetworkId(this.entityData.get(CURRENT_MIMIC_CUE));
-    }
-
-    public int getLearnedMimicCount() {
-        return this.mimicMemory.learnedCount();
-    }
-
-    public boolean knowsMimicCue(MynaMimicCue cue) {
-        return this.mimicMemory.knows(cue);
-    }
-
-    public int getMimicLearningProgress(MynaMimicCue cue) {
-        return this.mimicMemory.learningProgress(cue);
-    }
-
-    /**
-     * Records a learnable sound if this bird is awake, calm, in range and not
-     * separated from the source by a solid wall.
-     */
-    public MynaMimicMemory.LearningResult hearMimicCue(MynaMimicCue cue, Vec3 soundPosition) {
-        return this.hearMimicCue(cue, soundPosition, 1.0F);
-    }
-
-    public MynaMimicMemory.LearningResult hearMimicCue(
-            MynaMimicCue cue, Vec3 soundPosition, float sourcePitch) {
-        if (this.level().isClientSide || cue == null || soundPosition == null
-                || !this.canLearnMimicCue(soundPosition)) {
-            return MynaMimicMemory.LearningResult.IGNORED;
-        }
-        return this.mimicMemory.observe(cue, this.level().getGameTime(), sourcePitch);
-    }
-
-    private boolean canLearnMimicCue(Vec3 soundPosition) {
-        boolean trustedCompanion = this.isTame();
-        if (!this.isAlive()
-                || this.isBirdSleeping()
-                || this.isInWaterOrBubble()
-                || this.hurtTime > 0
-                || this.getTarget() != null
-                || this.getActionState() != MynaActionState.NONE
-                || this.getVocalState() != MynaVocalState.NONE
-                || (!trustedCompanion && (this.isBirdFlightActive() || !this.onGround()))
-                || this.birdBrain().computeRiskScore() >= (trustedCompanion ? 0.90F : 0.62F)
-                || this.distanceToSqr(soundPosition) > MIMIC_LEARNING_RANGE * MIMIC_LEARNING_RANGE) {
-            return false;
-        }
-
-        Vec3 eyePosition = this.getEyePosition();
-        HitResult obstruction = this.level().clip(
-                new ClipContext(
-                        eyePosition,
-                        soundPosition,
-                        ClipContext.Block.COLLIDER,
-                        ClipContext.Fluid.NONE,
-                        this));
-        return obstruction.getType() == HitResult.Type.MISS
-                || obstruction.getLocation().distanceToSqr(soundPosition) <= 1.0D;
-    }
-
-    private void setCurrentMimicCue(@Nullable MynaMimicCue cue) {
-        this.entityData.set(CURRENT_MIMIC_CUE, cue == null ? -1 : cue.networkId());
-    }
-
     @Override
     protected boolean blocksSparrowDecorativeBehavior() {
-        return this.getActionState() != MynaActionState.NONE || this.getVocalState() != MynaVocalState.NONE;
+        return this.getActionState() != MynaActionState.NONE;
     }
 
     @Override
@@ -645,7 +398,6 @@ public class MynaEntity extends SparrowEntity implements FlyingAnimal, BirdSleep
         }
         this.restInterruptionTicks = Math.max(this.restInterruptionTicks, 240);
         this.setActionState(MynaActionState.NONE, 0);
-        this.setVocalState(MynaVocalState.NONE, 0);
     }
 
     @Override
@@ -656,29 +408,6 @@ public class MynaEntity extends SparrowEntity implements FlyingAnimal, BirdSleep
             this.wakeFromLoudSound(sourcePosition);
         }
         return hurt;
-    }
-
-    @Override
-    public void addAdditionalSaveData(CompoundTag tag) {
-        super.addAdditionalSaveData(tag);
-        this.mimicMemory.save(tag);
-        tag.putBoolean("MynaMimicShowcase", this.mimicShowcase);
-        tag.putInt("MynaMimicShowcaseIndex", this.mimicShowcaseCueIndex);
-    }
-
-    @Override
-    public void readAdditionalSaveData(CompoundTag tag) {
-        super.readAdditionalSaveData(tag);
-        this.mimicMemory.load(tag);
-        this.mimicShowcase = tag.getBoolean("MynaMimicShowcase");
-        this.mimicShowcaseCueIndex = Mth.clamp(
-                tag.getInt("MynaMimicShowcaseIndex"), 0, MynaMimicCue.values().length);
-        this.mimicShowcaseGapTicks = 0;
-        this.setActionState(MynaActionState.NONE, 0);
-        this.setVocalState(MynaVocalState.NONE, 0);
-        this.idleCooldown = this.randomBetween(120, 520);
-        this.vocalCooldown = this.mimicShowcase
-                ? 0 : this.nextVocalCooldown();
     }
 
     public void setGuidePreviewAnimation(GuidePreviewAnimation animation) {
@@ -703,16 +432,6 @@ public class MynaEntity extends SparrowEntity implements FlyingAnimal, BirdSleep
         }
         if (action == MynaActionState.SLEEPING) {
             return animationState.setAndContinue(SLEEP_LOOP_ANIMATION);
-        }
-        MynaVocalState vocal = this.getVocalState();
-        if (vocal == MynaVocalState.STARTING) {
-            return animationState.setAndContinue(SPEAK_START_ANIMATION);
-        }
-        if (vocal == MynaVocalState.SPEAKING) {
-            return animationState.setAndContinue(SPEAK_LOOP_ANIMATION);
-        }
-        if (vocal == MynaVocalState.ENDING) {
-            return animationState.setAndContinue(SPEAK_END_ANIMATION);
         }
         if (this.shouldPlayFlyAnimation()) {
             return animationState.setAndContinue(FLY_ANIMATION);
@@ -740,7 +459,7 @@ public class MynaEntity extends SparrowEntity implements FlyingAnimal, BirdSleep
     @Nullable
     @Override
     protected SoundEvent getAmbientSound() {
-        return null;
+        return NATIVE_CALLS.get(this.getRandom().nextInt(NATIVE_CALLS.size())).get();
     }
 
     @Nullable
@@ -755,41 +474,8 @@ public class MynaEntity extends SparrowEntity implements FlyingAnimal, BirdSleep
         return null;
     }
 
-    @Override
-    public void playAmbientSound() {
-        // Natural calls are driven by the synced vocal state so sound and beak animation stay aligned.
-    }
-
-    public void startAudienceCheerCall() {
-        if (!this.level().isClientSide
-                && !this.isBirdSleeping()
-                && this.getVocalState() == MynaVocalState.NONE) {
-            this.startSpeaking(null);
-        }
-    }
-
     private int randomBetween(int min, int max) {
         return min + this.getRandom().nextInt(Math.max(1, max - min + 1));
-    }
-
-    private int nextVocalCooldown() {
-        long dayTime = Math.floorMod(this.level().getDayTime(), 24000L);
-        boolean dawnOrDusk = dayTime < 1800L || dayTime >= 10800L && dayTime <= 13200L;
-        return dawnOrDusk
-                ? this.randomBetween(MIN_PEAK_SPEAK_COOLDOWN, MAX_PEAK_SPEAK_COOLDOWN)
-                : this.randomBetween(MIN_SPEAK_COOLDOWN, MAX_SPEAK_COOLDOWN);
-    }
-
-    private record NativeCall(Supplier<SoundEvent> sound, int durationTicks) {
-        private void play(MynaEntity myna) {
-            myna.level().playSound(
-                    null,
-                    myna,
-                    this.sound.get(),
-                    SoundSource.NEUTRAL,
-                    0.82F,
-                    0.97F + myna.getRandom().nextFloat() * 0.06F);
-        }
     }
 
     public enum GuidePreviewAnimation {
@@ -799,7 +485,6 @@ public class MynaEntity extends SparrowEntity implements FlyingAnimal, BirdSleep
         FLY(FLY_ANIMATION),
         IDLE_1(IDLE_1_ANIMATION),
         IDLE_2(IDLE_2_ANIMATION),
-        SPEAK(RawAnimation.begin().thenPlay("animation.speak").thenLoop("animation.speak_loop")),
         SLEEP(RawAnimation.begin().thenPlay("animation.sleep").thenLoop("animation.sleep_loop"));
 
         @Nullable

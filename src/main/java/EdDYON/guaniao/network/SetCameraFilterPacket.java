@@ -13,7 +13,7 @@ import net.minecraftforge.network.NetworkEvent;
 public record SetCameraFilterPacket(InteractionHand hand, CameraFilter filter) {
     public static void encode(SetCameraFilterPacket packet, FriendlyByteBuf buffer) {
         buffer.writeEnum(packet.hand);
-        buffer.writeVarInt(packet.filter.ordinal());
+        buffer.writeVarInt(packet.filter.id());
     }
 
     public static SetCameraFilterPacket decode(FriendlyByteBuf buffer) {

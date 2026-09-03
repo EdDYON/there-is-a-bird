@@ -1,5 +1,6 @@
 package EdDYON.guaniao.content.nest;
 
+import EdDYON.guaniao.content.enchantment.FeatherFanEnchantmentBooks;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
@@ -21,6 +22,9 @@ public enum CrowNestLootProfile {
     }
 
     public static CrowNestLootProfile forStack(ItemStack stack) {
+        if (FeatherFanEnchantmentBooks.isBook(stack)) {
+            return TREASURE;
+        }
         if (stack.is(Items.DIAMOND) || stack.is(Items.EMERALD)) {
             return TREASURE;
         }

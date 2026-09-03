@@ -1,6 +1,7 @@
 package EdDYON.guaniao.world;
 
 import EdDYON.guaniao.config.BirdConfigManager;
+import EdDYON.guaniao.content.enchantment.FeatherFanEnchantmentBooks;
 import EdDYON.guaniao.content.nest.CrowNestBlock;
 import EdDYON.guaniao.content.nest.CrowNestBlockEntity;
 import EdDYON.guaniao.registry.GuaniaoBlocks;
@@ -30,6 +31,7 @@ public final class CrowNestFeature extends Feature<NoneFeatureConfiguration> {
     private static final int TREE_SCAN_ATTEMPTS = 36;
     private static final int RUNTIME_TREE_SCAN_RADIUS = 18;
     private static final int RUNTIME_TREE_SCAN_ATTEMPTS = 40;
+    private static final int ENCHANTMENT_BOOK_CHANCE = 12;
 
     public CrowNestFeature(Codec<NoneFeatureConfiguration> codec) {
         super(codec);
@@ -165,6 +167,9 @@ public final class CrowNestFeature extends Feature<NoneFeatureConfiguration> {
         int count = 1 + random.nextInt(3);
         for (int slot = 0; slot < count; ++slot) {
             nest.setItem(slot, randomNaturalNestItem(random));
+        }
+        if (random.nextInt(ENCHANTMENT_BOOK_CHANCE) == 0) {
+            nest.setItem(0, FeatherFanEnchantmentBooks.randomBook(random));
         }
         if (!nest.hasTreasure()) {
             nest.setItem(0, new ItemStack(Items.FEATHER));

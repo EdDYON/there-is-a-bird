@@ -1,0 +1,71 @@
+{
+  "blend": {
+    "func": "add",
+    "srcrgb": "one",
+    "dstrgb": "zero"
+  },
+  "vertex": "guaniao:camera_optics",
+  "fragment": "guaniao:camera_optics",
+  "attributes": [
+    "Position",
+    "UV0"
+  ],
+  "samplers": [
+    {
+      "name": "DiffuseSampler"
+    },
+    {
+      "name": "DepthSampler"
+    }
+  ],
+  "uniforms": [
+    {
+      "name": "OutSize",
+      "type": "float",
+      "count": 2,
+      "values": [1.0, 1.0]
+    },
+    {
+      "name": "NearPlane",
+      "type": "float",
+      "count": 1,
+      "values": [0.05]
+    },
+    {
+      "name": "FarPlane",
+      "type": "float",
+      "count": 1,
+      "values": [512.0]
+    },
+    {
+      "name": "FocusDistance",
+      "type": "float",
+      "count": 1,
+      "values": [12.0]
+    },
+    {
+      "name": "Aperture",
+      "type": "float",
+      "count": 1,
+      "values": [5.6]
+    },
+    {
+      "name": "FocalLength",
+      "type": "float",
+      "count": 1,
+      "values": [50.0]
+    },
+    {
+      "name": "DofMultiplier",
+      "type": "float",
+      "count": 1,
+      "values": [1.0]
+    },
+    {
+      "name": "LensDistortion",
+      "type": "float",
+      "count": 1,
+      "values": [0.0]
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 package EdDYON.guaniao.content.fan;
 
+import EdDYON.guaniao.content.bird.BirdTags;
 import EdDYON.guaniao.content.enchantment.GuaniaoEnchantments;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
 import EdDYON.guaniao.registry.GuaniaoItems;
@@ -292,7 +293,8 @@ public class FeatherFanProjectileEntity extends ThrowableItemProjectile {
         FanState state = this.getFanState();
         if (state == FanState.STUCK_ENTITY || state == FanState.STUCK_BLOCK
                 || state == FanState.BURIAL_VORTEX || state == FanState.RIVEN_SEQUENCE
-                || !(target instanceof LivingEntity) || target == this.getOwner() || !super.canHitEntity(target)) {
+                || !(target instanceof LivingEntity) || target == this.getOwner()
+                || target.getType().is(BirdTags.BIRDS) || !super.canHitEntity(target)) {
             return false;
         }
         if (state == FanState.HUNTING) {
@@ -313,6 +315,9 @@ public class FeatherFanProjectileEntity extends ThrowableItemProjectile {
     }
 
     private void hitLivingEntity(LivingEntity living, Vec3 hitLocation) {
+        if (living.getType().is(BirdTags.BIRDS)) {
+            return;
+        }
         if (this.getFanState() == FanState.HUNTING) {
             this.hitHuntingTarget(living);
             return;
@@ -466,7 +471,7 @@ public class FeatherFanProjectileEntity extends ThrowableItemProjectile {
         }
 
         LivingEntity target = this.findStuckEntity();
-        if (target == null || !target.isAlive()) {
+        if (target == null || !target.isAlive() || target.getType().is(BirdTags.BIRDS)) {
             this.beginPullout();
             return;
         }
@@ -683,6 +688,7 @@ public class FeatherFanProjectileEntity extends ThrowableItemProjectile {
                     || !candidate.isAlive()
                     || candidate.isSpectator()
                     || candidate == owner
+                    || candidate.getType().is(BirdTags.BIRDS)
                     || !owner.canAttack(candidate)) {
                 continue;
             }
@@ -721,7 +727,7 @@ public class FeatherFanProjectileEntity extends ThrowableItemProjectile {
             return null;
         }
         Entity entity = serverLevel.getEntity(this.huntingTargetUuid);
-        return entity instanceof LivingEntity living ? living : null;
+        return entity instanceof LivingEntity living && !living.getType().is(BirdTags.BIRDS) ? living : null;
     }
 
     private boolean hasClearHuntingPath(Vec3 start, LivingEntity target) {
@@ -788,6 +794,7 @@ public class FeatherFanProjectileEntity extends ThrowableItemProjectile {
                         && !target.isVehicle()
                         && target != owner
                         && target != anchor
+                        && !target.getType().is(BirdTags.BIRDS)
         );
 
         for (LivingEntity target : targets) {
@@ -849,6 +856,9 @@ public class FeatherFanProjectileEntity extends ThrowableItemProjectile {
     }
 
     private void damageBurialTarget(LivingEntity target) {
+        if (target.getType().is(BirdTags.BIRDS)) {
+            return;
+        }
         Vec3 movementBeforeDamage = target.getDeltaMovement();
         int previousInvulnerableTime = target.invulnerableTime;
         target.invulnerableTime = 0;
@@ -892,6 +902,7 @@ public class FeatherFanProjectileEntity extends ThrowableItemProjectile {
                 LivingEntity.class,
                 area,
                 target -> target.isAlive() && !target.isSpectator() && target != owner
+                        && !target.getType().is(BirdTags.BIRDS)
         );
 
         for (LivingEntity target : targets) {
@@ -951,6 +962,7 @@ public class FeatherFanProjectileEntity extends ThrowableItemProjectile {
                 LivingEntity.class,
                 area,
                 target -> target.isAlive() && !target.isSpectator() && target != owner
+                        && !target.getType().is(BirdTags.BIRDS)
         );
 
         for (LivingEntity target : targets) {
@@ -1003,7 +1015,7 @@ public class FeatherFanProjectileEntity extends ThrowableItemProjectile {
     }
 
     private void performRivenReformStrike(LivingEntity target) {
-        if (target == null || !target.isAlive()) {
+        if (target == null || !target.isAlive() || target.getType().is(BirdTags.BIRDS)) {
             return;
         }
 

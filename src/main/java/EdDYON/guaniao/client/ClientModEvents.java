@@ -3,6 +3,7 @@ package EdDYON.guaniao.client;
 import EdDYON.guaniao.GuaniaoMod;
 import EdDYON.guaniao.client.bath.BirdBathRenderer;
 import EdDYON.guaniao.client.camera.PhotographEntityRenderer;
+import EdDYON.guaniao.client.camera.CameraOpticsShader;
 import EdDYON.guaniao.client.cage.BirdCageRenderer;
 import EdDYON.guaniao.client.nest.CrowNestRenderer;
 import EdDYON.guaniao.client.nest.CrowNestScreen;
@@ -46,8 +47,10 @@ import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraftforge.client.event.EntityRenderersEvent;
+import net.minecraftforge.client.event.RegisterColorHandlersEvent;
 import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
 import net.minecraftforge.client.event.RegisterParticleProvidersEvent;
+import net.minecraftforge.client.event.RegisterShadersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -89,6 +92,32 @@ public final class ClientModEvents {
         event.registerSpriteSet(GuaniaoParticleTypes.RIVEN_STREAK.get(), RivenStreakParticle.Provider::new);
         event.registerSpriteSet(GuaniaoParticleTypes.HUNTING_MARK.get(), HuntingMarkParticle.Provider::new);
         event.registerSpriteSet(GuaniaoParticleTypes.HUNTING_STREAK.get(), HuntingStreakParticle.Provider::new);
+    }
+
+    @SubscribeEvent
+    public static void onRegisterShaders(RegisterShadersEvent event) throws java.io.IOException {
+        CameraOpticsShader.register(event);
+    }
+
+    @SubscribeEvent
+    public static void onRegisterItemColors(RegisterColorHandlersEvent.Item event) {
+        // These spawn eggs use complete, full-color icons rather than vanilla's two tint masks.
+        // Returning white prevents ForgeSpawnEggItem's base/spot colors from darkening layer0.
+        event.register(
+                (stack, tintIndex) -> 0xFFFFFFFF,
+                GuaniaoItems.NIGHT_HERON_SPAWN_EGG.get(),
+                GuaniaoItems.SPARROW_SPAWN_EGG.get(),
+                GuaniaoItems.LONG_TAILED_TIT_SPAWN_EGG.get(),
+                GuaniaoItems.COCKATIEL_SPAWN_EGG.get(),
+                GuaniaoItems.MACAW_SPAWN_EGG.get(),
+                GuaniaoItems.BUDGERIGAR_SPAWN_EGG.get(),
+                GuaniaoItems.SPOTTED_DOVE_SPAWN_EGG.get(),
+                GuaniaoItems.PIGEON_SPAWN_EGG.get(),
+                GuaniaoItems.CROW_SPAWN_EGG.get(),
+                GuaniaoItems.SEAGULL_SPAWN_EGG.get(),
+                GuaniaoItems.KIWI_SPAWN_EGG.get(),
+                GuaniaoItems.MYNA_SPAWN_EGG.get()
+        );
     }
 
     @SubscribeEvent

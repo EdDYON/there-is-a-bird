@@ -9,7 +9,7 @@ import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 
 public final class GuaniaoNetwork {
-    private static final String PROTOCOL = "14";
+    private static final String PROTOCOL = "15";
     private static int packetId;
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
@@ -81,6 +81,11 @@ public final class GuaniaoNetwork {
                 .encoder(SetCameraFilterPacket::encode)
                 .decoder(SetCameraFilterPacket::decode)
                 .consumerMainThread(SetCameraFilterPacket::handle)
+                .add();
+        CHANNEL.messageBuilder(SetCameraSettingsPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(SetCameraSettingsPacket::encode)
+                .decoder(SetCameraSettingsPacket::decode)
+                .consumerMainThread(SetCameraSettingsPacket::handle)
                 .add();
     }
 

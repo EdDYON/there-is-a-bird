@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 import com.mojang.math.Axis;
+import EdDYON.guaniao.content.bird.BirdTags;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.particles.ParticleTypes;
@@ -155,6 +156,9 @@ public class FeatherFanItem extends Item {
 
     @Override
     public boolean hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
+        if (target.getType().is(BirdTags.BIRDS)) {
+            return false;
+        }
         if (!attacker.level().isClientSide) {
             target.knockback(MELEE_KNOCKBACK, attacker.getX() - target.getX(), attacker.getZ() - target.getZ());
         }
@@ -337,6 +341,7 @@ public class FeatherFanItem extends Item {
                 target -> target.isAlive()
                         && !target.isSpectator()
                         && target != player
+                        && !target.getType().is(BirdTags.BIRDS)
                         && player.canAttack(target)
         );
         candidates.removeIf(target -> {

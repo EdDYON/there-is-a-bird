@@ -48,14 +48,6 @@ public final class GuaniaoSoundEvents {
     public static final RegistryObject<SoundEvent> MYNA_CALL_11 = register("entity.myna.call_11");
     public static final RegistryObject<SoundEvent> MYNA_CALL_12 = register("entity.myna.call_12");
     public static final RegistryObject<SoundEvent> MYNA_CALL_13 = register("entity.myna.call_13");
-    public static final RegistryObject<SoundEvent> MYNA_MIMIC_WHISTLE_SHORT = register("entity.myna.mimic.whistle_short");
-    public static final RegistryObject<SoundEvent> MYNA_MIMIC_WHISTLE_RISE = register("entity.myna.mimic.whistle_rise");
-    public static final RegistryObject<SoundEvent> MYNA_MIMIC_WHISTLE_FALL = register("entity.myna.mimic.whistle_fall");
-    public static final RegistryObject<SoundEvent> MYNA_MIMIC_RASP = register("entity.myna.mimic.rasp");
-    public static final RegistryObject<SoundEvent> MYNA_MIMIC_CLICK = register("entity.myna.mimic.click");
-    public static final RegistryObject<SoundEvent> MYNA_MIMIC_TRILL = register("entity.myna.mimic.trill");
-    public static final RegistryObject<SoundEvent> MYNA_MIMIC_HISS = register("entity.myna.mimic.hiss");
-    public static final RegistryObject<SoundEvent> MYNA_MIMIC_BURST = register("entity.myna.mimic.burst");
     public static final RegistryObject<SoundEvent> FEATHER_FAN_BURIAL_VORTEX =
             register("item.feather_fan.burial_vortex");
     public static final RegistryObject<SoundEvent> FEATHER_FAN_BURIAL_SLASH =

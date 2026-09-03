@@ -1,6 +1,7 @@
 package EdDYON.guaniao.event;
 
 import EdDYON.guaniao.GuaniaoMod;
+import EdDYON.guaniao.content.bird.BirdTags;
 import EdDYON.guaniao.content.fan.FeatherFanProjectileEntity;
 import EdDYON.guaniao.registry.GuaniaoItems;
 import EdDYON.guaniao.registry.GuaniaoParticleTypes;
@@ -11,6 +12,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -18,6 +20,24 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
 public final class FeatherFanCombatEvents {
     private FeatherFanCombatEvents() {
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onLivingAttack(LivingAttackEvent event) {
+        LivingEntity victim = event.getEntity();
+        if (!victim.getType().is(BirdTags.BIRDS)) {
+            return;
+        }
+
+        DamageSource source = event.getSource();
+        Entity directAttacker = source.getDirectEntity();
+        boolean projectileAttack = directAttacker instanceof FeatherFanProjectileEntity;
+        boolean meleeAttack = source.getEntity() instanceof Player player
+                && directAttacker == player
+                && player.getMainHandItem().is(GuaniaoItems.WIND_FEATHER_FAN.get());
+        if (projectileAttack || meleeAttack) {
+            event.setCanceled(true);
+        }
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
