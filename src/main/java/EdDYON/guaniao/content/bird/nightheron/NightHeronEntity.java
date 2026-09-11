@@ -1,5 +1,6 @@
 package EdDYON.guaniao.content.bird.nightheron;
 
+import EdDYON.guaniao.content.bird.flight.BirdFlightAnimation;
 import EdDYON.guaniao.config.BirdConfigManager;
 import EdDYON.guaniao.content.bird.BirdSoundVolume;
 import EdDYON.guaniao.content.bird.BirdFlockSoundLimiter;
@@ -1307,7 +1308,7 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
             return animationState.setAndContinue(EAT_ANIMATION);
         }
         if (this.shouldUseFlyingAnimation()) {
-            return animationState.setAndContinue(this.chooseFlyingAnimation());
+            return BirdFlightAnimation.play(animationState, this.chooseFlyingAnimation());
         }
         NightHeronBehaviorState state = this.getBehaviorState();
         if (state == NightHeronBehaviorState.ROOSTING) {

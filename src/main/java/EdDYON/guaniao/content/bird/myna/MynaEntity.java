@@ -1,5 +1,6 @@
 package EdDYON.guaniao.content.bird.myna;
 
+import EdDYON.guaniao.content.bird.flight.BirdFlightAnimation;
 import EdDYON.guaniao.content.bird.BirdActivitySchedule;
 import EdDYON.guaniao.content.bird.BirdGroundAnimation;
 import EdDYON.guaniao.content.bird.BirdSleepWakeable;
@@ -434,7 +435,7 @@ public class MynaEntity extends SparrowEntity implements FlyingAnimal, BirdSleep
             return animationState.setAndContinue(SLEEP_LOOP_ANIMATION);
         }
         if (this.shouldPlayFlyAnimation()) {
-            return animationState.setAndContinue(FLY_ANIMATION);
+            return BirdFlightAnimation.play(animationState, FLY_ANIMATION);
         }
         if (action == MynaActionState.IDLE_1) {
             return animationState.setAndContinue(IDLE_1_ANIMATION);

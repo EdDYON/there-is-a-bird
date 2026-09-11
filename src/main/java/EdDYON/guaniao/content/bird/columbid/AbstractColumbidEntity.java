@@ -1,5 +1,6 @@
 package EdDYON.guaniao.content.bird.columbid;
 
+import EdDYON.guaniao.content.bird.flight.BirdFlightAnimation;
 import EdDYON.guaniao.config.BirdConfigManager;
 import EdDYON.guaniao.config.BirdSpecies;
 import EdDYON.guaniao.content.bird.BirdSoundVolume;
@@ -1408,12 +1409,12 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
         }
         if (this.shouldPlayFlyAnimation()) {
             if (this.flapOnceTicks > 0) {
-                return animationState.setAndContinue(FLY_FLAP_ONCE_ANIMATION);
+                return BirdFlightAnimation.play(animationState, FLY_FLAP_ONCE_ANIMATION);
             }
             if (this.getBehaviorState() == ColumbidBehaviorState.GLIDING) {
-                return animationState.setAndContinue(FLY_LOOP_ANIMATION);
+                return BirdFlightAnimation.play(animationState, FLY_LOOP_ANIMATION);
             }
-            return animationState.setAndContinue(FLY_FLAPPING_LOOP_ANIMATION);
+            return BirdFlightAnimation.play(animationState, FLY_FLAPPING_LOOP_ANIMATION);
         }
         if (this.shouldPlayWalkAnimation(animationState.isMoving())) {
             animationState.getController().setAnimationSpeed(BirdGroundAnimation.walkAnimationSpeed(this));

@@ -23,6 +23,7 @@ import EdDYON.guaniao.content.bird.flight.BirdFlightAware;
 import EdDYON.guaniao.content.bird.flight.BirdFlightBoids;
 import EdDYON.guaniao.content.bird.flight.BirdFlightController;
 import EdDYON.guaniao.content.bird.flight.BirdFlightProfile;
+import EdDYON.guaniao.content.bird.flight.BirdFlightAnimation;
 import EdDYON.guaniao.content.bird.flight.BirdFlightTargeting;
 import EdDYON.guaniao.content.bird.scale.BirdModelScale;
 import EdDYON.guaniao.content.bird.scale.BirdModelScaleProfile;
@@ -1554,7 +1555,7 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
         if (this.shouldPlayFlyAnimation()) {
             animationState.getController().transitionLength(0);
             animationState.getController().setAnimationSpeed(this.flightAnimationSpeed());
-            return animationState.setAndContinue(FLY_ANIMATION);
+            return BirdFlightAnimation.play(animationState, FLY_ANIMATION);
         }
         if (state == BudgerigarBehaviorState.EATING || this.eatingTicks > 0) {
             return animationState.setAndContinue(EAT_ANIMATION);

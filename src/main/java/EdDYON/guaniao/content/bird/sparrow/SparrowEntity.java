@@ -1,5 +1,6 @@
 package EdDYON.guaniao.content.bird.sparrow;
 
+import EdDYON.guaniao.content.bird.flight.BirdFlightAnimation;
 import EdDYON.guaniao.content.bird.BirdSoundVolume;
 import EdDYON.guaniao.content.bird.BirdFlockSoundLimiter;
 import EdDYON.guaniao.content.bird.BirdScanBudget;
@@ -2121,7 +2122,7 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
         }
         SparrowBehaviorState state = this.getBehaviorState();
         if (this.shouldPlayFlyAnimation()) {
-            return animationState.setAndContinue(FLY_ANIMATION);
+            return BirdFlightAnimation.play(animationState, FLY_ANIMATION);
         }
         if (this.shouldPlayWalkAnimation(state, animationState.isMoving())) {
             animationState.getController().setAnimationSpeed(BirdGroundAnimation.walkAnimationSpeed(this));

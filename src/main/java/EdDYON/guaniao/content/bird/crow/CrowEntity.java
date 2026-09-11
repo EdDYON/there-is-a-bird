@@ -1,5 +1,6 @@
 package EdDYON.guaniao.content.bird.crow;
 
+import EdDYON.guaniao.content.bird.flight.BirdFlightAnimation;
 import EdDYON.guaniao.content.bird.BirdSoundVolume;
 import EdDYON.guaniao.content.bird.BirdFlockSoundLimiter;
 import EdDYON.guaniao.content.bath.BirdBathAttraction;
@@ -1864,7 +1865,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         CrowBehaviorState state = this.getBehaviorState();
         // A real flight must cancel guide/action poses instead of blending with them during take-off.
         if (this.shouldPlayFlyAnimation()) {
-            return animationState.setAndContinue(this.shouldPlayGlideAnimation() ? GLIDE_ANIMATION : FLY_ANIMATION);
+            return BirdFlightAnimation.play(animationState, this.shouldPlayGlideAnimation() ? GLIDE_ANIMATION : FLY_ANIMATION);
         }
         RawAnimation guidePreviewRawAnimation = this.guidePreviewAnimation.animation();
         if (guidePreviewRawAnimation != null) {

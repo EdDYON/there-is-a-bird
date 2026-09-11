@@ -1,5 +1,6 @@
 package EdDYON.guaniao.content.bird.woodcock;
 
+import EdDYON.guaniao.content.bird.flight.BirdFlightAnimation;
 import EdDYON.guaniao.content.earthworm.EarthwormEntity;
 
 import EdDYON.guaniao.content.bird.BirdActivitySchedule;
@@ -920,7 +921,7 @@ public class WoodcockEntity extends SparrowEntity
             return animationState.setAndContinue(SLEEP_LOOP_ANIMATION);
         }
         if (this.shouldPlayFlyAnimation()) {
-            return animationState.setAndContinue(FLY_ANIMATION);
+            return BirdFlightAnimation.play(animationState, FLY_ANIMATION);
         }
         return switch (this.getWoodcockBehaviorState()) {
             case STEP_1 -> {

@@ -1,5 +1,6 @@
 package EdDYON.guaniao.content.bird.seagull;
 
+import EdDYON.guaniao.content.bird.flight.BirdFlightAnimation;
 import EdDYON.guaniao.content.bird.BirdSoundVolume;
 import EdDYON.guaniao.content.bird.BirdFlockSoundLimiter;
 import EdDYON.guaniao.config.BirdConfigManager;
@@ -511,7 +512,7 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
             return animationState.setAndContinue(guidePreviewRawAnimation);
         }
         if (this.shouldPlayFlyAnimation()) {
-            return animationState.setAndContinue(this.flightAnimation());
+            return BirdFlightAnimation.play(animationState, this.flightAnimation());
         }
         if (this.isNightResting()) {
             return animationState.setAndContinue(SLEEP_ANIMATION);

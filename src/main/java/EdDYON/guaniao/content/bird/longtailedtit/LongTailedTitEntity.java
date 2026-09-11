@@ -1,5 +1,6 @@
 package EdDYON.guaniao.content.bird.longtailedtit;
 
+import EdDYON.guaniao.content.bird.flight.BirdFlightAnimation;
 import EdDYON.guaniao.config.BirdConfigManager;
 import EdDYON.guaniao.config.BirdSpecies;
 import EdDYON.guaniao.content.bird.BirdActivitySchedule;
@@ -272,7 +273,7 @@ public class LongTailedTitEntity extends SparrowEntity {
                 this.isNoGravity(),
                 this.getDeltaMovement(),
                 0)) {
-            return state.setAndContinue(FLY_ANIMATION);
+            return BirdFlightAnimation.play(state, FLY_ANIMATION);
         }
         if (BirdGroundAnimation.hasWalkMotion(this, state.isMoving())
                 && !behavior.isAirborne()

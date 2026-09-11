@@ -9,6 +9,7 @@ import EdDYON.guaniao.content.bird.budgerigar.BudgerigarBehaviorState;
 import EdDYON.guaniao.content.bird.budgerigar.BudgerigarEntity;
 import EdDYON.guaniao.content.bird.cockatiel.CockatielEntity;
 import EdDYON.guaniao.content.bird.flight.BirdFlightProfile;
+import EdDYON.guaniao.content.bird.flight.BirdFlightAnimation;
 import EdDYON.guaniao.content.bird.scale.BirdModelScale;
 import EdDYON.guaniao.content.bird.scale.BirdModelScaleProfile;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
@@ -197,7 +198,7 @@ public class MacawEntity extends BudgerigarEntity {
         if (this.shouldPlayFlyAnimation()) {
             animationState.getController().transitionLength(0);
             animationState.getController().setAnimationSpeed(this.flightAnimationSpeed());
-            return animationState.setAndContinue(FLY_ANIMATION);
+            return BirdFlightAnimation.play(animationState, FLY_ANIMATION);
         }
         if (state == BudgerigarBehaviorState.EATING) {
             return animationState.setAndContinue(EAT_ANIMATION);

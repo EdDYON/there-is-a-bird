@@ -8,6 +8,7 @@ import EdDYON.guaniao.content.bird.BirdTags;
 import EdDYON.guaniao.content.bird.budgerigar.BudgerigarBehaviorState;
 import EdDYON.guaniao.content.bird.budgerigar.BudgerigarEntity;
 import EdDYON.guaniao.content.bird.flight.BirdFlightProfile;
+import EdDYON.guaniao.content.bird.flight.BirdFlightAnimation;
 import EdDYON.guaniao.content.bird.scale.BirdModelScale;
 import EdDYON.guaniao.content.bird.scale.BirdModelScaleProfile;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
@@ -274,7 +275,7 @@ public class CockatielEntity extends BudgerigarEntity {
             this.happyDanceUntilTick = 0L;
             animationState.getController().transitionLength(0);
             animationState.getController().setAnimationSpeed(this.flightAnimationSpeed());
-            return animationState.setAndContinue(FLY_ANIMATION);
+            return BirdFlightAnimation.play(animationState, FLY_ANIMATION);
         }
         if (state == BudgerigarBehaviorState.EATING) {
             this.wasEating = true;
