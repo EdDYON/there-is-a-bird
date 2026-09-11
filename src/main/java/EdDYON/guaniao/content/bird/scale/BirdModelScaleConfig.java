@@ -5,8 +5,8 @@ public final class BirdModelScaleConfig {
     public static final Scale SPARROW = new Scale(0.36F, 0.94F, 1.06F);
     public static final Scale LONG_TAILED_TIT = new Scale(0.37F, 0.94F, 1.06F);
     public static final Scale BUDGERIGAR = new Scale(0.38F, 0.94F, 1.06F);
-    public static final Scale COCKATIEL = new Scale(0.51F, 0.94F, 1.06F);
-    public static final Scale MACAW = new Scale(0.95F, 0.94F, 1.06F);
+    public static final Scale COCKATIEL = new Scale(0.612F, 0.94F, 1.06F);
+    public static final Scale MACAW = new Scale(1.14F, 0.94F, 1.06F);
     public static final Scale SPOTTED_DOVE = new Scale(0.40F, 0.94F, 1.06F);
     public static final Scale COLUMBID = new Scale(0.43F, 0.94F, 1.06F);
     public static final Scale CROW = new Scale(0.58F, 0.94F, 1.06F);
