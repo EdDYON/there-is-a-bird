@@ -7,6 +7,7 @@ import EdDYON.guaniao.content.bird.BirdScanBudget;
 import EdDYON.guaniao.content.bird.BirdTags;
 import EdDYON.guaniao.content.bird.budgerigar.BudgerigarBehaviorState;
 import EdDYON.guaniao.content.bird.budgerigar.BudgerigarEntity;
+import EdDYON.guaniao.content.bird.flight.BirdFlightProfile;
 import EdDYON.guaniao.content.bird.scale.BirdModelScale;
 import EdDYON.guaniao.content.bird.scale.BirdModelScaleProfile;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
@@ -211,6 +212,16 @@ public class CockatielEntity extends BudgerigarEntity {
     }
 
     @Override
+    public BirdFlightProfile birdFlightProfile() {
+        return BirdFlightProfile.COCKATIEL;
+    }
+
+    @Override
+    protected double flybyInitialLift() {
+        return 0.08D;
+    }
+
+    @Override
     protected SoundEvent getAmbientSound() {
         return GuaniaoSoundEvents.COCKATIEL_AMBIENT.get();
     }
@@ -251,25 +262,29 @@ public class CockatielEntity extends BudgerigarEntity {
 
     private <T extends CockatielEntity> PlayState movementController(AnimationState<T> animationState) {
         animationState.getController().setAnimationSpeed(1.0D);
+        animationState.getController().transitionLength(4);
         RawAnimation preview = this.cockatielPreviewAnimation.animation;
         if (preview != null) {
             return animationState.setAndContinue(preview);
         }
         BudgerigarBehaviorState state = this.getBehaviorState();
+        boolean flying = this.shouldPlayFlyAnimation();
+        if (flying) {
+            this.wasEating = false;
+            this.happyDanceUntilTick = 0L;
+            animationState.getController().transitionLength(0);
+            animationState.getController().setAnimationSpeed(this.flightAnimationSpeed());
+            return animationState.setAndContinue(FLY_ANIMATION);
+        }
         if (state == BudgerigarBehaviorState.EATING) {
             this.wasEating = true;
             return animationState.setAndContinue(EAT_ANIMATION);
         }
-        boolean flying = this.shouldPlayFlyAnimation();
         if (this.wasEating) {
             this.wasEating = false;
-            if (!flying && this.onGround() && this.getRandom().nextInt(3) == 0) {
+            if (this.onGround() && this.getRandom().nextInt(3) == 0) {
                 this.happyDanceUntilTick = this.level().getGameTime() + 165L;
             }
-        }
-        if (flying) {
-            this.happyDanceUntilTick = 0L;
-            return animationState.setAndContinue(FLY_ANIMATION);
         }
         if (state == BudgerigarBehaviorState.SLEEPING || state == BudgerigarBehaviorState.ROOSTING) {
             this.happyDanceUntilTick = 0L;

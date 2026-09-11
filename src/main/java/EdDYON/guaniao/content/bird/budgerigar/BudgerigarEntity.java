@@ -119,6 +119,7 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
     private static final int ESCAPE_AIR_CRUISE_RANDOM_TICKS = 70;
     private static final int MAX_CONTROLLED_FLIGHT_TICKS = 520;
     private static final int MAX_LANDING_RETRIES = 2;
+    private static final double FLIGHT_ATTRIBUTE_TO_CONTROLLER_SPEED = BirdFlightProfile.BUDGERIGAR.cruiseSpeed() / BudgerigarDefinition.FLYING_SPEED;
     private static final BirdFlightProfile FLIGHT_PROFILE = BirdFlightProfile.BUDGERIGAR;
     private static final RawAnimation IDLE_ANIMATION = RawAnimation.begin().thenLoop("idle");
     private static final RawAnimation PREEN_ANIMATION = RawAnimation.begin().thenPlay("idle_diff_1").thenLoop("idle");
@@ -649,7 +650,8 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
         if (direction.lengthSqr() <= 1.0E-4D) {
             direction = this.randomHorizontalDirection();
         }
-        Vec3 movement = direction.normalize().scale(0.24D).add(0.0D, 0.07D, 0.0D);
+        double launchSpeed = this.scaledFlightSpeed(this.birdFlightProfile().cruiseSpeed()) * 0.92D;
+        Vec3 movement = direction.normalize().scale(launchSpeed).add(0.0D, this.flybyInitialLift(), 0.0D);
         this.setDeltaMovement(movement);
         this.faceFlightDirection(movement);
         this.fallDistance = 0.0F;
@@ -1167,7 +1169,10 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
                 horizontalDirection = BirdFlightTargeting.normalizeHorizontal(horizontalDirection.add(flockHeading), horizontalDirection);
             }
         }
-        double speed = this.escapeFlightActive ? 0.34D : (this.landingFlight ? 0.20D : 0.26D);
+        BirdFlightProfile profile = this.birdFlightProfile();
+        double speed = this.scaledFlightSpeed(this.escapeFlightActive
+                ? profile.escapeSpeed()
+                : (this.landingFlight ? profile.landingSpeed() : profile.cruiseSpeed()));
         if (this.landingFlight) {
             speed = BirdFlightController.decelerateNearLanding(speed, horizontalDistance, 3.4D, 0.42D);
         }
@@ -1211,7 +1216,7 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
             away = new Vec3(this.getRandom().nextDouble() - 0.5D, 0.0D, this.getRandom().nextDouble() - 0.5D);
         }
         Vec3 direction = new Vec3(away.x, 0.0D, away.z).normalize();
-        Vec3 target = BirdFlightTargeting.findAirTarget(this, FLIGHT_PROFILE, direction, true);
+        Vec3 target = BirdFlightTargeting.findAirTarget(this, this.birdFlightProfile(), direction, true);
         if (target == null) {
             target = BirdFlightTargeting.findRecoveryTarget(this, direction, 5, 8);
         }
@@ -1289,7 +1294,7 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
         } else {
             direction = this.getRandom().nextInt(3) == 0 ? this.getLookAngle() : this.randomHorizontalDirection();
         }
-        Vec3 target = BirdFlightTargeting.findAirTarget(this, FLIGHT_PROFILE, direction, fleeing);
+        Vec3 target = BirdFlightTargeting.findAirTarget(this, this.birdFlightProfile(), direction, fleeing);
         if (target != null) {
             return this.clampFlightTarget(target);
         }
@@ -1443,7 +1448,25 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
     }
 
     private void faceFlightDirection(Vec3 movement) {
-        BirdFlightController.faceMovement(this, movement, FLIGHT_PROFILE.maxPitchDegrees());
+        BirdFlightController.faceMovement(this, movement, this.birdFlightProfile().maxPitchDegrees());
+    }
+
+    protected double flybyInitialLift() {
+        return 0.07D;
+    }
+
+    protected double flightAnimationSpeed() {
+        return Mth.clamp(
+                this.getAttributeValue(Attributes.FLYING_SPEED) / BudgerigarDefinition.FLYING_SPEED,
+                0.80D,
+                1.35D);
+    }
+
+    private double scaledFlightSpeed(double profileSpeed) {
+        BirdFlightProfile profile = this.birdFlightProfile();
+        double profileCruiseSpeed = Math.max(0.01D, profile.cruiseSpeed());
+        double attributeCruiseSpeed = this.getAttributeValue(Attributes.FLYING_SPEED) * FLIGHT_ATTRIBUTE_TO_CONTROLLER_SPEED;
+        return attributeCruiseSpeed * profileSpeed / profileCruiseSpeed;
     }
 
     private void tickGroundMovementFacing() {
@@ -1522,19 +1545,22 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
 
     private <T extends BudgerigarEntity> PlayState movementController(AnimationState<T> animationState) {
         animationState.getController().setAnimationSpeed(1.0D);
+        animationState.getController().transitionLength(4);
         RawAnimation guidePreviewRawAnimation = this.guidePreviewAnimation.animation();
         if (guidePreviewRawAnimation != null) {
             return animationState.setAndContinue(guidePreviewRawAnimation);
         }
         BudgerigarBehaviorState state = this.getBehaviorState();
+        if (this.shouldPlayFlyAnimation()) {
+            animationState.getController().transitionLength(0);
+            animationState.getController().setAnimationSpeed(this.flightAnimationSpeed());
+            return animationState.setAndContinue(FLY_ANIMATION);
+        }
         if (state == BudgerigarBehaviorState.EATING || this.eatingTicks > 0) {
             return animationState.setAndContinue(EAT_ANIMATION);
         }
         if (state == BudgerigarBehaviorState.SLEEPING) {
             return animationState.setAndContinue(this.behaviorStateLockTicks > 0 ? SLEEP_ANIMATION : SLEEP_LOOP_ANIMATION);
-        }
-        if (this.shouldPlayFlyAnimation()) {
-            return animationState.setAndContinue(FLY_ANIMATION);
         }
         if (this.isDancing()) {
             return animationState.setAndContinue(DANCE_ANIMATION);

@@ -8,6 +8,7 @@ import EdDYON.guaniao.content.bird.BirdFlockSoundLimiter;
 import EdDYON.guaniao.content.bird.budgerigar.BudgerigarBehaviorState;
 import EdDYON.guaniao.content.bird.budgerigar.BudgerigarEntity;
 import EdDYON.guaniao.content.bird.cockatiel.CockatielEntity;
+import EdDYON.guaniao.content.bird.flight.BirdFlightProfile;
 import EdDYON.guaniao.content.bird.scale.BirdModelScale;
 import EdDYON.guaniao.content.bird.scale.BirdModelScaleProfile;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
@@ -122,6 +123,16 @@ public class MacawEntity extends BudgerigarEntity {
     }
 
     @Override
+    public BirdFlightProfile birdFlightProfile() {
+        return BirdFlightProfile.MACAW;
+    }
+
+    @Override
+    protected double flybyInitialLift() {
+        return 0.09D;
+    }
+
+    @Override
     protected TagKey<Item> foodTag() {
         return BirdTags.MACAW_FOODS;
     }
@@ -177,16 +188,19 @@ public class MacawEntity extends BudgerigarEntity {
 
     private <T extends MacawEntity> PlayState movementController(AnimationState<T> animationState) {
         animationState.getController().setAnimationSpeed(1.0D);
+        animationState.getController().transitionLength(5);
         RawAnimation preview = this.macawPreviewAnimation.animation;
         if (preview != null) {
             return animationState.setAndContinue(preview);
         }
         BudgerigarBehaviorState state = this.getBehaviorState();
+        if (this.shouldPlayFlyAnimation()) {
+            animationState.getController().transitionLength(0);
+            animationState.getController().setAnimationSpeed(this.flightAnimationSpeed());
+            return animationState.setAndContinue(FLY_ANIMATION);
+        }
         if (state == BudgerigarBehaviorState.EATING) {
             return animationState.setAndContinue(EAT_ANIMATION);
-        }
-        if (this.shouldPlayFlyAnimation()) {
-            return animationState.setAndContinue(FLY_ANIMATION);
         }
         if (state == BudgerigarBehaviorState.SLEEPING || state == BudgerigarBehaviorState.ROOSTING) {
             return animationState.setAndContinue(SLEEP_ANIMATION);

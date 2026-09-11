@@ -3449,6 +3449,11 @@
 						"vector": [0, 0, 0]
 					}
 				},
+				"left_wing": {
+					"scale": {
+						"vector": [0, 0, 0]
+					}
+				},
 				"tail": {
 					"rotation": {
 						"vector": ["20-math.cos(query.anim_time*1440+30)*5", 0, 0]

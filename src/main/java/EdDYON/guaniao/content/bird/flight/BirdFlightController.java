@@ -12,8 +12,8 @@ public final class BirdFlightController {
     private static final float FLIGHT_HEAD_LIMIT = 28.0F;
     private static final float FLIGHT_PITCH_TURN_RATE = 5.0F;
     private static final float GROUND_YAW_TURN_RATE = 18.0F;
-    private static final double TAKEOFF_VERTICAL_SPEED = 0.12D;
-    private static final double TAKEOFF_HORIZONTAL_SPEED_SQR = 0.001D;
+    private static final double TAKEOFF_VERTICAL_SPEED = 0.055D;
+    private static final double TAKEOFF_HORIZONTAL_SPEED_SQR = 0.025D;
     private static final Map<Mob, FlightProgress> FLIGHT_PROGRESS = Collections.synchronizedMap(new WeakHashMap<>());
 
     private BirdFlightController() {
