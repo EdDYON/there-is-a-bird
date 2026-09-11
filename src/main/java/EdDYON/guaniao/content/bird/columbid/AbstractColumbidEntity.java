@@ -1339,11 +1339,9 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
     }
 
     private boolean shouldPlayFlyAnimation() {
-        boolean airborneState = this.getBehaviorState().isAirborne()
-                && (!this.onGround() || this.isControlledFlightActive() || super.isNoGravity());
         return BirdFlightController.shouldPlayFlyAnimation(
                 this,
-                airborneState,
+                this.getBehaviorState().isAirborne(),
                 this.onGround(),
                 this.isNoGravity(),
                 this.getDeltaMovement(),
