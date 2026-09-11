@@ -8,6 +8,8 @@ import EdDYON.guaniao.client.gui.layout.GuiLayoutRect;
 import EdDYON.guaniao.content.bird.budgerigar.BudgerigarEntity;
 import EdDYON.guaniao.content.bird.columbid.AbstractColumbidEntity;
 import EdDYON.guaniao.content.bird.crow.CrowEntity;
+import EdDYON.guaniao.content.bird.kiwi.KiwiEntity;
+import EdDYON.guaniao.content.bird.myna.MynaEntity;
 import EdDYON.guaniao.content.bird.nightheron.NightHeronEntity;
 import EdDYON.guaniao.content.bird.seagull.SeagullEntity;
 import EdDYON.guaniao.content.bird.scale.BirdModelScale;
@@ -68,7 +70,10 @@ public class BirdGuideScreen extends Screen {
             new BirdGuideEntry("spotted_dove", List.of("intro")),
             new BirdGuideEntry("pigeon", List.of("intro")),
             new BirdGuideEntry("crow", List.of("intro")),
-            new BirdGuideEntry("seagull", List.of("intro"))
+            new BirdGuideEntry("seagull", List.of("intro")),
+            new BirdGuideEntry("kiwi", List.of("intro")),
+            new BirdGuideEntry("myna", List.of("intro")),
+            new BirdGuideEntry("woodcock", List.of("intro"))
     );
     private static final PoseKind[] POSES = PoseKind.values();
     private static final List<String> LAYOUT_RECT_IDS = List.of(
@@ -508,6 +513,12 @@ public class BirdGuideScreen extends Screen {
             int x = this.poseButtonX(poseButtons, i);
             int w = this.poseButtonW(poseButtons);
             boolean selected = this.selectedPoseIndex == i && this.manualPoseLocked;
+            if (POSES[i] == PoseKind.FLY && this.isKiwiSelected()) {
+                this.drawPixelButton(graphics, x, y, w, h, false, false);
+                this.drawCenteredFittingString(graphics, Component.translatable("gui.guaniao.bird_guide.pose.flightless"),
+                        x, y, w, h, 0xFF888888);
+                continue;
+            }
             boolean hovered = mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + h;
             this.drawPixelButton(graphics, x, y, w, h, selected, hovered);
             this.drawCenteredFittingString(graphics, Component.translatable(POSES[i].translationKey()), x, y, w, h, selected ? NOTE_TITLE_COLOR : TEXT_COLOR);
@@ -589,7 +600,13 @@ public class BirdGuideScreen extends Screen {
 
     private void chooseNextPreviewMotion() {
         float roll = this.previewRandom.nextFloat();
-        if (this.isNightHeronSelected()) {
+        if (this.isKiwiSelected()) {
+            if (roll < 0.55F) {
+                this.planPerch();
+            } else {
+                this.planWalk();
+            }
+        } else if (this.isNightHeronSelected()) {
             if (roll < 0.34F) {
                 this.planPerch();
             } else if (roll < 0.48F) {
@@ -646,6 +663,9 @@ public class BirdGuideScreen extends Screen {
     }
 
     private void selectPose(int poseIndex) {
+        if (this.isKiwiSelected() && POSES[Mth.clamp(poseIndex, 0, POSES.length - 1)] == PoseKind.FLY) {
+            return;
+        }
         this.selectedPoseIndex = Mth.clamp(poseIndex, 0, POSES.length - 1);
         this.manualPoseLocked = true;
         this.applySelectedPose();
@@ -703,6 +723,21 @@ public class BirdGuideScreen extends Screen {
     private void applyPreviewAnimation(LivingEntity entity) {
         if (entity instanceof NightHeronEntity nightHeron) {
             nightHeron.setGuidePreviewAnimation(this.toNightHeronPreviewAnimation(this.previewAnimation));
+        } else if (entity instanceof MynaEntity myna) {
+            myna.setGuidePreviewAnimation(switch (this.previewAnimation) {
+                case WALK, RUN -> MynaEntity.GuidePreviewAnimation.WALK;
+                case FLY_FLAP, GLIDE -> MynaEntity.GuidePreviewAnimation.FLY;
+                case LOOK_2, SCRATCH -> MynaEntity.GuidePreviewAnimation.IDLE_2;
+                case LOOK_1, LOOK_3, LOOK_5 -> MynaEntity.GuidePreviewAnimation.IDLE_1;
+                default -> MynaEntity.GuidePreviewAnimation.IDLE;
+            });
+        } else if (entity instanceof KiwiEntity kiwi) {
+            kiwi.setGuidePreviewAnimation(switch (this.previewAnimation) {
+                case WALK, RUN -> KiwiEntity.GuidePreviewAnimation.WALK;
+                case LOOK_2, SCRATCH -> KiwiEntity.GuidePreviewAnimation.FORAGE;
+                case LOOK_1, LOOK_3, LOOK_5 -> KiwiEntity.GuidePreviewAnimation.ALERT;
+                default -> KiwiEntity.GuidePreviewAnimation.IDLE;
+            });
         } else if (entity instanceof SparrowEntity sparrow) {
             sparrow.setGuidePreviewAnimation(this.toSparrowPreviewAnimation(this.previewAnimation));
         } else if (entity instanceof BudgerigarEntity budgerigar) {
@@ -815,6 +850,9 @@ public class BirdGuideScreen extends Screen {
             case "pigeon" -> List.of("diurnal", "urban", "social", "seed_eater");
             case "crow" -> List.of("diurnal", "scavenger", "omnivore", "shiny", "alert");
             case "seagull" -> List.of("diurnal", "coast", "omnivore", "scavenger", "bold");
+            case "kiwi" -> List.of("nocturnal", "forest", "insect_eater", "alert", "solitary");
+            case "myna" -> List.of("diurnal", "village", "omnivore", "social", "tameable");
+            case "woodcock" -> List.of("nocturnal", "forest", "insect_eater", "alert", "solitary");
             default -> List.of();
         };
     }
@@ -831,6 +869,9 @@ public class BirdGuideScreen extends Screen {
             case "pigeon" -> 0xFF9AB3C4;
             case "crow" -> 0xFF7E8798;
             case "seagull" -> 0xFFE7E2D7;
+            case "kiwi" -> 0xFFA88B65;
+            case "myna" -> 0xFFE5A62A;
+            case "woodcock" -> 0xFF9A6A45;
             default -> ACCENT_TEXT_COLOR;
         };
     }
@@ -842,6 +883,10 @@ public class BirdGuideScreen extends Screen {
 
     private float basePreviewScale() {
         return this.isNightHeronSelected() ? 0.86F : 0.96F;
+    }
+
+    private boolean isKiwiSelected() {
+        return "kiwi".equals(this.selectedEntry(this.selectedIndex).id());
     }
 
     private float defaultStageX(GuiLayoutRect preview, int scale) {
@@ -1608,6 +1653,9 @@ public class BirdGuideScreen extends Screen {
                 case "pigeon" -> GuaniaoEntityTypes.PIGEON.get();
                 case "crow" -> GuaniaoEntityTypes.CROW.get();
                 case "seagull" -> GuaniaoEntityTypes.SEAGULL.get();
+                case "kiwi" -> GuaniaoEntityTypes.KIWI.get();
+                case "myna" -> GuaniaoEntityTypes.MYNA.get();
+                case "woodcock" -> GuaniaoEntityTypes.WOODCOCK.get();
                 default -> GuaniaoEntityTypes.NIGHT_HERON.get();
             };
         }

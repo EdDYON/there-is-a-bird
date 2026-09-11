@@ -306,6 +306,7 @@ public class MacawEntity extends BudgerigarEntity {
             case BUDGERIGAR, COCKATIEL -> GuaniaoSoundEvents.BUDGERIGAR_AMBIENT.get();
             case SPOTTED_DOVE -> GuaniaoSoundEvents.SPOTTED_DOVE_AMBIENT.get();
             case PIGEON -> GuaniaoSoundEvents.PIGEON_AMBIENT.get();
+            case WOODCOCK -> GuaniaoSoundEvents.WOODCOCK_AMBIENT.get();
             case CROW, SEAGULL, MACAW, KIWI, MYNA -> null;
         };
     }

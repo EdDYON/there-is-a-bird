@@ -9,7 +9,7 @@ import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 
 public final class GuaniaoNetwork {
-    private static final String PROTOCOL = "15";
+    private static final String PROTOCOL = "17";
     private static int packetId;
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(

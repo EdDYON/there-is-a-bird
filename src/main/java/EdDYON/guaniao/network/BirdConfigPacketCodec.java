@@ -26,6 +26,7 @@ final class BirdConfigPacketCodec {
         buffer.writeBoolean(global.crowItemSafety);
         buffer.writeBoolean(global.birdsPassThroughLeaves);
         buffer.writeBoolean(global.aprilFoolsMode);
+        buffer.writeBoolean(global.sparrowTideMode);
         buffer.writeBoolean(global.droppingPressurePlatePulseEnabled);
         buffer.writeBoolean(global.photoUploadsEnabled);
         buffer.writeBoolean(global.photoUploadsOperatorOnly);
@@ -36,6 +37,12 @@ final class BirdConfigPacketCodec {
         buffer.writeDouble(global.soundVolumeMultiplier);
         buffer.writeVarInt(global.maxBirdsNearby);
         buffer.writeVarInt(global.maxGroundDroppingsNearby);
+        buffer.writeBoolean(global.naturalDroppingsEnabled);
+        buffer.writeVarInt(global.droppingNearbyRadius);
+        buffer.writeVarInt(global.droppingAreaCooldownMinSeconds);
+        buffer.writeVarInt(global.droppingAreaCooldownMaxSeconds);
+        buffer.writeVarInt(global.droppingLifetimeMinMinutes);
+        buffer.writeVarInt(global.droppingLifetimeMaxMinutes);
         buffer.writeVarInt(global.crowNestSearchDistance);
         buffer.writeVarInt(global.maxCrowNestTreasures);
         buffer.writeVarInt(global.maxWildBirdsPerRegion);
@@ -88,6 +95,7 @@ final class BirdConfigPacketCodec {
         data.global.crowItemSafety = buffer.readBoolean();
         data.global.birdsPassThroughLeaves = buffer.readBoolean();
         data.global.aprilFoolsMode = buffer.readBoolean();
+        data.global.sparrowTideMode = buffer.readBoolean();
         data.global.droppingPressurePlatePulseEnabled = buffer.readBoolean();
         data.global.photoUploadsEnabled = buffer.readBoolean();
         data.global.photoUploadsOperatorOnly = buffer.readBoolean();
@@ -98,6 +106,12 @@ final class BirdConfigPacketCodec {
         data.global.soundVolumeMultiplier = buffer.readDouble();
         data.global.maxBirdsNearby = buffer.readVarInt();
         data.global.maxGroundDroppingsNearby = buffer.readVarInt();
+        data.global.naturalDroppingsEnabled = buffer.readBoolean();
+        data.global.droppingNearbyRadius = buffer.readVarInt();
+        data.global.droppingAreaCooldownMinSeconds = buffer.readVarInt();
+        data.global.droppingAreaCooldownMaxSeconds = buffer.readVarInt();
+        data.global.droppingLifetimeMinMinutes = buffer.readVarInt();
+        data.global.droppingLifetimeMaxMinutes = buffer.readVarInt();
         data.global.crowNestSearchDistance = buffer.readVarInt();
         data.global.maxCrowNestTreasures = buffer.readVarInt();
         data.global.maxWildBirdsPerRegion = buffer.readVarInt();

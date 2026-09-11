@@ -1,5 +1,7 @@
 package EdDYON.guaniao.registry;
 
+import EdDYON.guaniao.content.earthworm.EarthwormItem;
+
 import java.util.function.Supplier;
 import java.util.EnumMap;
 import java.util.List;
@@ -15,6 +17,7 @@ import EdDYON.guaniao.content.bird.crow.CrowDefinition;
 import EdDYON.guaniao.content.bird.seagull.SeagullDefinition;
 import EdDYON.guaniao.content.bird.kiwi.KiwiDefinition;
 import EdDYON.guaniao.content.bird.myna.MynaDefinition;
+import EdDYON.guaniao.content.bird.woodcock.WoodcockDefinition;
 import EdDYON.guaniao.content.bird.sparrow.SparrowDefinition;
 import EdDYON.guaniao.content.bird.longtailedtit.LongTailedTitDefinition;
 import EdDYON.guaniao.content.bird.cockatiel.CockatielDefinition;
@@ -56,6 +59,8 @@ public final class GuaniaoItems {
     public static final RegistryObject<Item> SEAGULL_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(SeagullDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.SEAGULL, SeagullDefinition.SPAWN_EGG_BASE_COLOR, SeagullDefinition.SPAWN_EGG_SPOT_COLOR);
     public static final RegistryObject<Item> KIWI_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(KiwiDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.KIWI, KiwiDefinition.SPAWN_EGG_BASE_COLOR, KiwiDefinition.SPAWN_EGG_SPOT_COLOR);
     public static final RegistryObject<Item> MYNA_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(MynaDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.MYNA, MynaDefinition.SPAWN_EGG_BASE_COLOR, MynaDefinition.SPAWN_EGG_SPOT_COLOR);
+    public static final RegistryObject<Item> WOODCOCK_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(WoodcockDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.WOODCOCK, WoodcockDefinition.SPAWN_EGG_BASE_COLOR, WoodcockDefinition.SPAWN_EGG_SPOT_COLOR);
+    public static final RegistryObject<Item> EARTHWORM = ITEMS.register("earthworm", () -> new EarthwormItem(new Item.Properties().stacksTo(64)));
     public static final RegistryObject<Item> BREADCRUMBS = ITEMS.register("breadcrumbs", () -> new BreadcrumbItem(new Item.Properties()));
     public static final RegistryObject<Item> BIRD_GUIDE = ITEMS.register("bird_guide", () -> new BirdGuideItem(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> NIKON_D750 = ITEMS.register("nikon_d750", () -> new NikonD750Item(new Item.Properties().stacksTo(1)));
@@ -116,6 +121,7 @@ public final class GuaniaoItems {
         FEATHERS_BY_SPECIES.put(BirdSpecies.SEAGULL, List.of(FEATHER_WHITE, FEATHER_GREY, FEATHER_BLACK));
         FEATHERS_BY_SPECIES.put(BirdSpecies.KIWI, List.of(FEATHER_BROWN, FEATHER_GREY, FEATHER_BLACK, FEATHER_CHESTNUT));
         FEATHERS_BY_SPECIES.put(BirdSpecies.MYNA, List.of(FEATHER_BLACK, FEATHER_BROWN, FEATHER_GREY, FEATHER_WHITE));
+        FEATHERS_BY_SPECIES.put(BirdSpecies.WOODCOCK, List.of(FEATHER_BROWN, FEATHER_CHESTNUT, FEATHER_SPECKLED, FEATHER_BLACK));
     }
 
     private GuaniaoItems() {

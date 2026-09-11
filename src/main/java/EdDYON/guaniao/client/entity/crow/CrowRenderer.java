@@ -12,7 +12,7 @@ public class CrowRenderer extends GeoEntityRenderer<CrowEntity> {
     public CrowRenderer(EntityRendererProvider.Context renderManager) {
         super(renderManager, (GeoModel)new CrowModel());
         this.addRenderLayer(new CrowHeldFoodLayer(this));
-        this.shadowRadius = 0.26F;
+        this.shadowRadius = 0.17F;
     }
 
     @Override

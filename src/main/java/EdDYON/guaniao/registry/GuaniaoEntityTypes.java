@@ -1,5 +1,7 @@
 package EdDYON.guaniao.registry;
 
+import EdDYON.guaniao.content.earthworm.EarthwormEntity;
+
 import EdDYON.guaniao.content.bird.budgerigar.BudgerigarDefinition;
 import EdDYON.guaniao.content.bird.budgerigar.BudgerigarEntity;
 import EdDYON.guaniao.content.bird.columbid.PigeonDefinition;
@@ -16,6 +18,8 @@ import EdDYON.guaniao.content.bird.kiwi.KiwiDefinition;
 import EdDYON.guaniao.content.bird.kiwi.KiwiEntity;
 import EdDYON.guaniao.content.bird.myna.MynaDefinition;
 import EdDYON.guaniao.content.bird.myna.MynaEntity;
+import EdDYON.guaniao.content.bird.woodcock.WoodcockDefinition;
+import EdDYON.guaniao.content.bird.woodcock.WoodcockEntity;
 import EdDYON.guaniao.content.bird.sparrow.SparrowDefinition;
 import EdDYON.guaniao.content.bird.sparrow.SparrowEntity;
 import EdDYON.guaniao.content.bird.longtailedtit.LongTailedTitDefinition;
@@ -52,6 +56,7 @@ public final class GuaniaoEntityTypes {
     public static final RegistryObject<EntityType<SeagullEntity>> SEAGULL = GuaniaoEntityTypes.registerCreature(SeagullDefinition.ENTITY_ID, SeagullEntity::new, SeagullDefinition.WIDTH, SeagullDefinition.HEIGHT);
     public static final RegistryObject<EntityType<KiwiEntity>> KIWI = GuaniaoEntityTypes.registerCreature(KiwiDefinition.ENTITY_ID, KiwiEntity::new, KiwiDefinition.WIDTH, KiwiDefinition.HEIGHT);
     public static final RegistryObject<EntityType<MynaEntity>> MYNA = GuaniaoEntityTypes.registerCreature(MynaDefinition.ENTITY_ID, MynaEntity::new, MynaDefinition.WIDTH, MynaDefinition.HEIGHT);
+    public static final RegistryObject<EntityType<WoodcockEntity>> WOODCOCK = GuaniaoEntityTypes.registerCreature(WoodcockDefinition.ENTITY_ID, WoodcockEntity::new, WoodcockDefinition.WIDTH, WoodcockDefinition.HEIGHT);
     public static final RegistryObject<EntityType<PhotographEntity>> PHOTOGRAPH = ENTITY_TYPES.register("photograph", () ->
             EntityType.Builder.<PhotographEntity>of(PhotographEntity::new, MobCategory.MISC)
                     .sized(0.5F, 0.5F)
@@ -76,6 +81,11 @@ public final class GuaniaoEntityTypes {
                     .clientTrackingRange(8)
                     .updateInterval(1)
                     .build(new ResourceLocation("guaniao", "feather_fan_projectile").toString()));
+
+    public static final RegistryObject<EntityType<EarthwormEntity>> EARTHWORM = ENTITY_TYPES.register("earthworm", () ->
+            EntityType.Builder.<EarthwormEntity>of(EarthwormEntity::new, MobCategory.MISC)
+                    .sized(0.32F, 0.05F).clientTrackingRange(6).updateInterval(3)
+                    .build(new ResourceLocation("guaniao", "earthworm").toString()));
 
     private GuaniaoEntityTypes() {
     }

@@ -11,6 +11,7 @@ public class BirdGlobalConfig {
     public boolean crowItemSafety = true;
     public boolean birdsPassThroughLeaves = true;
     public boolean aprilFoolsMode;
+    public boolean sparrowTideMode;
     public boolean droppingPressurePlatePulseEnabled = true;
     public boolean enableMigration = true;
     public int migrationIntervalTicks = 6000;
@@ -23,7 +24,13 @@ public class BirdGlobalConfig {
     public double droppingFrequencyMultiplier = 1.0D;
     public double soundVolumeMultiplier = 1.0D;
     public int maxBirdsNearby = 24;
-    public int maxGroundDroppingsNearby = 8;
+    public int maxGroundDroppingsNearby = 4;
+    public boolean naturalDroppingsEnabled = true;
+    public int droppingNearbyRadius = 16;
+    public int droppingAreaCooldownMinSeconds = 20;
+    public int droppingAreaCooldownMaxSeconds = 40;
+    public int droppingLifetimeMinMinutes = 5;
+    public int droppingLifetimeMaxMinutes = 8;
     public int crowNestSearchDistance = 96;
     public int maxCrowNestTreasures = 6;
     public int wildBirdDespawnTicks = 24000;
@@ -56,6 +63,7 @@ public class BirdGlobalConfig {
         copy.crowItemSafety = this.crowItemSafety;
         copy.birdsPassThroughLeaves = this.birdsPassThroughLeaves;
         copy.aprilFoolsMode = this.aprilFoolsMode;
+        copy.sparrowTideMode = this.sparrowTideMode;
         copy.droppingPressurePlatePulseEnabled = this.droppingPressurePlatePulseEnabled;
         copy.enableMigration = this.enableMigration;
         copy.migrationIntervalTicks = this.migrationIntervalTicks;
@@ -69,6 +77,12 @@ public class BirdGlobalConfig {
         copy.soundVolumeMultiplier = this.soundVolumeMultiplier;
         copy.maxBirdsNearby = this.maxBirdsNearby;
         copy.maxGroundDroppingsNearby = this.maxGroundDroppingsNearby;
+        copy.naturalDroppingsEnabled = this.naturalDroppingsEnabled;
+        copy.droppingNearbyRadius = this.droppingNearbyRadius;
+        copy.droppingAreaCooldownMinSeconds = this.droppingAreaCooldownMinSeconds;
+        copy.droppingAreaCooldownMaxSeconds = this.droppingAreaCooldownMaxSeconds;
+        copy.droppingLifetimeMinMinutes = this.droppingLifetimeMinMinutes;
+        copy.droppingLifetimeMaxMinutes = this.droppingLifetimeMaxMinutes;
         copy.crowNestSearchDistance = this.crowNestSearchDistance;
         copy.maxCrowNestTreasures = this.maxCrowNestTreasures;
         copy.wildBirdDespawnTicks = this.wildBirdDespawnTicks;

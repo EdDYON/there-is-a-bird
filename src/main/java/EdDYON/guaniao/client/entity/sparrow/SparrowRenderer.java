@@ -9,7 +9,7 @@ import software.bernie.geckolib.renderer.GeoEntityRenderer;
 public class SparrowRenderer extends GeoEntityRenderer<SparrowEntity> {
     public SparrowRenderer(EntityRendererProvider.Context renderManager) {
         super(renderManager, (GeoModel)new SparrowModel());
-        this.shadowRadius = 0.16f;
+        this.shadowRadius = 0.09F;
     }
 
     @Override

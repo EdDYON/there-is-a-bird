@@ -16,6 +16,7 @@ import EdDYON.guaniao.content.note.BirdNoteContent;
 import EdDYON.guaniao.network.GuaniaoNetwork;
 import EdDYON.guaniao.network.OpenBirdConfigPacket;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -77,7 +78,10 @@ public final class BirdConfigCommands {
                 .then(Commands.literal("birdNotes")
                         .executes(context -> birdNotes(context.getSource())))
                 .then(Commands.literal("birdSizeComparison")
-                        .executes(context -> birdSizeComparison(context.getSource()))));
+                        .executes(context -> birdSizeComparison(context.getSource())))
+                .then(Commands.literal("bird")
+                        .then(Commands.literal("sizecomparison")
+                                .executes(context -> birdSizeComparison(context.getSource())))));
     }
 
     private static int open(CommandSourceStack source) throws CommandSyntaxException {
@@ -102,7 +106,7 @@ public final class BirdConfigCommands {
 
     private static final String[] SPECIES_CHOICES = {
             "nightheron", "sparrow", "longtailedtit", "cockatiel", "macaw",
-            "budgerigar", "spotteddove", "pigeon", "crow", "seagull"
+            "budgerigar", "spotteddove", "pigeon", "crow", "seagull", "woodcock"
     };
     private static final String[] MUTATION_CHOICES = {"leucistic", "melanistic", "golden", "puregold", "rainbow", "random"};
     private static final BirdMutation[] ALL_MUTATIONS = {
@@ -110,9 +114,10 @@ public final class BirdConfigCommands {
     };
     private static final String SIZE_COMPARISON_TAG = "guaniao.bird_size_comparison";
     private static final BirdSpecies[] SIZE_COMPARISON_ORDER = {
-            BirdSpecies.BUDGERIGAR, BirdSpecies.LONG_TAILED_TIT, BirdSpecies.SPARROW, BirdSpecies.COCKATIEL,
-            BirdSpecies.KIWI, BirdSpecies.SPOTTED_DOVE, BirdSpecies.PIGEON, BirdSpecies.MACAW,
-            BirdSpecies.MYNA, BirdSpecies.CROW, BirdSpecies.NIGHT_HERON, BirdSpecies.SEAGULL
+            BirdSpecies.SPARROW, BirdSpecies.LONG_TAILED_TIT, BirdSpecies.BUDGERIGAR, BirdSpecies.MYNA,
+            BirdSpecies.SPOTTED_DOVE, BirdSpecies.COCKATIEL, BirdSpecies.PIGEON, BirdSpecies.WOODCOCK,
+            BirdSpecies.KIWI, BirdSpecies.CROW, BirdSpecies.SEAGULL,
+            BirdSpecies.NIGHT_HERON, BirdSpecies.MACAW
     };
 
     // Lazily built: this class is a @Mod.EventBusSubscriber, so Forge loads it during mod
@@ -135,6 +140,7 @@ public final class BirdConfigCommands {
             map.put("pigeon", GuaniaoEntityTypes.PIGEON.get());
             map.put("crow", GuaniaoEntityTypes.CROW.get());
             map.put("seagull", GuaniaoEntityTypes.SEAGULL.get());
+            map.put("woodcock", GuaniaoEntityTypes.WOODCOCK.get());
             speciesMap = map;
         }
         return map;
@@ -263,6 +269,7 @@ public final class BirdConfigCommands {
         }
 
         ServerLevel level = player.serverLevel();
+        clearPreviousSizeComparison(level);
         Vec3 forward = player.getLookAngle().multiply(1.0D, 0.0D, 1.0D);
         if (forward.lengthSqr() < 1.0E-4D) {
             forward = new Vec3(0.0D, 0.0D, 1.0D);
@@ -322,11 +329,20 @@ public final class BirdConfigCommands {
         mob.setYHeadRot(yaw);
         mob.yBodyRot = yaw;
         mob.addTag(SIZE_COMPARISON_TAG);
-        mob.setCustomName(Component.translatable(species.translationKey())
-                .append(Component.literal(minimum ? " · MIN" : " · MAX")));
-        mob.setCustomNameVisible(true);
+        mob.setCustomName(null);
+        mob.setCustomNameVisible(false);
         level.addFreshEntity(mob);
         return true;
+    }
+
+    private static void clearPreviousSizeComparison(ServerLevel level) {
+        List<Entity> previousComparisonBirds = new ArrayList<>();
+        for (Entity entity : level.getAllEntities()) {
+            if (entity.getTags().contains(SIZE_COMPARISON_TAG)) {
+                previousComparisonBirds.add(entity);
+            }
+        }
+        previousComparisonBirds.forEach(Entity::discard);
     }
 
     private static int birdNotes(CommandSourceStack source) {

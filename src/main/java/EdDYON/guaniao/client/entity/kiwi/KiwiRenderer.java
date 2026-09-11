@@ -11,7 +11,7 @@ import software.bernie.geckolib.renderer.GeoEntityRenderer;
 public class KiwiRenderer extends GeoEntityRenderer<KiwiEntity> {
     public KiwiRenderer(EntityRendererProvider.Context context) {
         super(context, new KiwiModel());
-        this.shadowRadius = 0.30F;
+        this.shadowRadius = 0.19F;
     }
 
     @Override

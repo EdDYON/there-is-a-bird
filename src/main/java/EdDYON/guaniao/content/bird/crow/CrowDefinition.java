@@ -7,8 +7,8 @@ public final class CrowDefinition {
     public static final String SPAWN_EGG_ID = "crow_spawn_egg";
     public static final int SPAWN_EGG_BASE_COLOR = 0x141820;
     public static final int SPAWN_EGG_SPOT_COLOR = 0x6D7582;
-    public static final float WIDTH = 0.52F;
-    public static final float HEIGHT = 0.72F;
+    public static final float WIDTH = 0.34F;
+    public static final float HEIGHT = 0.50F;
     public static final double MAX_HEALTH = 8.0D;
     public static final double WALK_SPEED = 0.25D;
     public static final double FLYING_SPEED = 0.42D;

@@ -462,6 +462,13 @@ public class MynaEntity extends SparrowEntity implements FlyingAnimal, BirdSleep
         return NATIVE_CALLS.get(this.getRandom().nextInt(NATIVE_CALLS.size())).get();
     }
 
+    @Override
+    public void playAmbientSound() {
+        if (!this.isBirdSleeping()) {
+            super.playAmbientSound();
+        }
+    }
+
     @Nullable
     @Override
     protected SoundEvent getHurtSound(DamageSource source) {

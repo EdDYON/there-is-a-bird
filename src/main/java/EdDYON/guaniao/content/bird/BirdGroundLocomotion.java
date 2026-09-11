@@ -118,6 +118,7 @@ public final class BirdGroundLocomotion {
             case SEAGULL -> new LocomotionProfile(0.82F, 0.08F, 40, 50, 10, 60, 160);
             case KIWI -> new LocomotionProfile(0.90F, 0.10F, 35, 55, 10, 50, 150);
             case MYNA -> new LocomotionProfile(1.05F, 0.10F, 20, 45, 35, 20, 70);
+            case WOODCOCK -> new LocomotionProfile(0.88F, 0.08F, 42, 48, 10, 70, 190);
         };
     }
 

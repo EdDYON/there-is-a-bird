@@ -1,5 +1,7 @@
 package EdDYON.guaniao.client;
 
+import EdDYON.guaniao.client.entity.earthworm.EarthwormRenderer;
+
 import EdDYON.guaniao.GuaniaoMod;
 import EdDYON.guaniao.client.bath.BirdBathRenderer;
 import EdDYON.guaniao.client.camera.PhotographEntityRenderer;
@@ -26,6 +28,7 @@ import EdDYON.guaniao.client.entity.nightheron.NightHeronRenderer;
 import EdDYON.guaniao.client.entity.seagull.SeagullRenderer;
 import EdDYON.guaniao.client.entity.kiwi.KiwiRenderer;
 import EdDYON.guaniao.client.entity.myna.MynaRenderer;
+import EdDYON.guaniao.client.entity.woodcock.WoodcockRenderer;
 import EdDYON.guaniao.client.entity.sparrow.SparrowRenderer;
 import EdDYON.guaniao.client.entity.longtailedtit.LongTailedTitRenderer;
 import EdDYON.guaniao.client.entity.cockatiel.CockatielRenderer;
@@ -62,6 +65,7 @@ public final class ClientModEvents {
 
     @SubscribeEvent
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerEntityRenderer(GuaniaoEntityTypes.EARTHWORM.get(), EarthwormRenderer::new);
         event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.NIGHT_HERON.get(), NightHeronRenderer::new);
         event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.SPARROW.get(), SparrowRenderer::new);
         event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.LONG_TAILED_TIT.get(), LongTailedTitRenderer::new);
@@ -74,6 +78,7 @@ public final class ClientModEvents {
         event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.SEAGULL.get(), SeagullRenderer::new);
         event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.KIWI.get(), KiwiRenderer::new);
         event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.MYNA.get(), MynaRenderer::new);
+        event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.WOODCOCK.get(), WoodcockRenderer::new);
         event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.PHOTOGRAPH.get(), PhotographEntityRenderer::new);
         event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.BIRD_DROPPING_PROJECTILE.get(), BirdDroppingProjectileRenderer::new);
         event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.BIRD_DROPPING_SPLAT.get(), BirdDroppingSplatRenderer::new);

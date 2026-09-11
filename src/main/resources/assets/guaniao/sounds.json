@@ -191,6 +191,12 @@
       "guaniao:entity/kiwi/ambient_03"
     ]
   },
+  "entity.woodcock.ambient": {
+    "subtitle": "subtitles.guaniao.entity.woodcock.ambient",
+    "sounds": [
+      "guaniao:entity/woodcock/ambient_01"
+    ]
+  },
   "entity.long_tailed_tit.ambient": {
     "subtitle": "subtitles.guaniao.entity.long_tailed_tit.ambient",
     "sounds": [

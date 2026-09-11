@@ -12,7 +12,7 @@ public class SeagullRenderer extends GeoEntityRenderer<SeagullEntity> {
     public SeagullRenderer(EntityRendererProvider.Context renderManager) {
         super(renderManager, (GeoModel)new SeagullModel());
         this.addRenderLayer(new SeagullHeldFoodLayer(this));
-        this.shadowRadius = 0.24F;
+        this.shadowRadius = 0.20F;
     }
 
     @Override

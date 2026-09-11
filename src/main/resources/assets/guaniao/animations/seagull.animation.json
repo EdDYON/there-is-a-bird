@@ -7898,16 +7898,6 @@
 			"loop": true,
 			"animation_length": 2,
 			"bones": {
-				"eye_left": {
-					"scale": {
-						"vector": [1, 0.3, 1]
-					}
-				},
-				"eye_right": {
-					"scale": {
-						"vector": [1, 0.3, 1]
-					}
-				},
 				"root": {
 					"scale": {
 						"0.0": {

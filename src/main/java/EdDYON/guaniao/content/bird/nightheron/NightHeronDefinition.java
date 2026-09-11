@@ -7,8 +7,8 @@ public final class NightHeronDefinition {
     public static final String SPAWN_EGG_ID = "night_heron_spawn_egg";
     public static final int SPAWN_EGG_BASE_COLOR = 6121331;
     public static final int SPAWN_EGG_SPOT_COLOR = 14198125;
-    public static final float WIDTH = 0.55f;
-    public static final float HEIGHT = 0.95f;
+    public static final float WIDTH = 0.42F;
+    public static final float HEIGHT = 0.68F;
     public static final double MAX_HEALTH = 14.0;
     public static final double WALK_SPEED = 0.2;
     public static final double FLY_SPEED = 0.45;

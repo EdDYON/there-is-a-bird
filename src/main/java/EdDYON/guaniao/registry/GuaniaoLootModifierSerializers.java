@@ -3,6 +3,7 @@ package EdDYON.guaniao.registry;
 import EdDYON.guaniao.GuaniaoMod;
 import EdDYON.guaniao.content.enchantment.FeatherFanBookLootModifier;
 import EdDYON.guaniao.content.note.BirdNoteLootModifier;
+import EdDYON.guaniao.content.bird.woodcock.EarthwormLootModifier;
 import com.mojang.serialization.Codec;
 import net.minecraftforge.common.loot.IGlobalLootModifier;
 import net.minecraftforge.registries.DeferredRegister;
@@ -23,6 +24,9 @@ public final class GuaniaoLootModifierSerializers {
             "feather_fan_book",
             () -> FeatherFanBookLootModifier.CODEC
     );
+
+    public static final RegistryObject<Codec<? extends IGlobalLootModifier>> EARTHWORM = LOOT_MODIFIER_SERIALIZERS.register(
+            "earthworm", () -> EarthwormLootModifier.CODEC);
 
     private GuaniaoLootModifierSerializers() {
     }

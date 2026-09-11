@@ -143,7 +143,7 @@ public final class KiwiFightCommands {
                 GuaniaoEntityTypes.CROW.get(), EntityType.GOAT,
                 GuaniaoEntityTypes.SEAGULL.get(), EntityType.LLAMA,
                 GuaniaoEntityTypes.MYNA.get(), GuaniaoEntityTypes.NIGHT_HERON.get(),
-                GuaniaoEntityTypes.MACAW.get()
+                GuaniaoEntityTypes.MACAW.get(), GuaniaoEntityTypes.WOODCOCK.get()
         );
         List<UUID> spawned = new ArrayList<>();
         double angleStep = Math.PI * 2.0D / audienceTypes.size();

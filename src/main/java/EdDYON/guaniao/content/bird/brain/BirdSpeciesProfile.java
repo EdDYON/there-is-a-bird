@@ -65,7 +65,7 @@ public abstract class BirdSpeciesProfile {
         if (senses.nearRoost()) {
             comfort += 0.2F;
         }
-        if (senses.hasNearbyThreat()) {
+        if (senses.hasNearbyThreat() && this.playerCountsAsRisk(senses.nearestPlayer())) {
             comfort -= 0.22F;
         }
         return this.clamp(comfort);
@@ -77,7 +77,8 @@ public abstract class BirdSpeciesProfile {
         BirdPersonality personality = brain.personality();
         float risk = 0.0F;
 
-        if (!BirdConfigManager.aprilFoolsMode() && senses.nearestPlayer() != null) {
+        Player player = senses.nearestPlayer();
+        if (!BirdConfigManager.aprilFoolsMode() && this.playerCountsAsRisk(player)) {
             double radius = Math.max(1.0D, this.playerSenseRadius());
             float closeness = (float)(1.0D - Mth.clamp(senses.nearestPlayerDistance() / radius, 0.0D, 1.0D));
             risk += closeness * 0.62F;
@@ -99,6 +100,11 @@ public abstract class BirdSpeciesProfile {
         risk -= motivation.hunger() * 0.08F;
         risk += motivation.fear() * 0.24F;
         return this.clamp(risk);
+    }
+
+    /** Lets a species keep its threat and risk rules consistent. */
+    protected boolean playerCountsAsRisk(Player player) {
+        return player != null && player.isAlive() && !player.isSpectator();
     }
 
     public boolean wantsForage(BirdBrain brain) {

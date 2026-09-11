@@ -38,6 +38,7 @@ public final class GuaniaoSoundEvents {
     public static final RegistryObject<SoundEvent> SPOTTED_DOVE_MATE = register("entity.spotted_dove.mate");
     public static final RegistryObject<SoundEvent> PIGEON_AMBIENT = register("entity.pigeon.ambient");
     public static final RegistryObject<SoundEvent> KIWI_AMBIENT = register("entity.kiwi.ambient");
+    public static final RegistryObject<SoundEvent> WOODCOCK_AMBIENT = register("entity.woodcock.ambient");
     public static final RegistryObject<SoundEvent> SEAGULL_AMBIENT = register("entity.seagull.ambient");
     public static final RegistryObject<SoundEvent> MYNA_CALL_03 = register("entity.myna.call_03");
     public static final RegistryObject<SoundEvent> MYNA_CALL_04 = register("entity.myna.call_04");

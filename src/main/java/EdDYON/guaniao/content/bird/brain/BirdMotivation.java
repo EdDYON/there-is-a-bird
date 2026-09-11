@@ -26,7 +26,9 @@ public class BirdMotivation {
         float risk = brain.computeRiskScore();
         this.fear = this.approach(this.fear, risk, risk > this.fear ? profile.fearRiseRate() : profile.fearFallRate());
         this.comfort = this.approach(this.comfort, profile.computeComfort(senses), 0.015F);
-        this.alertness = this.clamp(this.fear * 0.72F + (senses.hasNearbyThreat() ? 0.28F : 0.0F));
+        boolean nearbyPlayerThreat = senses.hasNearbyThreat()
+                && profile.playerCountsAsRisk(senses.nearestPlayer());
+        this.alertness = this.clamp(this.fear * 0.72F + (nearbyPlayerThreat ? 0.28F : 0.0F));
         this.roostNeed = this.clamp(this.roostNeed + (senses.roostTime() ? 0.0018F : -0.0012F));
         this.socialStress = this.clamp(this.socialStress * 0.985F);
     }

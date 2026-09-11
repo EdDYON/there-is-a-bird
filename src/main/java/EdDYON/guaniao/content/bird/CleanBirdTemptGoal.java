@@ -88,11 +88,15 @@ public class CleanBirdTemptGoal extends Goal {
             return;
         }
         this.mob.getLookControl().setLookAt(this.player, this.mob.getMaxHeadYRot() + 20.0F, this.mob.getMaxHeadXRot());
-        if (this.mob.distanceToSqr(this.player) < 6.25D) {
+        if (this.mob.distanceToSqr(this.player) < this.stopDistanceSqr()) {
             this.mob.getNavigation().stop();
         } else {
             this.mob.getNavigation().moveTo(this.player, this.speedModifier);
         }
+    }
+
+    protected double stopDistanceSqr() {
+        return 6.25D;
     }
 
     public boolean isRunning() {

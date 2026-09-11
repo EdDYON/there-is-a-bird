@@ -72,7 +72,7 @@ public class BirdDroppingSplatEntity extends Entity implements GeoEntity {
     }
 
     public static boolean canAddSplatAt(Level level, Vec3 position) {
-        double radius = BirdConfigManager.DROPPING_CAP_RADIUS;
+        double radius = BirdConfigManager.droppingNearbyRadius();
         AABB area = new AABB(
                 position.x - radius,
                 position.y - radius,
@@ -216,7 +216,8 @@ public class BirdDroppingSplatEntity extends Entity implements GeoEntity {
     }
 
     private void setMaxAgeTicks(int ticks) {
-        this.entityData.set(DATA_MAX_AGE_TICKS, Mth.clamp(ticks, MIN_AGE_TICKS, MAX_AGE_TICKS));
+        this.entityData.set(DATA_MAX_AGE_TICKS, Mth.clamp(ticks,
+                BirdConfigManager.droppingLifetimeMinTicks(), BirdConfigManager.droppingLifetimeMaxTicks()));
     }
 
     private void setAttachedEntity(Entity target, Vec3 hitPosition, Direction hitDirection) {
@@ -284,7 +285,7 @@ public class BirdDroppingSplatEntity extends Entity implements GeoEntity {
     private void dropCollectible(ItemStack stack) {
         ItemEntity itemEntity = this.spawnAtLocation(stack);
         if (itemEntity != null) {
-            BirdAmbientDropControl.applyRandomLifetime(itemEntity);
+            BirdAmbientDropControl.applyDroppingLifetime(itemEntity);
         }
     }
 

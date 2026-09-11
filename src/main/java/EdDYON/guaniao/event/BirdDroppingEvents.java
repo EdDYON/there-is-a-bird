@@ -3,11 +3,13 @@ package EdDYON.guaniao.event;
 import EdDYON.guaniao.config.BirdConfigManager;
 import EdDYON.guaniao.config.BirdSpecies;
 import EdDYON.guaniao.content.bird.BirdAmbientDropControl;
+import EdDYON.guaniao.content.bird.BirdDroppingAreaLimiter;
 import EdDYON.guaniao.content.dropping.BirdDroppingItem;
 import EdDYON.guaniao.content.dropping.BirdDroppingProjectileEntity;
 import EdDYON.guaniao.content.dropping.BirdDroppingSplatEntity;
 import EdDYON.guaniao.content.dropping.BirdDroppingVariant;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
+import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -25,8 +27,9 @@ import net.minecraftforge.fml.common.Mod;
 public final class BirdDroppingEvents {
     private static final String TAG_COOLDOWN = "GuaniaoDroppingCooldown";
     private static final int CHECK_INTERVAL_TICKS = 20;
-    private static final int RETRY_MIN_TICKS = 600;
-    private static final int RETRY_MAX_TICKS = 1200;
+    private static final int RETRY_MIN_TICKS = 20 * 5;
+    private static final int RETRY_MAX_TICKS = 20 * 10;
+    private static final int INITIAL_JITTER_TICKS = 20 * 30;
     private static final int MIN_EXISTING_AGE_TICKS = 200;
 
     private BirdDroppingEvents() {
@@ -49,7 +52,9 @@ public final class BirdDroppingEvents {
 
         CompoundTag data = entity.getPersistentData();
         if (!data.contains(TAG_COOLDOWN)) {
-            data.putInt(TAG_COOLDOWN, nextNaturalCooldown(entity));
+            long initialCooldown = (long)nextNaturalCooldown(entity)
+                    + entity.getRandom().nextInt(INITIAL_JITTER_TICKS + 1);
+            data.putInt(TAG_COOLDOWN, (int)Math.min(Integer.MAX_VALUE, initialCooldown));
             return;
         }
 
@@ -70,11 +75,16 @@ public final class BirdDroppingEvents {
         if (bird.isDeadOrDying() || bird.isRemoved() || bird.isInWaterOrBubble() || !bird.isAlive()) {
             return false;
         }
+        Vec3 spawnPosition = droppingSpawnPosition(bird);
+        BlockPos areaPosition = BlockPos.containing(spawnPosition);
+        // A cheap area check avoids repeated entity scans while another bird's drop is cooling down.
+        if (!BirdDroppingAreaLimiter.canDrop(level, areaPosition)) {
+            return false;
+        }
         if (!hasNaturalDroppingCapacity(level, bird)) {
             return false;
         }
 
-        Vec3 spawnPosition = droppingSpawnPosition(bird);
         if (!BirdDroppingSplatEntity.canAddSplatAt(level, spawnPosition)) {
             return false;
         }
@@ -95,7 +105,11 @@ public final class BirdDroppingEvents {
 
         dropping.setPos(spawnPosition.x, spawnPosition.y, spawnPosition.z);
         dropping.setDeltaMovement(motion);
-        return level.addFreshEntity(dropping);
+        if (!level.addFreshEntity(dropping)) {
+            return false;
+        }
+        BirdDroppingAreaLimiter.recordDrop(level, areaPosition, random);
+        return true;
     }
 
     private static boolean hasNaturalDroppingCapacity(ServerLevel level, LivingEntity bird) {
@@ -107,7 +121,7 @@ public final class BirdDroppingEvents {
             return false;
         }
 
-        AABB area = bird.getBoundingBox().inflate(BirdAmbientDropControl.LOCAL_CAP_RADIUS);
+        AABB area = bird.getBoundingBox().inflate(BirdConfigManager.droppingNearbyRadius());
         int count = level.getEntitiesOfClass(
                 BirdDroppingProjectileEntity.class,
                 area,
@@ -151,7 +165,8 @@ public final class BirdDroppingEvents {
         if (multiplier <= 0.0D) {
             return Integer.MAX_VALUE;
         }
-        return Mth.clamp((int)Math.round(baseCooldown / multiplier), CHECK_INTERVAL_TICKS, Integer.MAX_VALUE);
+        return (int)Math.max(CHECK_INTERVAL_TICKS,
+                Math.min(Integer.MAX_VALUE, Math.round(baseCooldown / multiplier)));
     }
 
     private static int randomBetween(RandomSource random, int minInclusive, int maxInclusive) {

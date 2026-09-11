@@ -12,7 +12,7 @@ extends GeoEntityRenderer<NightHeronEntity> {
     public NightHeronRenderer(EntityRendererProvider.Context renderManager) {
         super(renderManager, (GeoModel)new NightHeronModel());
         this.addRenderLayer(new NightHeronHeldFishLayer(this));
-        this.shadowRadius = 0.45f;
+        this.shadowRadius = 0.21F;
     }
 
     @Override

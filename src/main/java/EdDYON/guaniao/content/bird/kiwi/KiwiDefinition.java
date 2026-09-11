@@ -9,8 +9,8 @@ public final class KiwiDefinition {
     public static final int SPAWN_EGG_BASE_COLOR = 0x4B3528;
     public static final int SPAWN_EGG_SPOT_COLOR = 0xA88B65;
 
-    public static final float WIDTH = 0.58F;
-    public static final float HEIGHT = 0.70F;
+    public static final float WIDTH = 0.38F;
+    public static final float HEIGHT = 0.50F;
     public static final double MAX_HEALTH = 10.0D;
     public static final double WALK_SPEED = 0.18D;
     public static final double FOLLOW_RANGE = 18.0D;

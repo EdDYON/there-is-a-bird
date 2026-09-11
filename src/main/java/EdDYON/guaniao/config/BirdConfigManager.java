@@ -23,7 +23,6 @@ import java.time.format.DateTimeFormatter;
 public final class BirdConfigManager {
     public static final double BIRD_CAP_HORIZONTAL_RADIUS = 96.0D;
     public static final double BIRD_CAP_VERTICAL_RADIUS = 48.0D;
-    public static final double DROPPING_CAP_RADIUS = 16.0D;
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path CONFIG_DIR = FMLPaths.CONFIGDIR.get().resolve(GuaniaoMod.MOD_ID);
@@ -142,6 +141,10 @@ public final class BirdConfigManager {
         return config.global.colonialMode;
     }
 
+    public static boolean sparrowTideMode() {
+        return config.global.sparrowTideMode;
+    }
+
     public static boolean naturalCrowNests() {
         return config.global.naturalCrowNests;
     }
@@ -177,7 +180,7 @@ public final class BirdConfigManager {
     public static double droppingMultiplier(BirdSpecies species) {
         BirdConfigData current = config;
         BirdSpeciesConfig bird = speciesConfig(current, species);
-        if (species == null || !bird.enabled) {
+        if (species == null || !bird.enabled || !current.global.naturalDroppingsEnabled) {
             return 0.0D;
         }
         return current.global.droppingFrequencyMultiplier * bird.droppingFrequencyMultiplier;
@@ -199,6 +202,12 @@ public final class BirdConfigManager {
     public static int maxGroundDroppingsNearby() {
         return config.global.maxGroundDroppingsNearby;
     }
+
+    public static int droppingNearbyRadius() { return config.global.droppingNearbyRadius; }
+    public static int droppingAreaCooldownMinTicks() { return config.global.droppingAreaCooldownMinSeconds * 20; }
+    public static int droppingAreaCooldownMaxTicks() { return config.global.droppingAreaCooldownMaxSeconds * 20; }
+    public static int droppingLifetimeMinTicks() { return config.global.droppingLifetimeMinMinutes * 1200; }
+    public static int droppingLifetimeMaxTicks() { return config.global.droppingLifetimeMaxMinutes * 1200; }
 
     public static int maxWildBirdsPerRegion() { return config.global.maxWildBirdsPerRegion; }
     public static int populationRegionChunks() { return config.global.populationRegionChunks; }
@@ -238,7 +247,10 @@ public final class BirdConfigManager {
     }
     public static int maxWildNearby(BirdSpecies species) { return speciesConfig(species).maxWildNearby; }
     public static double flockRadius(BirdSpecies species) { return speciesConfig(species).flockRadius; }
-    public static int flockMaxMembers(BirdSpecies species) { return speciesConfig(species).flockMaxMembers; }
+    public static int flockMaxMembers(BirdSpecies species) {
+        int configured = speciesConfig(species).flockMaxMembers;
+        return species == BirdSpecies.SPARROW && sparrowTideMode() ? Math.min(12, configured) : configured;
+    }
     public static int foodScanInterval(BirdSpecies species) { return speciesConfig(species).foodScanInterval; }
     public static int threatScanInterval(BirdSpecies species) { return speciesConfig(species).threatScanInterval; }
     public static double ownerTeleportDistance(BirdSpecies species) { return speciesConfig(species).ownerTeleportDistance; }
@@ -316,6 +328,7 @@ public final class BirdConfigManager {
         normalized.global.crowItemSafety = sourceGlobal.crowItemSafety;
         normalized.global.birdsPassThroughLeaves = sourceGlobal.birdsPassThroughLeaves;
         normalized.global.aprilFoolsMode = sourceGlobal.aprilFoolsMode;
+        normalized.global.sparrowTideMode = sourceGlobal.sparrowTideMode;
         normalized.global.droppingPressurePlatePulseEnabled = sourceGlobal.droppingPressurePlatePulseEnabled;
         normalized.global.photoUploadsEnabled = sourceGlobal.photoUploadsEnabled;
         normalized.global.photoUploadsOperatorOnly = sourceGlobal.photoUploadsOperatorOnly;
@@ -331,6 +344,14 @@ public final class BirdConfigManager {
                 0,
                 BirdAmbientDropControl.HARD_MAX_DROPPINGS_NEARBY
         );
+        normalized.global.naturalDroppingsEnabled = sourceGlobal.naturalDroppingsEnabled;
+        normalized.global.droppingNearbyRadius = clamp(sourceGlobal.droppingNearbyRadius, 4, 32);
+        normalized.global.droppingAreaCooldownMinSeconds = clamp(sourceGlobal.droppingAreaCooldownMinSeconds, 1, 300);
+        normalized.global.droppingAreaCooldownMaxSeconds = clamp(sourceGlobal.droppingAreaCooldownMaxSeconds,
+                normalized.global.droppingAreaCooldownMinSeconds, 300);
+        normalized.global.droppingLifetimeMinMinutes = clamp(sourceGlobal.droppingLifetimeMinMinutes, 1, 30);
+        normalized.global.droppingLifetimeMaxMinutes = clamp(sourceGlobal.droppingLifetimeMaxMinutes,
+                normalized.global.droppingLifetimeMinMinutes, 30);
         normalized.global.crowNestSearchDistance = clamp(sourceGlobal.crowNestSearchDistance, 16, 128);
         normalized.global.maxCrowNestTreasures = clamp(sourceGlobal.maxCrowNestTreasures, 1, 6);
         normalized.global.wildBirdDespawnTicks = clamp(sourceGlobal.wildBirdDespawnTicks, 200, 1728000);

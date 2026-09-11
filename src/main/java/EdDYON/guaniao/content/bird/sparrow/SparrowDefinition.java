@@ -7,8 +7,8 @@ public final class SparrowDefinition {
     public static final String SPAWN_EGG_ID = "sparrow_spawn_egg";
     public static final int SPAWN_EGG_BASE_COLOR = 0x8A6E4D;
     public static final int SPAWN_EGG_SPOT_COLOR = 0xD7C7A2;
-    public static final float WIDTH = 0.32f;
-    public static final float HEIGHT = 0.38f;
+    public static final float WIDTH = 0.18F;
+    public static final float HEIGHT = 0.20F;
     public static final double MAX_HEALTH = 6.0;
     public static final double WALK_SPEED = 0.25;
     public static final double FOLLOW_RANGE = 18.0;

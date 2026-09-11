@@ -9,9 +9,6 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 public final class BirdFlightController {
-    private static final float FLIGHT_YAW_TURN_RATE = 12.0F;
-    private static final float FLIGHT_BODY_TURN_RATE = 10.0F;
-    private static final float FLIGHT_HEAD_TURN_RATE = 14.0F;
     private static final float FLIGHT_HEAD_LIMIT = 28.0F;
     private static final float FLIGHT_PITCH_TURN_RATE = 5.0F;
     private static final float GROUND_YAW_TURN_RATE = 18.0F;
@@ -88,14 +85,16 @@ public final class BirdFlightController {
         }
         float targetYaw = (float)(Mth.atan2(movement.z, movement.x) * 57.29577951308232D) - 90.0F;
         float targetPitch = Mth.clamp((float)(-(Math.atan2(movement.y, horizontalLength) * 57.29577951308232D)), -maxPitchDegrees, maxPitchDegrees);
-        float yaw = approachAngle(bird.getYRot(), targetYaw, FLIGHT_YAW_TURN_RATE);
-        float bodyYaw = approachAngle(bird.yBodyRot, yaw, FLIGHT_BODY_TURN_RATE);
-        float headYaw = approachAngle(bird.getYHeadRot(), yaw, FLIGHT_HEAD_TURN_RATE);
-        headYaw = bodyYaw + Mth.clamp(Mth.wrapDegrees(headYaw - bodyYaw), -FLIGHT_HEAD_LIMIT, FLIGHT_HEAD_LIMIT);
         float pitch = approachLinear(bird.getXRot(), targetPitch, FLIGHT_PITCH_TURN_RATE);
-        bird.setYRot(yaw);
-        bird.yBodyRot = bodyYaw;
-        bird.setYHeadRot(headYaw);
+
+        // Flight steering writes velocity immediately. Gradually rotating the
+        // model toward that already-changed velocity allowed sharp turns to be
+        // rendered sideways or even backwards for several ticks. Keep the
+        // body and head locked to the actual horizontal travel direction;
+        // pitch remains eased so climbing and landing do not visually snap.
+        bird.setYRot(targetYaw);
+        bird.yBodyRot = targetYaw;
+        bird.setYHeadRot(targetYaw);
         bird.setXRot(pitch);
     }
 

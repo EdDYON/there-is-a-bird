@@ -365,6 +365,7 @@ public class BirdConfigScreen extends Screen {
             BirdGlobalConfig global = this.data.global;
             settings.add(SettingSpec.storageScope());
             settings.add(SettingSpec.toggle("april_fools_mode", () -> global.aprilFoolsMode, value -> global.aprilFoolsMode = value));
+            settings.add(SettingSpec.toggle("sparrow_tide_mode", () -> global.sparrowTideMode, value -> global.sparrowTideMode = value));
             settings.add(SettingSpec.toggle("natural_spawning", () -> global.naturalSpawning, value -> global.naturalSpawning = value));
             settings.add(SettingSpec.toggle("colonial_mode", () -> global.colonialMode, value -> global.colonialMode = value));
             settings.add(SettingSpec.toggle("natural_crow_nests", () -> global.naturalCrowNests, value -> global.naturalCrowNests = value));
@@ -403,6 +404,12 @@ public class BirdConfigScreen extends Screen {
             settings.add(SettingSpec.number("seagull_concurrent_targets", () -> global.maxConcurrentSeagullTargetsPerPlayer, value -> global.maxConcurrentSeagullTargetsPerPlayer = (int)value, 0.0D, 8.0D, true));
             settings.add(SettingSpec.number("bird_scan_budget", () -> global.birdScanBudgetPerTick, value -> global.birdScanBudgetPerTick = (int)value, 1.0D, 128.0D, true));
             settings.add(SettingSpec.number("max_droppings", () -> global.maxGroundDroppingsNearby, value -> global.maxGroundDroppingsNearby = (int)value, 0.0D, 16.0D, true));
+            settings.add(SettingSpec.toggle("natural_droppings", () -> global.naturalDroppingsEnabled, value -> global.naturalDroppingsEnabled = value));
+            settings.add(SettingSpec.number("dropping_radius", () -> global.droppingNearbyRadius, value -> global.droppingNearbyRadius = (int)value, 4.0D, 32.0D, true));
+            settings.add(SettingSpec.number("dropping_area_min_seconds", () -> global.droppingAreaCooldownMinSeconds, value -> global.droppingAreaCooldownMinSeconds = (int)value, 1.0D, 300.0D, true));
+            settings.add(SettingSpec.number("dropping_area_max_seconds", () -> global.droppingAreaCooldownMaxSeconds, value -> global.droppingAreaCooldownMaxSeconds = (int)value, 1.0D, 300.0D, true));
+            settings.add(SettingSpec.number("dropping_lifetime_min_minutes", () -> global.droppingLifetimeMinMinutes, value -> global.droppingLifetimeMinMinutes = (int)value, 1.0D, 30.0D, true));
+            settings.add(SettingSpec.number("dropping_lifetime_max_minutes", () -> global.droppingLifetimeMaxMinutes, value -> global.droppingLifetimeMaxMinutes = (int)value, 1.0D, 30.0D, true));
             settings.add(SettingSpec.toggle("enable_migration", () -> global.enableMigration, value -> global.enableMigration = value));
             settings.add(SettingSpec.number("migration_interval_ticks", () -> global.migrationIntervalTicks, value -> global.migrationIntervalTicks = (int)value, 200.0D, 72000.0D, true));
             settings.add(SettingSpec.number("migration_radius", () -> global.migrationRadius, value -> global.migrationRadius = (int)value, 32.0D, 512.0D, true));
@@ -553,6 +560,7 @@ public class BirdConfigScreen extends Screen {
             case CROW, SEAGULL -> 37;
             case KIWI -> 43;
             case MYNA -> 47;
+            case WOODCOCK -> 40;
         };
         return BirdModelScale.fitPreviewScale(scale);
     }

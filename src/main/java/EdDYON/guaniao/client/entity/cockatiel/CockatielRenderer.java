@@ -8,7 +8,7 @@ import software.bernie.geckolib.renderer.GeoEntityRenderer;
 public class CockatielRenderer extends GeoEntityRenderer<CockatielEntity> {
     public CockatielRenderer(EntityRendererProvider.Context context) {
         super(context, new CockatielModel());
-        this.shadowRadius = 0.14F;
+        this.shadowRadius = 0.12F;
     }
 
     @Override

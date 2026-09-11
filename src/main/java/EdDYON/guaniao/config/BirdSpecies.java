@@ -9,18 +9,19 @@ import net.minecraftforge.registries.ForgeRegistries;
 import java.util.Locale;
 
 public enum BirdSpecies {
-    NIGHT_HERON("night_heron", 1, 2, 2400, 3600),
-    SPARROW("sparrow", 5, 10, 1800, 3200),
-    LONG_TAILED_TIT("long_tailed_tit", 4, 10, 1900, 3300),
-    COCKATIEL("cockatiel", 2, 5, 1800, 3000),
-    MACAW("macaw", 2, 4, 1600, 2800),
-    BUDGERIGAR("budgerigar", 3, 8, 1800, 3200),
-    SPOTTED_DOVE("spotted_dove", 1, 2, 1400, 2600),
-    PIGEON("pigeon", 3, 7, 1200, 2400),
-    CROW("crow", 1, 3, 1500, 3000),
-    SEAGULL("seagull", 2, 5, 1300, 2600),
-    KIWI("kiwi", 1, 2, 1700, 3200, false),
-    MYNA("myna", 2, 4, 1500, 2800);
+    NIGHT_HERON("night_heron", 1, 2, 3600, 6000),
+    SPARROW("sparrow", 5, 10, 3600, 6000),
+    LONG_TAILED_TIT("long_tailed_tit", 4, 10, 3600, 6000),
+    COCKATIEL("cockatiel", 2, 5, 3600, 6000),
+    MACAW("macaw", 2, 4, 3600, 6000),
+    BUDGERIGAR("budgerigar", 3, 8, 3600, 6000),
+    SPOTTED_DOVE("spotted_dove", 1, 2, 3000, 5400),
+    PIGEON("pigeon", 3, 7, 2400, 4800),
+    CROW("crow", 1, 3, 3600, 6000),
+    SEAGULL("seagull", 2, 5, 3000, 5400),
+    KIWI("kiwi", 1, 2, 3600, 6000, false),
+    MYNA("myna", 2, 4, 3000, 5400),
+    WOODCOCK("woodcock", 1, 2, 3600, 6000, false);
 
     private final String id;
     private final int defaultMinGroup;

@@ -12,7 +12,7 @@ body:
     id: mod_version
     attributes:
       label: 模组版本
-      placeholder: 例如 2.1.4 或 commit SHA
+      placeholder: 例如 3.2.4 或 commit SHA
     validations:
       required: true
   - type: input

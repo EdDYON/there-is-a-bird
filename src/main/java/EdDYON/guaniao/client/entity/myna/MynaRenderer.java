@@ -11,7 +11,7 @@ import software.bernie.geckolib.renderer.GeoEntityRenderer;
 public class MynaRenderer extends GeoEntityRenderer<MynaEntity> {
     public MynaRenderer(EntityRendererProvider.Context context) {
         super(context, new MynaModel());
-        this.shadowRadius = 0.25F;
+        this.shadowRadius = 0.12F;
     }
 
     @Override

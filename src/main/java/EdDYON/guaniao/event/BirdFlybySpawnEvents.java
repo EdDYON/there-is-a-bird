@@ -440,7 +440,7 @@ public final class BirdFlybySpawnEvents {
         return BirdPopulationTracker.speciesAt(level, player.getX(), player.getZ(), kind.species());
     }
 
-    private static boolean isHiddenFromNearbyPlayers(ServerLevel level, Vec3 spawnPos) {
+    public static boolean isHiddenFromNearbyPlayers(ServerLevel level, Vec3 spawnPos) {
         for (ServerPlayer observer : level.players()) {
             if (observer.isSpectator()) {
                 continue;

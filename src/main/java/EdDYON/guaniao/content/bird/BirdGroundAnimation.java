@@ -51,6 +51,12 @@ public final class BirdGroundAnimation {
         }
     }
 
+    /** Applies a species-specific cadence correction after measuring real ground movement. */
+    public static double walkAnimationSpeed(PathfinderMob bird, double cadenceMultiplier) {
+        double multiplier = Double.isFinite(cadenceMultiplier) ? cadenceMultiplier : 1.0D;
+        return Mth.clamp(walkAnimationSpeed(bird) * multiplier, 0.65D, 2.0D);
+    }
+
     private static boolean hasClientPositionMotion(PathfinderMob bird) {
         synchronized (CLIENT_MOTION_SAMPLES) {
             ClientMotionSample sample = updateClientMotion(bird);

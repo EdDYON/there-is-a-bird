@@ -93,6 +93,7 @@ public class KiwiEntity extends PathfinderMob
     private final AnimatableInstanceCache animationCache = GeckoLibUtil.createInstanceCache((GeoAnimatable)this);
     private final BirdBrain birdBrain = new BirdBrain(this, KiwiProfile.INSTANCE);
     private int behaviorTicks;
+    private GuidePreviewAnimation guidePreviewAnimation = GuidePreviewAnimation.NONE;
     private int restInterruptionTicks;
     @Nullable
     private BlockPos homeCenter;
@@ -719,6 +720,9 @@ public class KiwiEntity extends PathfinderMob
 
     private <T extends KiwiEntity> PlayState movementController(AnimationState<T> animationState) {
         animationState.getController().setAnimationSpeed(1.0D);
+        if (this.guidePreviewAnimation.animation != null) {
+            return animationState.setAndContinue(this.guidePreviewAnimation.animation);
+        }
         if (this.getConflictState() == KiwiConflictState.FIGHTING) {
             animationState.getController().setAnimationSpeed(this.movementAnimationSpeed());
             return animationState.setAndContinue(WALK_ANIMATION);
@@ -755,6 +759,21 @@ public class KiwiEntity extends PathfinderMob
             return Math.min(measuredSpeed, 0.95D);
         }
         return measuredSpeed;
+    }
+
+    public void setGuidePreviewAnimation(GuidePreviewAnimation animation) {
+        this.guidePreviewAnimation = animation == null ? GuidePreviewAnimation.NONE : animation;
+    }
+
+    public enum GuidePreviewAnimation {
+        NONE(null), IDLE(IDLE_ANIMATION), WALK(WALK_ANIMATION),
+        FORAGE(PECK_ANIMATION), ALERT(IDLE_DIFF_1_ANIMATION);
+
+        private final RawAnimation animation;
+
+        GuidePreviewAnimation(RawAnimation animation) {
+            this.animation = animation;
+        }
     }
 
     @Override

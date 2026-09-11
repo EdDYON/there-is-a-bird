@@ -25,7 +25,7 @@ public class BirdSpeciesConfig {
         this.maxWildNearby = switch (species) {
             case SPARROW, LONG_TAILED_TIT, PIGEON -> 8;
             case BUDGERIGAR, SPOTTED_DOVE, SEAGULL, MYNA -> 6;
-            case COCKATIEL, CROW, KIWI -> 4;
+            case COCKATIEL, CROW, KIWI, WOODCOCK -> 4;
             case MACAW, NIGHT_HERON -> 3;
         };
         this.flockMaxMembers = switch (species) {
@@ -34,8 +34,14 @@ public class BirdSpeciesConfig {
             case SEAGULL, MYNA -> 8;
             case COCKATIEL, SPOTTED_DOVE, CROW -> 6;
             case NIGHT_HERON, KIWI -> 4;
+            case WOODCOCK -> 2;
             case MACAW -> 3;
         };
+        if (species == BirdSpecies.WOODCOCK) {
+            this.flockRadius = 9.0D;
+            this.foodScanInterval = 40;
+            this.threatScanInterval = 24;
+        }
     }
 
     public BirdSpeciesConfig copy() {

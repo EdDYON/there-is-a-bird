@@ -42,6 +42,9 @@ public final class BirdColonySpawnRules {
     }
 
     static GroupSize groupAt(ServerLevel level, BlockPos pos, BirdSpecies species) {
+        if (species == BirdSpecies.SPARROW && BirdConfigManager.sparrowTideMode()) {
+            return null;
+        }
         if (!BirdConfigManager.colonialMode() || !isColonialSpecies(species)) {
             return null;
         }
@@ -165,6 +168,13 @@ public final class BirdColonySpawnRules {
             snapshot.settlementScore = scanSettlementScore(level, pos);
         }
         return snapshot.settlementScore;
+    }
+
+    /** Reuses the colony cache; open woodland edges qualify for small gatherings too. */
+    public static int sparrowTideHabitatScore(ServerLevel level, BlockPos pos) {
+        int settlement = settlementScore(level, pos);
+        HabitatSnapshot habitat = habitatAt(level, pos, ColonyCell.from(pos));
+        return habitat.treeCover && habitat.dryOpenGround ? Math.max(10, settlement) : settlement;
     }
 
     public static int columbidHabitatScore(ServerLevel level, BlockPos pos, boolean urbanBias) {

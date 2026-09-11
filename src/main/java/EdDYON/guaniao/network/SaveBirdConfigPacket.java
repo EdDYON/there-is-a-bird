@@ -67,6 +67,7 @@ public final class SaveBirdConfigPacket {
         BirdGlobalConfig oldGlobal = before.global;
         BirdGlobalConfig newGlobal = after.global;
         if (Double.compare(oldGlobal.droppingFrequencyMultiplier, newGlobal.droppingFrequencyMultiplier) != 0
+                || oldGlobal.naturalDroppingsEnabled != newGlobal.naturalDroppingsEnabled
                 || oldGlobal.droppingPressurePlatePulseEnabled != newGlobal.droppingPressurePlatePulseEnabled
                 || oldGlobal.maxGroundDroppingsNearby != newGlobal.maxGroundDroppingsNearby
                 || oldGlobal.droppingPressurePlatePulseTicks != newGlobal.droppingPressurePlatePulseTicks) {
