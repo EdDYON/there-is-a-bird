@@ -180,7 +180,13 @@
   "entity.pigeon.ambient": {
     "subtitle": "subtitles.guaniao.entity.pigeon.ambient",
     "sounds": [
-      "guaniao:entity/pigeon/pigeon_call_1"
+      "guaniao:entity/pigeon/pigeon_1",
+      "guaniao:entity/pigeon/pigeon_2",
+      "guaniao:entity/pigeon/pigeon_3",
+      {
+        "name": "guaniao:entity/pigeon/pigeon_loop",
+        "stream": true
+      }
     ]
   },
   "entity.kiwi.ambient": {
