@@ -12,6 +12,8 @@ public class BirdGlobalConfig {
     public boolean birdsPassThroughLeaves = true;
     public boolean aprilFoolsMode;
     public boolean sparrowTideMode;
+    public boolean skyBirdEcologyEnabled = true;
+    public boolean birdDeathGuiltMessagesEnabled = true;
     public boolean droppingPressurePlatePulseEnabled = true;
     public boolean enableMigration = true;
     public int migrationIntervalTicks = 6000;
@@ -64,6 +66,8 @@ public class BirdGlobalConfig {
         copy.birdsPassThroughLeaves = this.birdsPassThroughLeaves;
         copy.aprilFoolsMode = this.aprilFoolsMode;
         copy.sparrowTideMode = this.sparrowTideMode;
+        copy.skyBirdEcologyEnabled = this.skyBirdEcologyEnabled;
+        copy.birdDeathGuiltMessagesEnabled = this.birdDeathGuiltMessagesEnabled;
         copy.droppingPressurePlatePulseEnabled = this.droppingPressurePlatePulseEnabled;
         copy.enableMigration = this.enableMigration;
         copy.migrationIntervalTicks = this.migrationIntervalTicks;

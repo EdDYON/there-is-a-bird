@@ -1,5 +1,6 @@
 package EdDYON.guaniao.content.feed;
 
+import EdDYON.guaniao.client.particle.PlaceableBlockBreakEffects;
 import EdDYON.guaniao.content.bird.sparrow.BreadcrumbSearchCache;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -22,6 +23,9 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
+import net.minecraftforge.client.extensions.common.IClientBlockExtensions;
+
+import java.util.function.Consumer;
 
 public class BreadcrumbPileBlock extends Block {
     public static final IntegerProperty LAYERS = IntegerProperty.create("layers", 1, 4);
@@ -43,6 +47,11 @@ public class BreadcrumbPileBlock extends Block {
                 .setValue(LAYERS, 4)
                 .setValue(AGE, 0)
                 .setValue(BITES, 7));
+    }
+
+    @Override
+    public void initializeClient(Consumer<IClientBlockExtensions> consumer) {
+        consumer.accept(PlaceableBlockBreakEffects.breadcrumbs());
     }
 
     @Override

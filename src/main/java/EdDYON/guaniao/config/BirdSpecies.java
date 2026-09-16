@@ -21,6 +21,8 @@ public enum BirdSpecies {
     SEAGULL("seagull", 2, 5, 3000, 5400),
     KIWI("kiwi", 1, 2, 3600, 6000, false),
     MYNA("myna", 2, 4, 3000, 5400),
+    CASSOWARY("cassowary", 1, 1, 3600, 6000, false),
+    KESTREL("kestrel", 1, 1, 3600, 6000),
     WOODCOCK("woodcock", 1, 2, 3600, 6000, false);
 
     private final String id;

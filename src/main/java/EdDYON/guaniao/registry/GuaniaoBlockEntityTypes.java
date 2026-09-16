@@ -4,6 +4,7 @@ import EdDYON.guaniao.GuaniaoMod;
 import EdDYON.guaniao.content.bath.BirdBathBlockEntity;
 import EdDYON.guaniao.content.cage.BirdCageBlockEntity;
 import EdDYON.guaniao.content.nest.CrowNestBlockEntity;
+import EdDYON.guaniao.content.food.BaggedFriesBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -29,6 +30,9 @@ public final class GuaniaoBlockEntityTypes {
 
     public static final RegistryObject<BlockEntityType<CrowNestBlockEntity>> CROW_NEST = BLOCK_ENTITY_TYPES.register("crow_nest", () ->
             BlockEntityType.Builder.of(CrowNestBlockEntity::new, GuaniaoBlocks.CROW_NEST.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<BaggedFriesBlockEntity>> BAGGED_FRIES = BLOCK_ENTITY_TYPES.register("bagged_fries", () ->
+            BlockEntityType.Builder.of(BaggedFriesBlockEntity::new, GuaniaoBlocks.BAGGED_FRIES.get()).build(null));
 
     private GuaniaoBlockEntityTypes() {
     }

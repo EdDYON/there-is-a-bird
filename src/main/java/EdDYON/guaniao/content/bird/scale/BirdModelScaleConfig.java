@@ -14,6 +14,8 @@ public final class BirdModelScaleConfig {
     public static final Scale KIWI = new Scale(0.65F, 0.94F, 1.06F);
     public static final Scale MYNA = new Scale(0.55F, 0.94F, 1.06F);
     public static final Scale WOODCOCK = new Scale(0.46F, 0.94F, 1.06F);
+    public static final Scale KESTREL = new Scale(0.52F, 0.94F, 1.06F);
+    public static final Scale CASSOWARY = new Scale(2.65F, 0.94F, 1.06F);
 
     private BirdModelScaleConfig() {
     }

@@ -1,0 +1,50 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_cooked_fries": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "guaniao:cooked_fries"
+            ]
+          }
+        ]
+      }
+    },
+    "has_paper": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "minecraft:paper"
+            ]
+          }
+        ]
+      }
+    },
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "guaniao:bagged_fries"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_cooked_fries",
+      "has_the_recipe"
+    ],
+    [
+      "has_paper",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "guaniao:bagged_fries"
+    ]
+  }
+}

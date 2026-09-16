@@ -31,7 +31,9 @@ public final class GuaniaoBirdSpawnRegistry {
             new SpawnRule(BirdSpecies.SEAGULL, GuaniaoEntityTypes.SEAGULL, 4),
             new SpawnRule(BirdSpecies.KIWI, GuaniaoEntityTypes.KIWI, 2),
             new SpawnRule(BirdSpecies.MYNA, GuaniaoEntityTypes.MYNA, 4),
-            new SpawnRule(BirdSpecies.WOODCOCK, GuaniaoEntityTypes.WOODCOCK, 2)
+            new SpawnRule(BirdSpecies.WOODCOCK, GuaniaoEntityTypes.WOODCOCK, 2),
+            new SpawnRule(BirdSpecies.KESTREL, GuaniaoEntityTypes.KESTREL, 2),
+            new SpawnRule(BirdSpecies.CASSOWARY, GuaniaoEntityTypes.CASSOWARY, 1)
     );
 
     private GuaniaoBirdSpawnRegistry() {

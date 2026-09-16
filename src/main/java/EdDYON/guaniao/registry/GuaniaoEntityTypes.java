@@ -20,6 +20,10 @@ import EdDYON.guaniao.content.bird.myna.MynaDefinition;
 import EdDYON.guaniao.content.bird.myna.MynaEntity;
 import EdDYON.guaniao.content.bird.woodcock.WoodcockDefinition;
 import EdDYON.guaniao.content.bird.woodcock.WoodcockEntity;
+import EdDYON.guaniao.content.bird.kestrel.KestrelDefinition;
+import EdDYON.guaniao.content.bird.kestrel.KestrelEntity;
+import EdDYON.guaniao.content.bird.cassowary.CassowaryDefinition;
+import EdDYON.guaniao.content.bird.cassowary.CassowaryEntity;
 import EdDYON.guaniao.content.bird.sparrow.SparrowDefinition;
 import EdDYON.guaniao.content.bird.sparrow.SparrowEntity;
 import EdDYON.guaniao.content.bird.longtailedtit.LongTailedTitDefinition;
@@ -57,6 +61,8 @@ public final class GuaniaoEntityTypes {
     public static final RegistryObject<EntityType<KiwiEntity>> KIWI = GuaniaoEntityTypes.registerCreature(KiwiDefinition.ENTITY_ID, KiwiEntity::new, KiwiDefinition.WIDTH, KiwiDefinition.HEIGHT);
     public static final RegistryObject<EntityType<MynaEntity>> MYNA = GuaniaoEntityTypes.registerCreature(MynaDefinition.ENTITY_ID, MynaEntity::new, MynaDefinition.WIDTH, MynaDefinition.HEIGHT);
     public static final RegistryObject<EntityType<WoodcockEntity>> WOODCOCK = GuaniaoEntityTypes.registerCreature(WoodcockDefinition.ENTITY_ID, WoodcockEntity::new, WoodcockDefinition.WIDTH, WoodcockDefinition.HEIGHT);
+    public static final RegistryObject<EntityType<KestrelEntity>> KESTREL = GuaniaoEntityTypes.registerCreature(KestrelDefinition.ENTITY_ID, KestrelEntity::new, KestrelDefinition.WIDTH, KestrelDefinition.HEIGHT);
+    public static final RegistryObject<EntityType<CassowaryEntity>> CASSOWARY = GuaniaoEntityTypes.registerCreature(CassowaryDefinition.ENTITY_ID, CassowaryEntity::new, CassowaryDefinition.WIDTH, CassowaryDefinition.HEIGHT);
     public static final RegistryObject<EntityType<PhotographEntity>> PHOTOGRAPH = ENTITY_TYPES.register("photograph", () ->
             EntityType.Builder.<PhotographEntity>of(PhotographEntity::new, MobCategory.MISC)
                     .sized(0.5F, 0.5F)

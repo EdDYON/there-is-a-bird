@@ -40,6 +40,11 @@ public final class GuaniaoSoundEvents {
     public static final RegistryObject<SoundEvent> KIWI_AMBIENT = register("entity.kiwi.ambient");
     public static final RegistryObject<SoundEvent> WOODCOCK_AMBIENT = register("entity.woodcock.ambient");
     public static final RegistryObject<SoundEvent> SEAGULL_AMBIENT = register("entity.seagull.ambient");
+    public static final RegistryObject<SoundEvent> KESTREL_AMBIENT = register("entity.kestrel.ambient");
+    public static final RegistryObject<SoundEvent> KESTREL_HURT = register("entity.kestrel.hurt");
+    public static final RegistryObject<SoundEvent> CASSOWARY_AMBIENT = register("entity.cassowary.ambient");
+    public static final RegistryObject<SoundEvent> CASSOWARY_WARNING = register("entity.cassowary.warning");
+    public static final RegistryObject<SoundEvent> CASSOWARY_HURT = register("entity.cassowary.hurt");
     public static final RegistryObject<SoundEvent> MYNA_CALL_03 = register("entity.myna.call_03");
     public static final RegistryObject<SoundEvent> MYNA_CALL_04 = register("entity.myna.call_04");
     public static final RegistryObject<SoundEvent> MYNA_CALL_05 = register("entity.myna.call_05");

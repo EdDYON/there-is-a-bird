@@ -106,7 +106,7 @@ public final class BirdConfigCommands {
 
     private static final String[] SPECIES_CHOICES = {
             "nightheron", "sparrow", "longtailedtit", "cockatiel", "macaw",
-            "budgerigar", "spotteddove", "pigeon", "crow", "seagull", "woodcock"
+            "budgerigar", "spotteddove", "pigeon", "crow", "seagull", "woodcock", "kestrel", "cassowary"
     };
     private static final String[] MUTATION_CHOICES = {"leucistic", "melanistic", "golden", "puregold", "rainbow", "random"};
     private static final BirdMutation[] ALL_MUTATIONS = {
@@ -116,8 +116,8 @@ public final class BirdConfigCommands {
     private static final BirdSpecies[] SIZE_COMPARISON_ORDER = {
             BirdSpecies.SPARROW, BirdSpecies.LONG_TAILED_TIT, BirdSpecies.BUDGERIGAR, BirdSpecies.MYNA,
             BirdSpecies.SPOTTED_DOVE, BirdSpecies.COCKATIEL, BirdSpecies.PIGEON, BirdSpecies.WOODCOCK,
-            BirdSpecies.KIWI, BirdSpecies.CROW, BirdSpecies.SEAGULL,
-            BirdSpecies.NIGHT_HERON, BirdSpecies.MACAW
+            BirdSpecies.KIWI, BirdSpecies.CROW, BirdSpecies.SEAGULL, BirdSpecies.KESTREL,
+            BirdSpecies.NIGHT_HERON, BirdSpecies.MACAW, BirdSpecies.CASSOWARY
     };
 
     // Lazily built: this class is a @Mod.EventBusSubscriber, so Forge loads it during mod
@@ -141,6 +141,8 @@ public final class BirdConfigCommands {
             map.put("crow", GuaniaoEntityTypes.CROW.get());
             map.put("seagull", GuaniaoEntityTypes.SEAGULL.get());
             map.put("woodcock", GuaniaoEntityTypes.WOODCOCK.get());
+            map.put("kestrel", GuaniaoEntityTypes.KESTREL.get());
+            map.put("cassowary", GuaniaoEntityTypes.CASSOWARY.get());
             speciesMap = map;
         }
         return map;

@@ -1,8 +1,11 @@
 package EdDYON.guaniao.content.bath;
 
+import EdDYON.guaniao.client.particle.PlaceableBlockBreakEffects;
 import EdDYON.guaniao.registry.GuaniaoItems;
 import EdDYON.guaniao.registry.GuaniaoBlockEntityTypes;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
@@ -26,6 +29,9 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
+import net.minecraftforge.client.extensions.common.IClientBlockExtensions;
+
+import java.util.function.Consumer;
 
 public class BirdBathBlock extends BaseEntityBlock {
     private final BirdBathVariant variant;
@@ -33,6 +39,11 @@ public class BirdBathBlock extends BaseEntityBlock {
     public BirdBathBlock(BirdBathVariant variant, BlockBehaviour.Properties properties) {
         super(properties);
         this.variant = variant;
+    }
+
+    @Override
+    public void initializeClient(Consumer<IClientBlockExtensions> consumer) {
+        consumer.accept(PlaceableBlockBreakEffects.birdBath());
     }
 
     public BirdBathVariant variant() {
@@ -78,6 +89,24 @@ public class BirdBathBlock extends BaseEntityBlock {
         if (blockEntity instanceof BirdBathBlockEntity birdBath) {
             birdBath.environmentTick(level, pos, state, random);
         }
+    }
+
+    @Override
+    public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+        if (level instanceof ServerLevel serverLevel
+                && level.getBlockEntity(pos) instanceof BirdBathBlockEntity birdBath
+                && !birdBath.isEmpty()) {
+            BirdBathContentType content = birdBath.getContentType();
+            if (content == BirdBathContentType.WATER) {
+                spawnDestroyedContent(serverLevel, pos, ParticleTypes.SPLASH, 10);
+                spawnDestroyedContent(serverLevel, pos, ParticleTypes.FALLING_WATER, 5);
+            } else if (content == BirdBathContentType.FROZEN_WATER) {
+                spawnDestroyedContent(serverLevel, pos, ParticleTypes.SNOWFLAKE, 8);
+            } else if (content.isFood() || content == BirdBathContentType.SPOILED) {
+                spawnDestroyedContent(serverLevel, pos, ParticleTypes.COMPOSTER, 6);
+            }
+        }
+        super.playerWillDestroy(level, pos, state, player);
     }
 
     @Nullable
@@ -239,5 +268,11 @@ public class BirdBathBlock extends BaseEntityBlock {
         } else if (!player.addItem(replacement)) {
             player.drop(replacement, false);
         }
+    }
+
+    private static void spawnDestroyedContent(ServerLevel level, BlockPos pos, ParticleOptions particle, int count) {
+        level.sendParticles(particle,
+                pos.getX() + 0.5D, pos.getY() + 1.38D, pos.getZ() + 0.5D,
+                count, 0.34D, 0.16D, 0.34D, 0.045D);
     }
 }

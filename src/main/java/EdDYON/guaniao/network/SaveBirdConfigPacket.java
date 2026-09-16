@@ -54,7 +54,8 @@ public final class SaveBirdConfigPacket {
                 for (ServerPlayer online : player.server.getPlayerList().getPlayers()) {
                     GuaniaoNetwork.sendToPlayer(new BirdRuntimeConfigPacket(
                             BirdConfigManager.birdsPassThroughLeaves(),
-                            BirdConfigManager.aprilFoolsMode()), online);
+                            BirdConfigManager.aprilFoolsMode(),
+                            BirdConfigManager.skyBirdEcologyEnabled()), online);
                 }
             } else {
                 player.displayClientMessage(Component.translatable("message.guaniao.bird_config.save_failed"), false);

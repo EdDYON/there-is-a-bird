@@ -226,6 +226,8 @@ public final class BirdConfigManager {
     public static int migrationRadius() { return config.global.migrationRadius; }
     public static boolean birdsPassThroughLeaves() { return config.global.birdsPassThroughLeaves; }
     public static boolean aprilFoolsMode() { return config.global.aprilFoolsMode; }
+    public static boolean skyBirdEcologyEnabled() { return config.global.skyBirdEcologyEnabled; }
+    public static boolean birdDeathGuiltMessagesEnabled() { return config.global.birdDeathGuiltMessagesEnabled; }
     public static boolean droppingPressurePlatePulseEnabled() { return config.global.droppingPressurePlatePulseEnabled; }
     public static int droppingPressurePlatePulseTicks() { return config.global.droppingPressurePlatePulseTicks; }
     public static boolean photoUploadsEnabled() { return config.global.photoUploadsEnabled; }
@@ -239,10 +241,12 @@ public final class BirdConfigManager {
     public static int maxConcurrentPhotoDownloads() { return config.global.maxConcurrentPhotoDownloads; }
     public static int photoDownloadBytesPerTick() { return config.global.photoDownloadKiBPerTick * 1024; }
 
-    public static synchronized void applyRemoteRuntime(boolean birdsPassThroughLeaves, boolean aprilFoolsMode) {
+    public static synchronized void applyRemoteRuntime(boolean birdsPassThroughLeaves, boolean aprilFoolsMode,
+                                                       boolean skyBirdEcologyEnabled) {
         BirdConfigData updated = config.copy();
         updated.global.birdsPassThroughLeaves = birdsPassThroughLeaves;
         updated.global.aprilFoolsMode = aprilFoolsMode;
+        updated.global.skyBirdEcologyEnabled = skyBirdEcologyEnabled;
         config = updated;
     }
     public static int maxWildNearby(BirdSpecies species) { return speciesConfig(species).maxWildNearby; }
@@ -329,6 +333,8 @@ public final class BirdConfigManager {
         normalized.global.birdsPassThroughLeaves = sourceGlobal.birdsPassThroughLeaves;
         normalized.global.aprilFoolsMode = sourceGlobal.aprilFoolsMode;
         normalized.global.sparrowTideMode = sourceGlobal.sparrowTideMode;
+        normalized.global.skyBirdEcologyEnabled = sourceGlobal.skyBirdEcologyEnabled;
+        normalized.global.birdDeathGuiltMessagesEnabled = sourceGlobal.birdDeathGuiltMessagesEnabled;
         normalized.global.droppingPressurePlatePulseEnabled = sourceGlobal.droppingPressurePlatePulseEnabled;
         normalized.global.photoUploadsEnabled = sourceGlobal.photoUploadsEnabled;
         normalized.global.photoUploadsOperatorOnly = sourceGlobal.photoUploadsOperatorOnly;

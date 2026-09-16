@@ -124,7 +124,6 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
     private static final RawAnimation LAUGH_IDLE_1_ANIMATION = RawAnimation.begin().thenPlay("idle_diff_2").thenLoop("idle");
     private static final RawAnimation EXTRA_IDLE_ANIMATION = RawAnimation.begin().thenPlay("idle_diff_3").thenLoop("idle");
     private static final RawAnimation LAUGH_IDLE_2_ANIMATION = RawAnimation.begin().thenPlay("idle_diff_4").thenLoop("idle");
-    private static final RawAnimation BIG_LAUGH_IDLE_ANIMATION = RawAnimation.begin().thenPlay("idle_diff_5").thenLoop("idle");
     private static final RawAnimation EAT_ANIMATION = RawAnimation.begin().thenPlay("eat").thenLoop("idle");
     private static final RawAnimation SLEEP_ANIMATION = RawAnimation.begin().thenPlay("sleep").thenLoop("sleep_loop");
 
@@ -874,7 +873,7 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
         LAUGH_1(LAUGH_IDLE_1_ANIMATION),
         IDLE_VARIATION(EXTRA_IDLE_ANIMATION),
         LAUGH_2(LAUGH_IDLE_2_ANIMATION),
-        BIG_LAUGH(BIG_LAUGH_IDLE_ANIMATION),
+        BIG_LAUGH(LAUGH_IDLE_2_ANIMATION),
         WALK(WALK_ANIMATION),
         FLY_FLAP(FLY_FLAP_LOOP_ANIMATION),
         GLIDE_BOOST(FLY_GLIDE_BOOST_ANIMATION),

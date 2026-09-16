@@ -1,0 +1,9 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "guaniao:block/bagged_fries"
+      }
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:plains",
+    "minecraft:sunflower_plains",
+    "minecraft:meadow",
+    "minecraft:snowy_plains",
+    "minecraft:swamp",
+    "minecraft:mangrove_swamp",
+    "minecraft:frozen_river",
+    "#minecraft:is_river",
+    "#minecraft:is_beach",
+    "#minecraft:is_ocean"
+  ]
+}

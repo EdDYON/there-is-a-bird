@@ -305,6 +305,7 @@ public final class BirdColonySpawnRules {
                 case SEAGULL -> this.nearbyWater;
                 case SPARROW, PIGEON -> this.settlement;
                 case BUDGERIGAR, COCKATIEL -> this.dryOpenGround;
+                case KESTREL -> false;
                 default -> false;
             };
         }

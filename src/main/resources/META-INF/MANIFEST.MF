@@ -3,7 +3,6 @@ Specification-Title: Bird Watching
 Specification-Vendor: EdDYON
 Specification-Version: 1
 Implementation-Title: guaniao
-Implementation-Version: 3.2.4
+Implementation-Version: 3.4.5
 Implementation-Vendor: EdDYON
 Implementation-Timestamp: 2026-05-21T22:29:14+0800
-

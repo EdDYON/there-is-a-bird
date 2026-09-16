@@ -1,6 +1,7 @@
 package EdDYON.guaniao.event;
 
 import EdDYON.guaniao.GuaniaoMod;
+import EdDYON.guaniao.config.BirdConfigManager;
 import EdDYON.guaniao.config.BirdSpecies;
 import EdDYON.guaniao.content.bird.BirdAmbientDropControl;
 import EdDYON.guaniao.content.bird.BirdTags;
@@ -94,7 +95,7 @@ public final class BirdFeatherEvents {
         ).size() < BirdAmbientDropControl.MAX_NATURAL_FEATHERS_NEARBY;
     }
 
-    /** Birds never drop items on death; a player killer instead receives a random warning. */
+    /** Birds never drop items on death; when enabled, a player killer receives a random warning. */
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onLivingDrops(LivingDropsEvent event) {
         Entity entity = event.getEntity();
@@ -103,7 +104,8 @@ public final class BirdFeatherEvents {
             return;
         }
 
-        if (event.getSource().getEntity() instanceof ServerPlayer player) {
+        if (BirdConfigManager.birdDeathGuiltMessagesEnabled()
+                && event.getSource().getEntity() instanceof ServerPlayer player) {
             int message = player.getRandom().nextInt(DEATH_MESSAGE_COUNT);
             player.sendSystemMessage(Component.translatable("message.guaniao.bird_death." + message)
                     .withStyle(ChatFormatting.GOLD));

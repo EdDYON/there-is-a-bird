@@ -22,6 +22,10 @@ public final class GuaniaoCreativeTabs {
         output.accept((ItemLike)GuaniaoItems.FILM.get());
         output.accept((ItemLike)GuaniaoItems.PHOTOGRAPH.get());
         output.accept((ItemLike)GuaniaoItems.BREADCRUMBS.get());
+        output.accept((ItemLike)GuaniaoItems.RAW_FRIES.get());
+        output.accept((ItemLike)GuaniaoItems.COOKED_FRIES.get());
+        output.accept((ItemLike)GuaniaoItems.BAGGED_FRIES.get());
+        output.accept((ItemLike)GuaniaoItems.LAXATIVE.get());
         output.accept((ItemLike)GuaniaoItems.EARTHWORM.get());
         output.accept((ItemLike)GuaniaoItems.BIRD_DROPPING_1.get());
         output.accept((ItemLike)GuaniaoItems.BIRD_DROPPING_2.get());
@@ -50,6 +54,8 @@ public final class GuaniaoCreativeTabs {
         output.accept((ItemLike)GuaniaoItems.KIWI_SPAWN_EGG.get());
         output.accept((ItemLike)GuaniaoItems.MYNA_SPAWN_EGG.get());
         output.accept((ItemLike)GuaniaoItems.WOODCOCK_SPAWN_EGG.get());
+        output.accept((ItemLike)GuaniaoItems.KESTREL_SPAWN_EGG.get());
+        output.accept((ItemLike)GuaniaoItems.CASSOWARY_SPAWN_EGG.get());
         output.accept((ItemLike)GuaniaoItems.FEATHER_WHITE.get());
         output.accept((ItemLike)GuaniaoItems.FEATHER_GREY.get());
         output.accept((ItemLike)GuaniaoItems.FEATHER_BLACK.get());

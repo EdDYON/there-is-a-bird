@@ -12,6 +12,8 @@ import EdDYON.guaniao.content.bird.kiwi.KiwiEntity;
 import EdDYON.guaniao.content.bird.myna.MynaEntity;
 import EdDYON.guaniao.content.bird.nightheron.NightHeronEntity;
 import EdDYON.guaniao.content.bird.seagull.SeagullEntity;
+import EdDYON.guaniao.content.bird.kestrel.KestrelEntity;
+import EdDYON.guaniao.content.bird.cassowary.CassowaryEntity;
 import EdDYON.guaniao.content.bird.scale.BirdModelScale;
 import EdDYON.guaniao.content.bird.sparrow.SparrowEntity;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
@@ -73,7 +75,9 @@ public class BirdGuideScreen extends Screen {
             new BirdGuideEntry("seagull", List.of("intro")),
             new BirdGuideEntry("kiwi", List.of("intro")),
             new BirdGuideEntry("myna", List.of("intro")),
-            new BirdGuideEntry("woodcock", List.of("intro"))
+            new BirdGuideEntry("woodcock", List.of("intro")),
+            new BirdGuideEntry("kestrel", List.of("intro")),
+            new BirdGuideEntry("cassowary", List.of("intro"))
     );
     private static final PoseKind[] POSES = PoseKind.values();
     private static final List<String> LAYOUT_RECT_IDS = List.of(
@@ -748,6 +752,23 @@ public class BirdGuideScreen extends Screen {
             crow.setGuidePreviewAnimation(this.toCrowPreviewAnimation(this.previewAnimation));
         } else if (entity instanceof SeagullEntity seagull) {
             seagull.setGuidePreviewAnimation(this.toSeagullPreviewAnimation(this.previewAnimation));
+        } else if (entity instanceof KestrelEntity kestrel) {
+            kestrel.setGuidePreviewAnimation(switch (this.previewAnimation) {
+                case WALK, RUN -> KestrelEntity.GuidePreviewAnimation.WALK;
+                case FLY_FLAP -> KestrelEntity.GuidePreviewAnimation.HOVER;
+                case GLIDE -> KestrelEntity.GuidePreviewAnimation.FLY;
+                default -> KestrelEntity.GuidePreviewAnimation.IDLE;
+            });
+        } else if (entity instanceof CassowaryEntity cassowary) {
+            cassowary.setGuidePreviewAnimation(switch (this.previewAnimation) {
+                case WALK -> CassowaryEntity.GuidePreviewAnimation.WALK;
+                case RUN -> CassowaryEntity.GuidePreviewAnimation.SPRINT;
+                case LOOK_1, LOOK_3, LOOK_5 -> CassowaryEntity.GuidePreviewAnimation.LOOK;
+                case LOOK_2, SCRATCH -> CassowaryEntity.GuidePreviewAnimation.ALERT;
+                case FLY_FLAP -> CassowaryEntity.GuidePreviewAnimation.WARNING;
+                case GLIDE -> CassowaryEntity.GuidePreviewAnimation.REST;
+                default -> CassowaryEntity.GuidePreviewAnimation.IDLE;
+            });
         }
     }
 
@@ -853,6 +874,8 @@ public class BirdGuideScreen extends Screen {
             case "kiwi" -> List.of("nocturnal", "forest", "insect_eater", "alert", "solitary");
             case "myna" -> List.of("diurnal", "village", "omnivore", "social", "tameable");
             case "woodcock" -> List.of("nocturnal", "forest", "insect_eater", "alert", "solitary");
+            case "kestrel" -> List.of("diurnal", "farmland", "predator", "alert", "solitary", "tameable");
+            case "cassowary" -> List.of("diurnal", "forest", "omnivore", "alert", "solitary");
             default -> List.of();
         };
     }
@@ -872,6 +895,8 @@ public class BirdGuideScreen extends Screen {
             case "kiwi" -> 0xFFA88B65;
             case "myna" -> 0xFFE5A62A;
             case "woodcock" -> 0xFF9A6A45;
+            case "kestrel" -> 0xFFC36F3D;
+            case "cassowary" -> 0xFF2E8392;
             default -> ACCENT_TEXT_COLOR;
         };
     }
@@ -882,11 +907,18 @@ public class BirdGuideScreen extends Screen {
     }
 
     private float basePreviewScale() {
-        return this.isNightHeronSelected() ? 0.86F : 0.96F;
+        if (this.isNightHeronSelected()) {
+            return 0.86F;
+        }
+        return this.isCassowarySelected() ? 0.62F : 0.96F;
     }
 
     private boolean isKiwiSelected() {
         return "kiwi".equals(this.selectedEntry(this.selectedIndex).id());
+    }
+
+    private boolean isCassowarySelected() {
+        return "cassowary".equals(this.selectedEntry(this.selectedIndex).id());
     }
 
     private float defaultStageX(GuiLayoutRect preview, int scale) {
@@ -1656,6 +1688,8 @@ public class BirdGuideScreen extends Screen {
                 case "kiwi" -> GuaniaoEntityTypes.KIWI.get();
                 case "myna" -> GuaniaoEntityTypes.MYNA.get();
                 case "woodcock" -> GuaniaoEntityTypes.WOODCOCK.get();
+                case "kestrel" -> GuaniaoEntityTypes.KESTREL.get();
+                case "cassowary" -> GuaniaoEntityTypes.CASSOWARY.get();
                 default -> GuaniaoEntityTypes.NIGHT_HERON.get();
             };
         }

@@ -100,6 +100,30 @@ public final class BirdFlightController {
         bird.setXRot(pitch);
     }
 
+    /**
+     * Faces an already-smoothed flight vector without snapping the model through
+     * a large yaw change in one tick. This is useful for wide-winged birds whose
+     * steering visibly follows long, curved flight paths.
+     */
+    public static void faceMovementSmooth(Mob bird, Vec3 movement, float maxPitchDegrees,
+                                          float maxYawChange) {
+        double horizontalLength = Math.sqrt(movement.x * movement.x + movement.z * movement.z);
+        if (horizontalLength <= 1.0E-4D) {
+            return;
+        }
+        float targetYaw = (float)(Mth.atan2(movement.z, movement.x) * 57.29577951308232D) - 90.0F;
+        float targetPitch = Mth.clamp((float)(-(Math.atan2(movement.y, horizontalLength) * 57.29577951308232D)),
+                -maxPitchDegrees, maxPitchDegrees);
+        float yaw = approachAngle(bird.getYRot(), targetYaw, Math.max(0.1F, maxYawChange));
+        float pitch = approachLinear(bird.getXRot(), targetPitch, FLIGHT_PITCH_TURN_RATE);
+        bird.setYRot(yaw);
+        // The movement vector already turns gradually. Lock the visible body
+        // and head to that single heading so they cannot twist independently.
+        bird.yBodyRot = yaw;
+        bird.setYHeadRot(yaw);
+        bird.setXRot(pitch);
+    }
+
     public static boolean faceGroundMovement(Mob bird, Vec3 movement, double minHorizontalSpeedSqr) {
         if (movement.horizontalDistanceSqr() <= minHorizontalSpeedSqr) {
             return false;

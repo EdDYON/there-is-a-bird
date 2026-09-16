@@ -1,5 +1,6 @@
 package EdDYON.guaniao.content.dropping;
 
+import EdDYON.guaniao.client.particle.PlaceableBlockBreakEffects;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleOptions;
@@ -28,12 +29,20 @@ import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraftforge.client.extensions.common.IClientBlockExtensions;
+
+import java.util.function.Consumer;
 
 public class BirdDroppingStainBlock extends Block implements LiquidBlockContainer {
     private static final VoxelShape SHAPE = Block.box(1.0D, 0.0D, 1.0D, 15.0D, 1.0D, 15.0D);
 
     public BirdDroppingStainBlock(BlockBehaviour.Properties properties) {
         super(properties);
+    }
+
+    @Override
+    public void initializeClient(Consumer<IClientBlockExtensions> consumer) {
+        consumer.accept(PlaceableBlockBreakEffects.droppingStain());
     }
 
     @Override

@@ -4,6 +4,7 @@ import EdDYON.guaniao.content.bath.BirdBathBlock;
 import EdDYON.guaniao.content.bath.BirdBathVariant;
 import EdDYON.guaniao.content.dropping.BirdDroppingStainBlock;
 import EdDYON.guaniao.content.feed.BreadcrumbPileBlock;
+import EdDYON.guaniao.content.food.BaggedFriesBlock;
 import EdDYON.guaniao.content.cage.BirdCageBlock;
 import EdDYON.guaniao.content.cage.BirdCageVariant;
 import EdDYON.guaniao.content.nest.CrowNestBlock;
@@ -22,6 +23,11 @@ public final class GuaniaoBlocks {
                     .instabreak()
                     .sound(SoundType.SAND)
                     .randomTicks()));
+    public static final RegistryObject<Block> BAGGED_FRIES = BLOCKS.register("bagged_fries", () ->
+            new BaggedFriesBlock(BlockBehaviour.Properties.of()
+                    .strength(0.2F)
+                    .sound(SoundType.WOOL)
+                    .noOcclusion()));
     public static final RegistryObject<Block> SMALL_BIRD_CAGE = registerBirdCage(BirdCageVariant.SMALL);
     public static final RegistryObject<Block> MEDIUM_BIRD_CAGE = registerBirdCage(BirdCageVariant.MEDIUM);
     public static final RegistryObject<Block> LARGE_BIRD_CAGE = registerBirdCage(BirdCageVariant.LARGE);

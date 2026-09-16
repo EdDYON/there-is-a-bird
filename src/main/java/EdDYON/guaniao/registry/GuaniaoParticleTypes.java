@@ -24,6 +24,8 @@ public final class GuaniaoParticleTypes {
             PARTICLE_TYPES.register("hunting_mark", () -> new SimpleParticleType(false));
     public static final RegistryObject<SimpleParticleType> HUNTING_STREAK =
             PARTICLE_TYPES.register("hunting_streak", () -> new SimpleParticleType(false));
+    public static final RegistryObject<SimpleParticleType> PLACEABLE_FLECK =
+            PARTICLE_TYPES.register("placeable_fleck", () -> new SimpleParticleType(false));
     private GuaniaoParticleTypes() {
     }
 }

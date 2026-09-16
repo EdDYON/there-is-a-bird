@@ -8,6 +8,7 @@ import EdDYON.guaniao.client.camera.PhotographEntityRenderer;
 import EdDYON.guaniao.client.camera.CameraOpticsShader;
 import EdDYON.guaniao.client.cage.BirdCageRenderer;
 import EdDYON.guaniao.client.nest.CrowNestRenderer;
+import EdDYON.guaniao.client.food.BaggedFriesRenderer;
 import EdDYON.guaniao.client.nest.CrowNestScreen;
 import EdDYON.guaniao.client.dropping.BirdDroppingProjectileRenderer;
 import EdDYON.guaniao.client.dropping.BirdDroppingSplatRenderer;
@@ -19,6 +20,7 @@ import EdDYON.guaniao.client.particle.RivenSplitParticle;
 import EdDYON.guaniao.client.particle.RivenStreakParticle;
 import EdDYON.guaniao.client.particle.HuntingMarkParticle;
 import EdDYON.guaniao.client.particle.HuntingStreakParticle;
+import EdDYON.guaniao.client.particle.PlaceableBreakFleckParticle;
 import EdDYON.guaniao.client.entity.mutation.BirdMutationTextureFactory;
 import EdDYON.guaniao.client.entity.budgerigar.BudgerigarRenderer;
 import EdDYON.guaniao.client.entity.columbid.PigeonRenderer;
@@ -29,6 +31,8 @@ import EdDYON.guaniao.client.entity.seagull.SeagullRenderer;
 import EdDYON.guaniao.client.entity.kiwi.KiwiRenderer;
 import EdDYON.guaniao.client.entity.myna.MynaRenderer;
 import EdDYON.guaniao.client.entity.woodcock.WoodcockRenderer;
+import EdDYON.guaniao.client.entity.kestrel.KestrelRenderer;
+import EdDYON.guaniao.client.entity.cassowary.CassowaryRenderer;
 import EdDYON.guaniao.client.entity.sparrow.SparrowRenderer;
 import EdDYON.guaniao.client.entity.longtailedtit.LongTailedTitRenderer;
 import EdDYON.guaniao.client.entity.cockatiel.CockatielRenderer;
@@ -79,6 +83,8 @@ public final class ClientModEvents {
         event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.KIWI.get(), KiwiRenderer::new);
         event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.MYNA.get(), MynaRenderer::new);
         event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.WOODCOCK.get(), WoodcockRenderer::new);
+        event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.KESTREL.get(), KestrelRenderer::new);
+        event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.CASSOWARY.get(), CassowaryRenderer::new);
         event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.PHOTOGRAPH.get(), PhotographEntityRenderer::new);
         event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.BIRD_DROPPING_PROJECTILE.get(), BirdDroppingProjectileRenderer::new);
         event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.BIRD_DROPPING_SPLAT.get(), BirdDroppingSplatRenderer::new);
@@ -86,6 +92,7 @@ public final class ClientModEvents {
         event.registerBlockEntityRenderer(GuaniaoBlockEntityTypes.BIRD_CAGE.get(), BirdCageRenderer::new);
         event.registerBlockEntityRenderer(GuaniaoBlockEntityTypes.BIRD_BATH.get(), BirdBathRenderer::new);
         event.registerBlockEntityRenderer(GuaniaoBlockEntityTypes.CROW_NEST.get(), CrowNestRenderer::new);
+        event.registerBlockEntityRenderer(GuaniaoBlockEntityTypes.BAGGED_FRIES.get(), BaggedFriesRenderer::new);
     }
 
     @SubscribeEvent
@@ -97,6 +104,7 @@ public final class ClientModEvents {
         event.registerSpriteSet(GuaniaoParticleTypes.RIVEN_STREAK.get(), RivenStreakParticle.Provider::new);
         event.registerSpriteSet(GuaniaoParticleTypes.HUNTING_MARK.get(), HuntingMarkParticle.Provider::new);
         event.registerSpriteSet(GuaniaoParticleTypes.HUNTING_STREAK.get(), HuntingStreakParticle.Provider::new);
+        event.registerSpriteSet(GuaniaoParticleTypes.PLACEABLE_FLECK.get(), PlaceableBreakFleckParticle.Provider::new);
     }
 
     @SubscribeEvent
@@ -121,7 +129,10 @@ public final class ClientModEvents {
                 GuaniaoItems.CROW_SPAWN_EGG.get(),
                 GuaniaoItems.SEAGULL_SPAWN_EGG.get(),
                 GuaniaoItems.KIWI_SPAWN_EGG.get(),
-                GuaniaoItems.MYNA_SPAWN_EGG.get()
+                GuaniaoItems.MYNA_SPAWN_EGG.get(),
+                GuaniaoItems.WOODCOCK_SPAWN_EGG.get(),
+                GuaniaoItems.KESTREL_SPAWN_EGG.get(),
+                GuaniaoItems.CASSOWARY_SPAWN_EGG.get()
         );
     }
 

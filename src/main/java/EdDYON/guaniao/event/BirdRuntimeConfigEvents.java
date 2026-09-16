@@ -19,7 +19,8 @@ public final class BirdRuntimeConfigEvents {
         if (event.getEntity() instanceof ServerPlayer player) {
             GuaniaoNetwork.sendToPlayer(new BirdRuntimeConfigPacket(
                     BirdConfigManager.birdsPassThroughLeaves(),
-                    BirdConfigManager.aprilFoolsMode()), player);
+                    BirdConfigManager.aprilFoolsMode(),
+                    BirdConfigManager.skyBirdEcologyEnabled()), player);
         }
     }
 }

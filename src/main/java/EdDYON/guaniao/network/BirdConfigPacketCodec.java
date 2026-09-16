@@ -27,6 +27,8 @@ final class BirdConfigPacketCodec {
         buffer.writeBoolean(global.birdsPassThroughLeaves);
         buffer.writeBoolean(global.aprilFoolsMode);
         buffer.writeBoolean(global.sparrowTideMode);
+        buffer.writeBoolean(global.skyBirdEcologyEnabled);
+        buffer.writeBoolean(global.birdDeathGuiltMessagesEnabled);
         buffer.writeBoolean(global.droppingPressurePlatePulseEnabled);
         buffer.writeBoolean(global.photoUploadsEnabled);
         buffer.writeBoolean(global.photoUploadsOperatorOnly);
@@ -96,6 +98,8 @@ final class BirdConfigPacketCodec {
         data.global.birdsPassThroughLeaves = buffer.readBoolean();
         data.global.aprilFoolsMode = buffer.readBoolean();
         data.global.sparrowTideMode = buffer.readBoolean();
+        data.global.skyBirdEcologyEnabled = buffer.readBoolean();
+        data.global.birdDeathGuiltMessagesEnabled = buffer.readBoolean();
         data.global.droppingPressurePlatePulseEnabled = buffer.readBoolean();
         data.global.photoUploadsEnabled = buffer.readBoolean();
         data.global.photoUploadsOperatorOnly = buffer.readBoolean();

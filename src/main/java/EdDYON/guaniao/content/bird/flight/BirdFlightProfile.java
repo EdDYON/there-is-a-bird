@@ -11,6 +11,7 @@ public final class BirdFlightProfile {
     public static final BirdFlightProfile SEAGULL = new BirdFlightProfile(9.0D, 24.0D, 0.62D, 0.76D, 0.30D, 110, 220, 18.0D, 54.0D, 12.0D, 34.0F);
     public static final BirdFlightProfile MYNA = new BirdFlightProfile(3.0D, 10.0D, 0.29D, 0.43D, 0.20D, 70, 220, 5.0D, 22.0D, 4.5D, 40.0F);
     public static final BirdFlightProfile WOODCOCK = new BirdFlightProfile(1.5D, 6.0D, 0.36D, 0.50D, 0.22D, 40, 105, 12.0D, 30.0D, 3.5D, 34.0F);
+    public static final BirdFlightProfile KESTREL = new BirdFlightProfile(13.0D, 28.0D, 0.62D, 0.84D, 0.28D, 140, 380, 24.0D, 48.0D, 8.0D, 48.0F);
 
     private final double minCruiseHeight;
     private final double maxCruiseHeight;

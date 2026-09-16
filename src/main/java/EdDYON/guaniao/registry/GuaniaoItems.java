@@ -18,6 +18,8 @@ import EdDYON.guaniao.content.bird.seagull.SeagullDefinition;
 import EdDYON.guaniao.content.bird.kiwi.KiwiDefinition;
 import EdDYON.guaniao.content.bird.myna.MynaDefinition;
 import EdDYON.guaniao.content.bird.woodcock.WoodcockDefinition;
+import EdDYON.guaniao.content.bird.kestrel.KestrelDefinition;
+import EdDYON.guaniao.content.bird.cassowary.CassowaryDefinition;
 import EdDYON.guaniao.content.bird.sparrow.SparrowDefinition;
 import EdDYON.guaniao.content.bird.longtailedtit.LongTailedTitDefinition;
 import EdDYON.guaniao.content.bird.cockatiel.CockatielDefinition;
@@ -38,6 +40,8 @@ import EdDYON.guaniao.registry.GuaniaoEntityTypes;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.level.block.Block;
 import net.minecraftforge.common.ForgeSpawnEggItem;
 import net.minecraftforge.registries.DeferredRegister;
@@ -60,8 +64,19 @@ public final class GuaniaoItems {
     public static final RegistryObject<Item> KIWI_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(KiwiDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.KIWI, KiwiDefinition.SPAWN_EGG_BASE_COLOR, KiwiDefinition.SPAWN_EGG_SPOT_COLOR);
     public static final RegistryObject<Item> MYNA_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(MynaDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.MYNA, MynaDefinition.SPAWN_EGG_BASE_COLOR, MynaDefinition.SPAWN_EGG_SPOT_COLOR);
     public static final RegistryObject<Item> WOODCOCK_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(WoodcockDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.WOODCOCK, WoodcockDefinition.SPAWN_EGG_BASE_COLOR, WoodcockDefinition.SPAWN_EGG_SPOT_COLOR);
+    public static final RegistryObject<Item> KESTREL_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(KestrelDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.KESTREL, KestrelDefinition.SPAWN_EGG_BASE_COLOR, KestrelDefinition.SPAWN_EGG_SPOT_COLOR);
+    public static final RegistryObject<Item> CASSOWARY_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(CassowaryDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.CASSOWARY, CassowaryDefinition.SPAWN_EGG_BASE_COLOR, CassowaryDefinition.SPAWN_EGG_SPOT_COLOR);
     public static final RegistryObject<Item> EARTHWORM = ITEMS.register("earthworm", () -> new EarthwormItem(new Item.Properties().stacksTo(64)));
     public static final RegistryObject<Item> BREADCRUMBS = ITEMS.register("breadcrumbs", () -> new BreadcrumbItem(new Item.Properties()));
+    public static final RegistryObject<Item> RAW_FRIES = ITEMS.register("raw_fries", () ->
+            new Item(new Item.Properties().stacksTo(64)));
+    public static final RegistryObject<Item> COOKED_FRIES = ITEMS.register("cooked_fries", () ->
+            new Item(new Item.Properties().stacksTo(64).food(new FoodProperties.Builder()
+                    .nutrition(4).saturationMod(0.35F).build())));
+    public static final RegistryObject<Item> BAGGED_FRIES = ITEMS.register("bagged_fries", () ->
+            new BlockItem(GuaniaoBlocks.BAGGED_FRIES.get(), new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> LAXATIVE = ITEMS.register("laxative", () ->
+            new Item(new Item.Properties().stacksTo(16)));
     public static final RegistryObject<Item> BIRD_GUIDE = ITEMS.register("bird_guide", () -> new BirdGuideItem(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> NIKON_D750 = ITEMS.register("nikon_d750", () -> new NikonD750Item(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> FILM = ITEMS.register("film", () -> new FilmItem(new Item.Properties().stacksTo(1)));
@@ -122,6 +137,8 @@ public final class GuaniaoItems {
         FEATHERS_BY_SPECIES.put(BirdSpecies.KIWI, List.of(FEATHER_BROWN, FEATHER_GREY, FEATHER_BLACK, FEATHER_CHESTNUT));
         FEATHERS_BY_SPECIES.put(BirdSpecies.MYNA, List.of(FEATHER_BLACK, FEATHER_BROWN, FEATHER_GREY, FEATHER_WHITE));
         FEATHERS_BY_SPECIES.put(BirdSpecies.WOODCOCK, List.of(FEATHER_BROWN, FEATHER_CHESTNUT, FEATHER_SPECKLED, FEATHER_BLACK));
+        FEATHERS_BY_SPECIES.put(BirdSpecies.KESTREL, List.of(FEATHER_CHESTNUT, FEATHER_BROWN, FEATHER_BLACK, FEATHER_SPECKLED));
+        FEATHERS_BY_SPECIES.put(BirdSpecies.CASSOWARY, List.of(FEATHER_BLACK, FEATHER_BLUE, FEATHER_BROWN));
     }
 
     private GuaniaoItems() {

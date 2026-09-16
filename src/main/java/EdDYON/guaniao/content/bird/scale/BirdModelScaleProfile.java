@@ -37,6 +37,10 @@ public final class BirdModelScaleProfile {
     // transition-time inflation bug.
     public static final BirdModelScaleProfile WOODCOCK = visualHeightProfile(
             BirdModelScaleConfig.WOODCOCK, 19.950F, WoodcockDefinition.MODEL_ROOT_SCALE);
+    public static final BirdModelScaleProfile KESTREL = visualHeightProfile(
+            BirdModelScaleConfig.KESTREL, 9.980F);
+    public static final BirdModelScaleProfile CASSOWARY = visualHeightProfile(
+            BirdModelScaleConfig.CASSOWARY, 29.424F);
 
     private final float baseRenderScale;
     private final float targetHeightBlocks;

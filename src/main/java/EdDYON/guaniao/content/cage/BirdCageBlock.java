@@ -1,5 +1,6 @@
 package EdDYON.guaniao.content.cage;
 
+import EdDYON.guaniao.client.particle.PlaceableBlockBreakEffects;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.BaseEntityBlock;
@@ -10,6 +11,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
+import net.minecraftforge.client.extensions.common.IClientBlockExtensions;
+
+import java.util.function.Consumer;
 
 public class BirdCageBlock extends BaseEntityBlock {
     private final BirdCageVariant variant;
@@ -17,6 +21,11 @@ public class BirdCageBlock extends BaseEntityBlock {
     public BirdCageBlock(BirdCageVariant variant, BlockBehaviour.Properties properties) {
         super(properties);
         this.variant = variant;
+    }
+
+    @Override
+    public void initializeClient(Consumer<IClientBlockExtensions> consumer) {
+        consumer.accept(PlaceableBlockBreakEffects.birdCage());
     }
 
     public BirdCageVariant variant() {

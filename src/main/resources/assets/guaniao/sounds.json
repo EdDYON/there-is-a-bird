@@ -203,6 +203,36 @@
       "guaniao:entity/woodcock/ambient_01"
     ]
   },
+  "entity.kestrel.ambient": {
+    "subtitle": "subtitles.guaniao.entity.kestrel.ambient",
+    "sounds": [
+      "guaniao:entity/kestrel/ambient"
+    ]
+  },
+  "entity.kestrel.hurt": {
+    "subtitle": "subtitles.guaniao.entity.kestrel.hurt",
+    "sounds": [
+      "guaniao:entity/kestrel/ambient"
+    ]
+  },
+  "entity.cassowary.ambient": {
+    "subtitle": "subtitles.guaniao.entity.cassowary.ambient",
+    "sounds": [
+      "guaniao:entity/cassowary/ambient"
+    ]
+  },
+  "entity.cassowary.warning": {
+    "subtitle": "subtitles.guaniao.entity.cassowary.warning",
+    "sounds": [
+      "guaniao:entity/cassowary/ambient"
+    ]
+  },
+  "entity.cassowary.hurt": {
+    "subtitle": "subtitles.guaniao.entity.cassowary.hurt",
+    "sounds": [
+      "guaniao:entity/cassowary/ambient"
+    ]
+  },
   "entity.long_tailed_tit.ambient": {
     "subtitle": "subtitles.guaniao.entity.long_tailed_tit.ambient",
     "sounds": [

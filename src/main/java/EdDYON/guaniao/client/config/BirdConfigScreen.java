@@ -12,6 +12,8 @@ import EdDYON.guaniao.content.bird.crow.CrowEntity;
 import EdDYON.guaniao.content.bird.nightheron.NightHeronEntity;
 import EdDYON.guaniao.content.bird.myna.MynaEntity;
 import EdDYON.guaniao.content.bird.seagull.SeagullEntity;
+import EdDYON.guaniao.content.bird.kestrel.KestrelEntity;
+import EdDYON.guaniao.content.bird.cassowary.CassowaryEntity;
 import EdDYON.guaniao.content.bird.scale.BirdModelScale;
 import EdDYON.guaniao.content.bird.sparrow.SparrowEntity;
 import EdDYON.guaniao.network.GuaniaoNetwork;
@@ -366,6 +368,8 @@ public class BirdConfigScreen extends Screen {
             settings.add(SettingSpec.storageScope());
             settings.add(SettingSpec.toggle("april_fools_mode", () -> global.aprilFoolsMode, value -> global.aprilFoolsMode = value));
             settings.add(SettingSpec.toggle("sparrow_tide_mode", () -> global.sparrowTideMode, value -> global.sparrowTideMode = value));
+            settings.add(SettingSpec.toggle("sky_bird_ecology", () -> global.skyBirdEcologyEnabled, value -> global.skyBirdEcologyEnabled = value));
+            settings.add(SettingSpec.toggle("bird_death_guilt_messages", () -> global.birdDeathGuiltMessagesEnabled, value -> global.birdDeathGuiltMessagesEnabled = value));
             settings.add(SettingSpec.toggle("natural_spawning", () -> global.naturalSpawning, value -> global.naturalSpawning = value));
             settings.add(SettingSpec.toggle("colonial_mode", () -> global.colonialMode, value -> global.colonialMode = value));
             settings.add(SettingSpec.toggle("natural_crow_nests", () -> global.naturalCrowNests, value -> global.naturalCrowNests = value));
@@ -467,6 +471,10 @@ public class BirdConfigScreen extends Screen {
             bird.setGuidePreviewAnimation(CrowEntity.GuidePreviewAnimation.IDLE);
         } else if (entity instanceof SeagullEntity bird) {
             bird.setGuidePreviewAnimation(SeagullEntity.GuidePreviewAnimation.IDLE);
+        } else if (entity instanceof KestrelEntity bird) {
+            bird.setGuidePreviewAnimation(KestrelEntity.GuidePreviewAnimation.IDLE);
+        } else if (entity instanceof CassowaryEntity bird) {
+            bird.setGuidePreviewAnimation(CassowaryEntity.GuidePreviewAnimation.IDLE);
         }
     }
 
@@ -561,6 +569,8 @@ public class BirdConfigScreen extends Screen {
             case KIWI -> 43;
             case MYNA -> 47;
             case WOODCOCK -> 40;
+            case KESTREL -> 38;
+            case CASSOWARY -> 15;
         };
         return BirdModelScale.fitPreviewScale(scale);
     }
