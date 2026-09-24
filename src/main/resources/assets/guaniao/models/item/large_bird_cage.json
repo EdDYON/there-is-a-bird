@@ -1,4 +1,20 @@
 {
-  "parent": "builtin/entity",
-  "gui_light": "front"
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
+  "textures": {
+    "particle": "guaniao:item/large_bird_cage_icon"
+  },
+  "base": {
+    "parent": "builtin/entity",
+    "gui_light": "front"
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "gui_light": "front",
+      "textures": {
+        "layer0": "guaniao:item/large_bird_cage_icon"
+      }
+    }
+  }
 }

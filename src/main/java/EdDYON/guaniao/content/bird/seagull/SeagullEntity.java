@@ -29,7 +29,11 @@ import EdDYON.guaniao.content.bird.scale.ScalableBirdModel;
 import EdDYON.guaniao.content.bird.flock.FlockCompatibleBird;
 import EdDYON.guaniao.content.bird.mutation.BirdMutation;
 import EdDYON.guaniao.content.bird.mutation.BirdMutationHolder;
+import EdDYON.guaniao.event.BirdDroppingEvents;
+import EdDYON.guaniao.content.food.BaggedFriesBlock;
+import EdDYON.guaniao.content.food.BaggedFriesBlockEntity;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
+import EdDYON.guaniao.registry.GuaniaoBlocks;
 import EdDYON.guaniao.registry.GuaniaoSoundEvents;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -114,6 +118,14 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
     private static final String NBT_HELD_FOOD = "SeagullHeldFood";
     private static final String NBT_HELD_FOOD_TICKS = "SeagullHeldFoodTicks";
     private static final String NBT_STEAL_COOLDOWN = "SeagullStealCooldown";
+    private static final String NBT_LAXATIVE_DELAY = "SeagullLaxativeDelay";
+    private static final String NBT_LAXATIVE_TICKS = "SeagullLaxativeTicks";
+    private static final String NBT_LAXATIVE_COOLDOWN = "SeagullLaxativeCooldown";
+    private static final String NBT_LAXATIVE_DROPS = "SeagullLaxativeDrops";
+    private static final int LAXATIVE_DELAY_TICKS = 20 * 6;
+    private static final int LAXATIVE_DURATION_TICKS = 20 * 15;
+    private static final int LAXATIVE_INTERVAL_TICKS = 15;
+    private static final int LAXATIVE_MAX_DROPS = 20;
     private static final double WALK_ANIMATION_MOTION_THRESHOLD = 1.0E-5D;
     private static final RawAnimation IDLE_ANIMATION = RawAnimation.begin().thenLoop("idle");
     private static final RawAnimation WALK_ANIMATION = RawAnimation.begin().thenLoop("walk");
@@ -137,6 +149,10 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
     private int heldFoodTicks;
     private int stealCooldownTicks;
     private int emergencyTicks;
+    private int laxativeDelayTicks;
+    private int laxativeTicks;
+    private int laxativeDropCooldownTicks;
+    private int laxativeDropsSpawned;
     private Vec3 flightTarget;
     @Nullable
     private Player theftTarget;
@@ -222,6 +238,7 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
         this.goalSelector.addGoal(3, new SeagullFollowOwnerGoal(this));
         this.goalSelector.addGoal(4, new SeagullStealFoodGoal(this));
         this.goalSelector.addGoal(4, new SeagullStealFromBirdGoal(this));
+        this.goalSelector.addGoal(4, new SeagullBaggedFriesGoal(this));
         this.goalSelector.addGoal(4, new SeagullScavengeFoodGoal(this));
         this.goalSelector.addGoal(5, new SeagullAirCruiseGoal(this));
         this.goalSelector.addGoal(6, new WaterAvoidingRandomStrollGoal(this, 0.92D, 0.001F));
@@ -289,6 +306,10 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
             compoundTag.putInt(NBT_HELD_FOOD_TICKS, this.heldFoodTicks);
         }
         compoundTag.putInt(NBT_STEAL_COOLDOWN, this.stealCooldownTicks);
+        compoundTag.putInt(NBT_LAXATIVE_DELAY, this.laxativeDelayTicks);
+        compoundTag.putInt(NBT_LAXATIVE_TICKS, this.laxativeTicks);
+        compoundTag.putInt(NBT_LAXATIVE_COOLDOWN, this.laxativeDropCooldownTicks);
+        compoundTag.putInt(NBT_LAXATIVE_DROPS, this.laxativeDropsSpawned);
     }
 
     @Override
@@ -316,6 +337,10 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
             }
         }
         this.stealCooldownTicks = Math.max(0, compoundTag.getInt(NBT_STEAL_COOLDOWN));
+        this.laxativeDelayTicks = Math.max(0, compoundTag.getInt(NBT_LAXATIVE_DELAY));
+        this.laxativeTicks = Math.max(0, compoundTag.getInt(NBT_LAXATIVE_TICKS));
+        this.laxativeDropCooldownTicks = Math.max(0, compoundTag.getInt(NBT_LAXATIVE_COOLDOWN));
+        this.laxativeDropsSpawned = Math.max(0, Math.min(LAXATIVE_MAX_DROPS, compoundTag.getInt(NBT_LAXATIVE_DROPS)));
     }
 
     @Override
@@ -354,6 +379,7 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
                 this.consumeHeldFood();
             }
         }
+        this.tickLaxativeEffect();
         this.tickAirCruise();
         this.syncFlyingAnimationState();
         this.tickCommandedRest();
@@ -644,6 +670,145 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
 
     public ItemStack getHeldFoodForRendering() {
         return this.entityData == null ? ItemStack.EMPTY : this.entityData.get(HELD_FOOD);
+    }
+
+    public void startLaxativeEffect() {
+        this.laxativeDelayTicks = LAXATIVE_DELAY_TICKS;
+        this.laxativeTicks = LAXATIVE_DURATION_TICKS;
+        this.laxativeDropCooldownTicks = 0;
+        this.laxativeDropsSpawned = 0;
+    }
+
+    private void tickLaxativeEffect() {
+        if (this.laxativeDelayTicks > 0) {
+            --this.laxativeDelayTicks;
+            return;
+        }
+        if (this.laxativeTicks <= 0 || this.laxativeDropsSpawned >= LAXATIVE_MAX_DROPS) {
+            this.laxativeTicks = 0;
+            return;
+        }
+        --this.laxativeTicks;
+        if (this.laxativeDropCooldownTicks > 0) {
+            --this.laxativeDropCooldownTicks;
+            return;
+        }
+        if (this.level() instanceof ServerLevel serverLevel
+                && BirdDroppingEvents.spawnLaxativeDropping(serverLevel, this)) {
+            ++this.laxativeDropsSpawned;
+            // The current tick is the first tick in the interval; storing one less avoids
+            // turning a nominal 15-tick cadence into 16 ticks after the countdown branch.
+            this.laxativeDropCooldownTicks = LAXATIVE_INTERVAL_TICKS - 1;
+        } else {
+            this.laxativeDropCooldownTicks = 4;
+        }
+    }
+
+    private static final class SeagullBaggedFriesGoal extends Goal {
+        private final SeagullEntity seagull;
+        @Nullable
+        private BlockPos target;
+        private int recalcTicks;
+
+        private SeagullBaggedFriesGoal(SeagullEntity seagull) {
+            this.seagull = seagull;
+            this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
+        }
+
+        @Override
+        public boolean canUse() {
+            if (this.seagull.isBusyWithCommand()
+                    || this.seagull.entityData.get(EATING)
+                    || !this.seagull.getHeldFoodForRendering().isEmpty()
+                    || this.seagull.getRandom().nextInt(Math.max(1, BirdConfigManager.foodScanInterval(BirdSpecies.SEAGULL))) != 0) {
+                return false;
+            }
+            if (!(this.seagull.level() instanceof ServerLevel serverLevel)
+                    || !BirdScanBudget.tryAcquire(serverLevel, this.seagull)) {
+                return false;
+            }
+            this.target = this.findTarget();
+            return this.target != null;
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            return this.target != null
+                    && this.isValidTarget(this.target)
+                    && this.seagull.distanceToSqr(Vec3.atCenterOf(this.target)) < 256.0D;
+        }
+
+        @Override
+        public void tick() {
+            if (this.target == null) {
+                return;
+            }
+            Vec3 targetCenter = Vec3.atCenterOf(this.target);
+            this.seagull.getLookControl().setLookAt(targetCenter.x, targetCenter.y + 0.35D, targetCenter.z, 18.0F, 18.0F);
+            if (this.seagull.distanceToSqr(targetCenter) <= 2.75D) {
+                if (this.seagull.level().getBlockEntity(this.target) instanceof BaggedFriesBlockEntity fries
+                        && fries.removeOneFry()) {
+                    boolean laxative = fries.isLaxative();
+                    BlockState state = this.seagull.level().getBlockState(this.target);
+                    this.seagull.level().setBlock(this.target,
+                            state.setValue(BaggedFriesBlock.FRIES, fries.getRemainingFries()),
+                            net.minecraft.world.level.block.Block.UPDATE_CLIENTS);
+                    fries.syncToClient();
+                    this.seagull.startEating();
+                    if (laxative) {
+                        this.seagull.startLaxativeEffect();
+                    }
+                }
+                this.target = null;
+                return;
+            }
+            if (--this.recalcTicks <= 0) {
+                this.recalcTicks = 10;
+                this.seagull.getNavigation().moveTo(targetCenter.x, targetCenter.y, targetCenter.z, 1.08D);
+            }
+        }
+
+        @Override
+        public void stop() {
+            this.target = null;
+            this.seagull.getNavigation().stop();
+        }
+
+        @Nullable
+        private BlockPos findTarget() {
+            BlockPos origin = this.seagull.blockPosition();
+            BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos();
+            BlockPos best = null;
+            double bestDistance = Double.MAX_VALUE;
+            for (int dx = -10; dx <= 10; ++dx) {
+                for (int dy = -4; dy <= 4; ++dy) {
+                    for (int dz = -10; dz <= 10; ++dz) {
+                        mutable.set(origin.getX() + dx, origin.getY() + dy, origin.getZ() + dz);
+                        if (!this.seagull.level().hasChunkAt(mutable)
+                                || !this.seagull.level().getBlockState(mutable).is(GuaniaoBlocks.BAGGED_FRIES.get())) {
+                            continue;
+                        }
+                        if (!(this.seagull.level().getBlockEntity(mutable) instanceof BaggedFriesBlockEntity fries)
+                                || !fries.hasRemainingFries()) {
+                            continue;
+                        }
+                        double distance = this.seagull.distanceToSqr(Vec3.atCenterOf(mutable));
+                        if (distance < bestDistance) {
+                            bestDistance = distance;
+                            best = mutable.immutable();
+                        }
+                    }
+                }
+            }
+            return best;
+        }
+
+        private boolean isValidTarget(BlockPos pos) {
+            return this.seagull.level().hasChunkAt(pos)
+                    && this.seagull.level().getBlockState(pos).is(GuaniaoBlocks.BAGGED_FRIES.get())
+                    && this.seagull.level().getBlockEntity(pos) instanceof BaggedFriesBlockEntity fries
+                    && fries.hasRemainingFries();
+        }
     }
 
     private boolean takeFood(ItemStack source, int holdTicks, @Nullable Vec3 fleeFrom) {

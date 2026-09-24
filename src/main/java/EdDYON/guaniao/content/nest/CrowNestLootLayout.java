@@ -33,7 +33,14 @@ public final class CrowNestLootLayout {
         boolean[][] occupied = new boolean[GRID_ROWS][GRID_COLUMNS];
         List<Placement> placements = new ArrayList<>(requests.size());
         if (!placeRequests(0, requests, occupied, placements, random)) {
-            throw new IllegalStateException("Bird nest loot footprints could not be packed into the double-chest grid");
+            // Unpackable footprint combination (impossible with the authored six
+            // slots, but never throw from the middle of a server tick): degrade
+            // every find to a single grid cell.
+            placements.clear();
+            for (int index = 0; index < requests.size(); index++) {
+                Request request = requests.get(index);
+                placements.add(new Placement(request.storageSlot(), index % GRID_COLUMNS, index / GRID_COLUMNS, 1, 1));
+            }
         }
         placements.sort(Comparator.comparingInt(Placement::storageSlot));
         return placements;

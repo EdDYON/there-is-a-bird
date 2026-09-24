@@ -25,6 +25,23 @@ final class BirdBathBoneVisibility {
     private BirdBathBoneVisibility() {
     }
 
+    // Tint colours are shared constants: tintFor/dirtTintFor run per bone per frame,
+    // so allocating fresh arrays there would churn the renderer for no benefit.
+    private static final float[] WHITE = {1.0F, 1.0F, 1.0F};
+    private static final float[] FROZEN_TINT = {0.74F, 0.88F, 1.0F};
+    private static final float[] SPOILED_FISH = {0.46F, 0.56F, 0.40F};
+    private static final float[] SPOILED_MEAT = {0.48F, 0.34F, 0.25F};
+    private static final float[] SPOILED_BREAD = {0.50F, 0.44F, 0.25F};
+    private static final float[] SPOILED_DEFAULT = {0.46F, 0.50F, 0.34F};
+    private static final float[] WATER_USED = {0.75F, 0.82F, 0.78F};
+    private static final float[] WATER_DIRTY = {0.56F, 0.54F, 0.43F};
+    private static final float[] WATER_FILTHY = {0.38F, 0.48F, 0.28F};
+    private static final float[] DIRT_FLIES = {0.08F, 0.08F, 0.07F};
+    private static final float[] DIRT_SPOIL_SPOTS = {0.36F, 0.48F, 0.20F};
+    private static final float[] DIRT_USED = {0.62F, 0.58F, 0.48F};
+    private static final float[] DIRT_DIRTY = {0.42F, 0.46F, 0.28F};
+    private static final float[] DIRT_FILTHY = {0.24F, 0.32F, 0.16F};
+
     static void apply(BirdBathContentType type, int level, BirdBathCleanliness cleanliness, BirdBathContentType spoiledContentType, GeoBone bone) {
         String boneName = bone.getName();
         if (CONTENT_BONES.contains(boneName)) {
@@ -71,25 +88,25 @@ final class BirdBathBoneVisibility {
     static float[] tintFor(BirdBathContentType type, BirdBathContentType visualType, BirdBathCleanliness cleanliness) {
         if (type == BirdBathContentType.SPOILED) {
             return switch (visualType == null ? BirdBathContentType.FISH : visualType) {
-                case FISH -> new float[]{0.46F, 0.56F, 0.40F};
-                case MEAT -> new float[]{0.48F, 0.34F, 0.25F};
-                case BREAD -> new float[]{0.50F, 0.44F, 0.25F};
-                default -> new float[]{0.46F, 0.50F, 0.34F};
+                case FISH -> SPOILED_FISH;
+                case MEAT -> SPOILED_MEAT;
+                case BREAD -> SPOILED_BREAD;
+                default -> SPOILED_DEFAULT;
             };
         }
         if (type == BirdBathContentType.WATER) {
             BirdBathCleanliness normalized = cleanliness == null ? BirdBathCleanliness.CLEAN : cleanliness;
             return switch (normalized) {
-                case CLEAN -> new float[]{1.0F, 1.0F, 1.0F};
-                case USED -> new float[]{0.75F, 0.82F, 0.78F};
-                case DIRTY -> new float[]{0.56F, 0.54F, 0.43F};
-                case FILTHY -> new float[]{0.38F, 0.48F, 0.28F};
+                case CLEAN -> WHITE;
+                case USED -> WATER_USED;
+                case DIRTY -> WATER_DIRTY;
+                case FILTHY -> WATER_FILTHY;
             };
         }
         if (type == BirdBathContentType.FROZEN_WATER) {
-            return new float[]{0.74F, 0.88F, 1.0F};
+            return FROZEN_TINT;
         }
-        return new float[]{1.0F, 1.0F, 1.0F};
+        return WHITE;
     }
 
     static boolean isDirtBone(String boneName) {
@@ -99,18 +116,18 @@ final class BirdBathBoneVisibility {
     static float[] dirtTintFor(BirdBathContentType type, BirdBathCleanliness cleanliness, String boneName) {
         if (type == BirdBathContentType.SPOILED) {
             if (boneName.equals("flies")) {
-                return new float[]{0.08F, 0.08F, 0.07F};
+                return DIRT_FLIES;
             }
             if (boneName.equals("spoil_spots")) {
-                return new float[]{0.36F, 0.48F, 0.20F};
+                return DIRT_SPOIL_SPOTS;
             }
         }
         BirdBathCleanliness normalized = cleanliness == null ? BirdBathCleanliness.CLEAN : cleanliness;
         return switch (normalized) {
-            case CLEAN -> new float[]{1.0F, 1.0F, 1.0F};
-            case USED -> new float[]{0.62F, 0.58F, 0.48F};
-            case DIRTY -> new float[]{0.42F, 0.46F, 0.28F};
-            case FILTHY -> new float[]{0.24F, 0.32F, 0.16F};
+            case CLEAN -> WHITE;
+            case USED -> DIRT_USED;
+            case DIRTY -> DIRT_DIRTY;
+            case FILTHY -> DIRT_FILTHY;
         };
     }
 

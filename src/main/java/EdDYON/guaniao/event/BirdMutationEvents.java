@@ -4,7 +4,6 @@ import EdDYON.guaniao.GuaniaoMod;
 import EdDYON.guaniao.content.bird.mutation.BirdMutation;
 import EdDYON.guaniao.content.bird.mutation.BirdMutationHolder;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.event.entity.living.LivingDropsEvent;
@@ -34,7 +33,9 @@ public final class BirdMutationEvents {
         if (event.getLootingLevel() > 0 && entity.level().random.nextFloat() < 0.5F * event.getLootingLevel()) {
             count++;
         }
-        event.getDrops().add(new ItemEntity(entity.level(), entity.getX(), entity.getY(), entity.getZ(),
-                new ItemStack(Items.GOLD_INGOT, count)));
+        // Spawned directly, not via getDrops(): the "birds never drop loot"
+        // handler runs at LOWEST priority and clears the drops list, which
+        // would swallow this reward if it lived in the list.
+        entity.spawnAtLocation(new ItemStack(Items.GOLD_INGOT, count));
     }
 }

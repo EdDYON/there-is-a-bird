@@ -128,7 +128,12 @@ public final class BirdGroundLocomotion {
             case MYNA -> new LocomotionProfile(1.05F, 0.10F, 20, 45, 35, 20, 70);
             case KESTREL -> new LocomotionProfile(0.68F, 0.08F, 55, 40, 5, 80, 220);
             case WOODCOCK -> new LocomotionProfile(0.88F, 0.08F, 42, 48, 10, 70, 190);
+            // Unreachable at runtime: the cassowary bails out above with its own
+            // patrol movement. Kept so the exhaustive switch still compiles.
             case CASSOWARY -> new LocomotionProfile(0.58F, 0.07F, 80, 120, 8, 120, 300);
+            // Heavy, deliberate waddle: a touch slower than the macaw and almost
+            // never in a hurry while walking.
+            case UMBRELLA_COCKATOO -> new LocomotionProfile(0.70F, 0.08F, 52, 44, 4, 85, 200);
         };
     }
 

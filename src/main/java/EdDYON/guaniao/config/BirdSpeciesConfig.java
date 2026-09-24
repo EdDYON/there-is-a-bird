@@ -27,7 +27,7 @@ public class BirdSpeciesConfig {
             case BUDGERIGAR, SPOTTED_DOVE, SEAGULL, MYNA -> 6;
             case COCKATIEL, CROW, KIWI, WOODCOCK -> 4;
             case KESTREL, CASSOWARY -> 2;
-            case MACAW, NIGHT_HERON -> 3;
+            case MACAW, NIGHT_HERON, UMBRELLA_COCKATOO -> 3;
         };
         this.flockMaxMembers = switch (species) {
             case SPARROW -> 12;
@@ -37,7 +37,7 @@ public class BirdSpeciesConfig {
             case NIGHT_HERON, KIWI -> 4;
             case WOODCOCK, KESTREL -> 2;
             case CASSOWARY -> 1;
-            case MACAW -> 3;
+            case MACAW, UMBRELLA_COCKATOO -> 3;
         };
         if (species == BirdSpecies.WOODCOCK) {
             this.flockRadius = 9.0D;
@@ -53,6 +53,14 @@ public class BirdSpeciesConfig {
             this.flockRadius = 8.0D;
             this.foodScanInterval = 30;
             this.threatScanInterval = 10;
+        }
+        if (species == BirdSpecies.UMBRELLA_COCKATOO) {
+            // A calm, deliberate bird: fewer food/threat scans per second than an
+            // actively foraging species, which also keeps the observe/inspect
+            // goals cheap when several live near a player base.
+            this.flockRadius = 12.0D;
+            this.foodScanInterval = 24;
+            this.threatScanInterval = 16;
         }
     }
 

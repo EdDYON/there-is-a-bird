@@ -21,6 +21,7 @@ public final class GuaniaoCreativeTabs {
         output.accept((ItemLike)GuaniaoItems.NIKON_D750.get());
         output.accept((ItemLike)GuaniaoItems.FILM.get());
         output.accept((ItemLike)GuaniaoItems.PHOTOGRAPH.get());
+        output.accept((ItemLike)GuaniaoItems.MUSIC_DISC_UWU_FUNK.get());
         output.accept((ItemLike)GuaniaoItems.BREADCRUMBS.get());
         output.accept((ItemLike)GuaniaoItems.RAW_FRIES.get());
         output.accept((ItemLike)GuaniaoItems.COOKED_FRIES.get());
@@ -56,6 +57,7 @@ public final class GuaniaoCreativeTabs {
         output.accept((ItemLike)GuaniaoItems.WOODCOCK_SPAWN_EGG.get());
         output.accept((ItemLike)GuaniaoItems.KESTREL_SPAWN_EGG.get());
         output.accept((ItemLike)GuaniaoItems.CASSOWARY_SPAWN_EGG.get());
+        output.accept((ItemLike)GuaniaoItems.UMBRELLA_COCKATOO_SPAWN_EGG.get());
         output.accept((ItemLike)GuaniaoItems.FEATHER_WHITE.get());
         output.accept((ItemLike)GuaniaoItems.FEATHER_GREY.get());
         output.accept((ItemLike)GuaniaoItems.FEATHER_BLACK.get());

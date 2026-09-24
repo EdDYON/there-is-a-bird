@@ -26,6 +26,10 @@ import net.minecraft.world.InteractionHand;
 public final class PhotoClientRepository {
     private static final int MAX_CACHED_IMAGES = 192;
     private static final long REQUEST_RETRY_MILLIS = 5_000L;
+    /** A dispatched download with no server response for this long is rejected so
+     * the request queue cannot stall forever (only server responses normally call
+     * finishActiveRequest). */
+    private static final long REQUEST_WATCHDOG_MILLIS = 15_000L;
     private static final Map<String, CachedImage> IMAGES = new LinkedHashMap<>(MAX_CACHED_IMAGES + 1, 0.75F, true);
     private static final Map<String, DownloadSession> DOWNLOADS = new HashMap<>();
     private static final Map<String, String> EXPECTED_HASHES = new HashMap<>();
@@ -49,9 +53,6 @@ public final class PhotoClientRepository {
     public static void upload(InteractionHand hand, byte[] jpeg) throws IOException {
         PhotoImageCodec.Dimensions dimensions = PhotoImageCodec.validateJpeg(jpeg);
         long now = System.currentTimeMillis();
-        if (activeRequest != null && now - activeRequestStarted > 10_000L) {
-            reject(activeRequest);
-        }
         PENDING_UPLOADS.entrySet().removeIf(entry -> now - entry.getValue() > 60_000L);
         UUID uploadId = UUID.randomUUID();
         String hash = PhotoImageCodec.sha256(jpeg);
@@ -92,6 +93,7 @@ public final class PhotoClientRepository {
             IMAGES.remove(photoId);
         }
         long now = System.currentTimeMillis();
+        watchdogExpiredRequest();
         if (!DOWNLOADS.containsKey(photoId) && !VALIDATING.contains(photoId)
                 && !photoId.equals(activeRequest) && now >= RETRY_AFTER.getOrDefault(photoId, 0L)) {
             EXPECTED_HASHES.put(photoId, expectedHash == null ? "" : expectedHash);
@@ -189,6 +191,13 @@ public final class PhotoClientRepository {
         RETRY_AFTER.put(photoId, System.currentTimeMillis() + delay);
         REQUEST_QUEUE.remove(photoId);
         finishActiveRequest(photoId);
+    }
+
+    private static void watchdogExpiredRequest() {
+        if (activeRequest != null
+                && System.currentTimeMillis() - activeRequestStarted > REQUEST_WATCHDOG_MILLIS) {
+            reject(activeRequest);
+        }
     }
 
     private static void dispatchNextRequest() {

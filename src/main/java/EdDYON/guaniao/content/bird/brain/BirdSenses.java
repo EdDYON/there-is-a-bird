@@ -28,13 +28,18 @@ public class BirdSenses {
     private long nextPlayerScanTick;
     private long nextPreyScanTick;
 
-    public void tick(BirdBrain brain) {
-        PathfinderMob bird = brain.bird();
-        BirdSpeciesProfile profile = brain.profile();
-
+    /** Cheap per-tick refresh, kept OUTSIDE the expensive-scan throttle: fatigue
+     * accumulation reads onGround/airborne every tick, and a stale value made a
+     * landed bird keep accruing flight fatigue for up to a whole scan interval. */
+    public void refreshPhysicalState(PathfinderMob bird) {
         this.dayTime = bird.level().getDayTime() % 24000L;
         this.onGround = bird.onGround();
         this.airborne = !this.onGround;
+    }
+
+    public void tick(BirdBrain brain) {
+        PathfinderMob bird = brain.bird();
+        BirdSpeciesProfile profile = brain.profile();
 
         BirdSpecies species = BirdSpecies.from(bird);
         long now = bird.level().getGameTime();

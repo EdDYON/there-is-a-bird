@@ -6,7 +6,11 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraftforge.registries.ForgeRegistries;
 
+import java.util.Arrays;
 import java.util.Locale;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public enum BirdSpecies {
     NIGHT_HERON("night_heron", 1, 2, 3600, 6000),
@@ -23,7 +27,8 @@ public enum BirdSpecies {
     MYNA("myna", 2, 4, 3000, 5400),
     CASSOWARY("cassowary", 1, 1, 3600, 6000, false),
     KESTREL("kestrel", 1, 1, 3600, 6000),
-    WOODCOCK("woodcock", 1, 2, 3600, 6000, false);
+    WOODCOCK("woodcock", 1, 2, 3600, 6000, false),
+    UMBRELLA_COCKATOO("umbrella_cockatoo", 2, 4, 3600, 6000, false);
 
     private final String id;
     private final int defaultMinGroup;
@@ -31,6 +36,9 @@ public enum BirdSpecies {
     private final int defaultDroppingMinTicks;
     private final int defaultDroppingMaxTicks;
     private final boolean requiresOpenSkyForNaturalSpawn;
+
+    private static final Map<String, BirdSpecies> BY_ID = Arrays.stream(values())
+            .collect(Collectors.toMap(species -> species.id, Function.identity()));
 
     BirdSpecies(String id, int defaultMinGroup, int defaultMaxGroup, int defaultDroppingMinTicks, int defaultDroppingMaxTicks) {
         this(id, defaultMinGroup, defaultMaxGroup, defaultDroppingMinTicks, defaultDroppingMaxTicks, true);
@@ -74,8 +82,20 @@ public enum BirdSpecies {
         return this.requiresOpenSkyForNaturalSpawn;
     }
 
+    @javax.annotation.Nullable
+    private EntityType<?> entityTypeCache;
+
     public EntityType<?> entityType() {
-        return ForgeRegistries.ENTITY_TYPES.getValue(new ResourceLocation(GuaniaoMod.MOD_ID, this.id));
+        EntityType<?> type = this.entityTypeCache;
+        if (type == null) {
+            // Resolved lazily so callers before registry init simply get null
+            // (uncached) instead of caching it forever.
+            type = ForgeRegistries.ENTITY_TYPES.getValue(new ResourceLocation(GuaniaoMod.MOD_ID, this.id));
+            if (type != null) {
+                this.entityTypeCache = type;
+            }
+        }
+        return type;
     }
 
     public static BirdSpecies from(Entity entity) {
@@ -94,12 +114,6 @@ public enum BirdSpecies {
         if (id == null) {
             return null;
         }
-        String normalized = id.toLowerCase(Locale.ROOT);
-        for (BirdSpecies species : values()) {
-            if (species.id.equals(normalized)) {
-                return species;
-            }
-        }
-        return null;
+        return BY_ID.get(id.toLowerCase(Locale.ROOT));
     }
 }

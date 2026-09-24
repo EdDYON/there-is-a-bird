@@ -29,6 +29,7 @@ public class BirdBrain {
             return;
         }
 
+        this.senses.refreshPhysicalState(this.bird);
         if (this.senseCooldown-- <= 0) {
             this.senses.tick(this);
             this.senseCooldown = 5 + this.bird.getRandom().nextInt(6);

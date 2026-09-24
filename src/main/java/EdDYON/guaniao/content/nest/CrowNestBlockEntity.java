@@ -11,7 +11,6 @@ import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.Container;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.Containers;
 import net.minecraft.world.entity.player.Player;
@@ -37,7 +36,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.WeakHashMap;
 
-public class CrowNestBlockEntity extends BlockEntity implements GeoBlockEntity, Container {
+public class CrowNestBlockEntity extends BlockEntity implements GeoBlockEntity {
     public static final int TREASURE_SLOTS = 6;
     private static final int MAX_CROW_CLAIMS = 3;
     private static final long CROW_CLAIM_EXPIRY_TICKS = 72000L;
@@ -645,22 +644,18 @@ public class CrowNestBlockEntity extends BlockEntity implements GeoBlockEntity, 
         return this.animationCache;
     }
 
-    @Override
     public int getContainerSize() {
         return TREASURE_SLOTS;
     }
 
-    @Override
     public boolean isEmpty() {
         return !this.hasTreasure();
     }
 
-    @Override
     public ItemStack getItem(int slot) {
         return slot >= 0 && slot < this.treasures.size() ? this.treasures.get(slot) : ItemStack.EMPTY;
     }
 
-    @Override
     public ItemStack removeItem(int slot, int amount) {
         ItemStack result = ContainerHelper.removeItem(this.treasures, slot, amount);
         if (!result.isEmpty()) {
@@ -674,7 +669,6 @@ public class CrowNestBlockEntity extends BlockEntity implements GeoBlockEntity, 
         return result;
     }
 
-    @Override
     public ItemStack removeItemNoUpdate(int slot) {
         ItemStack result = ContainerHelper.takeItem(this.treasures, slot);
         if (!result.isEmpty()) {
@@ -685,7 +679,8 @@ public class CrowNestBlockEntity extends BlockEntity implements GeoBlockEntity, 
         return result;
     }
 
-    @Override
+    /** Kept as a plain method: exposing the vanilla Container interface would let
+     * hoppers drain treasures straight past the rummage gate. */
     public void setItem(int slot, ItemStack stack) {
         if (slot < 0 || slot >= this.treasures.size()) {
             return;
@@ -716,7 +711,6 @@ public class CrowNestBlockEntity extends BlockEntity implements GeoBlockEntity, 
         this.sync();
     }
 
-    @Override
     public boolean stillValid(Player player) {
         return player != null
                 && this.level != null
@@ -725,7 +719,6 @@ public class CrowNestBlockEntity extends BlockEntity implements GeoBlockEntity, 
                 && player.distanceToSqr(Vec3.atCenterOf(this.worldPosition)) <= 64.0D;
     }
 
-    @Override
     public void clearContent() {
         this.clearTreasures();
     }

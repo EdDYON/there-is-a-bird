@@ -3,6 +3,7 @@ package EdDYON.guaniao.content.bird.columbid;
 import EdDYON.guaniao.content.bird.flight.BirdFlightAnimation;
 import EdDYON.guaniao.config.BirdConfigManager;
 import EdDYON.guaniao.config.BirdSpecies;
+import EdDYON.guaniao.registry.GuaniaoItems;
 import EdDYON.guaniao.content.bird.BirdSoundVolume;
 import EdDYON.guaniao.content.bird.BirdFlockSoundLimiter;
 import EdDYON.guaniao.content.bird.BirdActivitySchedule;
@@ -40,9 +41,12 @@ import EdDYON.guaniao.content.bird.sparrow.SparrowEntity;
 import EdDYON.guaniao.event.BirdColonySpawnRules;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Comparator;
+import net.minecraft.world.phys.AABB;
 import java.util.Optional;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
+import org.jetbrains.annotations.Nullable;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -93,6 +97,7 @@ import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.FenceBlock;
 import net.minecraft.world.level.block.FenceGateBlock;
+import net.minecraft.world.level.block.entity.JukeboxBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.pathfinder.BlockPathTypes;
 import net.minecraft.world.phys.Vec3;
@@ -111,6 +116,7 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
     private static final EntityDataAccessor<Float> MODEL_SCALE = SynchedEntityData.defineId(AbstractColumbidEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Integer> COMMAND_MODE = SynchedEntityData.defineId(AbstractColumbidEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> MUTATION = SynchedEntityData.defineId(AbstractColumbidEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Boolean> DANCING = SynchedEntityData.defineId(AbstractColumbidEntity.class, EntityDataSerializers.BOOLEAN);
     public static final String MUTATION_NBT_KEY = "BirdMutation";
     private static final double FLIGHT_SPEED = 0.34D;
     private static final double HIGH_FLIGHT_SPEED = 0.38D;
@@ -127,6 +133,12 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
     protected static final RawAnimation FLY_LOOP_ANIMATION = RawAnimation.begin().thenLoop("fly_loop");
     protected static final RawAnimation FLY_FLAP_ONCE_ANIMATION = RawAnimation.begin().thenPlay("fly_flapping_wing").thenLoop("fly_loop");
     protected static final RawAnimation FLY_FLAPPING_LOOP_ANIMATION = RawAnimation.begin().thenLoop("fly_flapping_wing_loop");
+    protected static final RawAnimation DANCE_ANIMATION = RawAnimation.begin().thenLoop("idle_diff_4");
+    private static final int DANCE_SCAN_INTERVAL_TICKS = 10;
+    private static final int DANCE_GRACE_SCANS = 3;
+    private static final int DANCE_HEARING_RADIUS = 16;
+    private static final double DANCE_GATHER_RADIUS = 3.0D;
+    private static final double DANCE_APPROACH_SPEED = 1.15D;
 
     private final AnimatableInstanceCache animationCache = GeckoLibUtil.createInstanceCache((GeoAnimatable)this);
     private final BirdBrain birdBrain;
@@ -160,6 +172,8 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
     protected int flightWaypointTicks;
     protected BlockPos homePos;
     protected UUID pairPartnerUUID;
+    private int danceGraceScans;
+    private BlockPos danceTargetPos;
 
     protected AbstractColumbidEntity(EntityType<? extends AbstractColumbidEntity> entityType, Level level, BirdSpeciesProfile profile) {
         super(entityType, level);
@@ -284,6 +298,7 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
         this.entityData.define(MODEL_SCALE, BirdModelScale.DEFAULT_INDIVIDUAL_SCALE);
         this.entityData.define(COMMAND_MODE, BirdCommandMode.FREE.ordinal());
         this.entityData.define(MUTATION, BirdMutation.NONE.ordinal());
+        this.entityData.define(DANCING, false);
     }
 
     @Override
@@ -320,6 +335,22 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
     public void aiStep() {
         super.aiStep();
         if (this.level().isClientSide) {
+            return;
+        }
+        this.tickDancing();
+        if (this.danceTargetPos != null) {
+            this.tickCounters();
+            this.tickWaterEscape();
+            if (this.isControlledFlightActive()) {
+                this.tickFlight();
+                return;
+            }
+            if (this.isNoGravity()) {
+                this.setNoGravity(false);
+            }
+            if (this.entityData.get(DANCING)) {
+                this.getNavigation().stop();
+            }
             return;
         }
         this.birdBrain.tick();
@@ -1401,6 +1432,83 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
         return IdleAnimationChoice.DISPLAY;
     }
 
+    protected boolean canDanceToMusic() {
+        return false;
+    }
+
+    public boolean isDancing() {
+        return this.entityData.get(DANCING);
+    }
+
+    private void tickDancing() {
+        if (!this.canDanceToMusic()) {
+            return;
+        }
+        if (this.tickCount % DANCE_SCAN_INTERVAL_TICKS == 0) {
+            this.refreshDanceTarget();
+        }
+        if (this.danceTargetPos == null) {
+            return;
+        }
+        double dx = this.danceTargetPos.getX() + 0.5D - this.getX();
+        double dz = this.danceTargetPos.getZ() + 0.5D - this.getZ();
+        double distSq = dx * dx + dz * dz;
+        if (this.onGround() && distSq > DANCE_GATHER_RADIUS * DANCE_GATHER_RADIUS) {
+            if (this.getNavigation().isDone() || this.tickCount % DANCE_SCAN_INTERVAL_TICKS == 0) {
+                this.getNavigation().moveTo(this.danceTargetPos.getX() + 0.5D, this.danceTargetPos.getY(),
+                        this.danceTargetPos.getZ() + 0.5D, DANCE_APPROACH_SPEED);
+            }
+        } else if (this.onGround()) {
+            this.getNavigation().stop();
+            this.faceDanceCenter();
+        }
+        this.setDancing(true);
+    }
+
+    private void faceDanceCenter() {
+        this.getLookControl().setLookAt(this.danceTargetPos.getX() + 0.5D, this.danceTargetPos.getY() + 0.5D,
+                this.danceTargetPos.getZ() + 0.5D);
+    }
+
+    private void refreshDanceTarget() {
+        BlockPos target = this.findDanceMusicJukebox();
+        if (target != null) {
+            this.danceTargetPos = target;
+            this.danceGraceScans = DANCE_GRACE_SCANS;
+        } else if (this.danceTargetPos != null) {
+            if (this.danceGraceScans > 0) {
+                --this.danceGraceScans;
+            } else {
+                this.danceTargetPos = null;
+                this.setDancing(false);
+            }
+        }
+    }
+
+    private void setDancing(boolean dancing) {
+        if (dancing != this.entityData.get(DANCING)) {
+            this.entityData.set(DANCING, dancing);
+        }
+    }
+
+    @Nullable
+    private BlockPos findDanceMusicJukebox() {
+        BlockPos nearest = null;
+        double nearestDistSq = Double.MAX_VALUE;
+        for (BlockPos pos : BlockPos.withinManhattan(this.blockPosition(), DANCE_HEARING_RADIUS, 4, DANCE_HEARING_RADIUS)) {
+            if (this.level().getBlockEntity(pos) instanceof JukeboxBlockEntity jukebox
+                    && jukebox.isRecordPlaying()
+                    && jukebox.getFirstItem().is(GuaniaoItems.MUSIC_DISC_UWU_FUNK.get())) {
+                double distSq = pos.distSqr(this.blockPosition());
+                if (distSq < nearestDistSq) {
+                    nearestDistSq = distSq;
+                    nearest = pos.immutable();
+                }
+            }
+        }
+        return nearest;
+    }
+
     private <T extends AbstractColumbidEntity> PlayState movementController(AnimationState<T> animationState) {
         animationState.getController().setAnimationSpeed(1.0D);
         RawAnimation preview = this.guidePreviewAnimation.animation();
@@ -1415,6 +1523,9 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
                 return BirdFlightAnimation.play(animationState, FLY_LOOP_ANIMATION);
             }
             return BirdFlightAnimation.play(animationState, FLY_FLAPPING_LOOP_ANIMATION);
+        }
+        if (this.entityData.get(DANCING)) {
+            return animationState.setAndContinue(DANCE_ANIMATION);
         }
         if (this.shouldPlayWalkAnimation(animationState.isMoving())) {
             animationState.getController().setAnimationSpeed(BirdGroundAnimation.walkAnimationSpeed(this));

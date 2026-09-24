@@ -1,6 +1,7 @@
 package EdDYON.guaniao.content.dropping;
 
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
+import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
@@ -15,6 +16,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.npc.Villager;
@@ -24,6 +26,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.NotNull;
 import software.bernie.geckolib.animatable.GeoEntity;
@@ -41,6 +44,7 @@ public class BirdDroppingProjectileEntity extends ThrowableItemProjectile implem
     private final AnimatableInstanceCache animationCache = GeckoLibUtil.createInstanceCache((GeoAnimatable)this);
     private int lifeTicks;
     private boolean impactResolved;
+    private boolean laxativeDropping;
     private UUID sourceBirdUuid;
 
     public BirdDroppingProjectileEntity(EntityType<? extends BirdDroppingProjectileEntity> entityType, Level level) {
@@ -111,8 +115,27 @@ public class BirdDroppingProjectileEntity extends ThrowableItemProjectile implem
             living.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 80, 0));
         }
 
+        this.attachStickySplat(hit);
         this.splat();
         this.discard();
+    }
+
+    /** Spawns the sticky splat variant that rides the victim; the splat follows its
+     * host every tick until it ages out. A helmet keeps the mess off, consistent
+     * with the prank handler. */
+    private void attachStickySplat(Entity hit) {
+        if (!(hit instanceof LivingEntity living)
+                || !(this.level() instanceof ServerLevel serverLevel)
+                || !this.canAddImpactSplatAt(serverLevel, living.position())) {
+            return;
+        }
+        if (hit instanceof Player player && !player.getItemBySlot(EquipmentSlot.HEAD).isEmpty()) {
+            return;
+        }
+        Vec3 anchor = living.position().add(0.0D, living.getBbHeight() * 0.92D, 0.0D);
+        BirdDroppingSplatEntity splat = BirdDroppingSplatEntity.onEntity(
+                serverLevel, living, anchor, Direction.UP);
+        serverLevel.addFreshEntity(splat);
     }
 
     @Override
@@ -154,7 +177,7 @@ public class BirdDroppingProjectileEntity extends ThrowableItemProjectile implem
         if (level.getFluidState(result.getBlockPos().relative(result.getDirection())).isSource()) {
             return;
         }
-        if (!BirdDroppingSplatEntity.canAddSplatAt(level, result.getLocation())) {
+        if (!this.canAddImpactSplatAt(level, result.getLocation())) {
             return;
         }
         BirdDroppingSplatEntity splat = BirdDroppingSplatEntity.onBlock(level, result.getLocation(), result.getDirection(), result.getBlockPos());
@@ -189,6 +212,21 @@ public class BirdDroppingProjectileEntity extends ThrowableItemProjectile implem
         this.sourceBirdUuid = birdUuid;
     }
 
+    public void markLaxativeDropping(UUID birdUuid) {
+        this.markNaturalDropping(birdUuid);
+        this.laxativeDropping = true;
+    }
+
+    public boolean isLaxativeDropping() {
+        return this.laxativeDropping;
+    }
+
+    private boolean canAddImpactSplatAt(Level level, Vec3 position) {
+        return this.isLaxativeDropping()
+                ? BirdDroppingSplatEntity.canAddHardCappedSplatAt(level, position)
+                : BirdDroppingSplatEntity.canAddSplatAt(level, position);
+    }
+
     public UUID getSourceBirdUuid() {
         return this.sourceBirdUuid;
     }
@@ -198,6 +236,7 @@ public class BirdDroppingProjectileEntity extends ThrowableItemProjectile implem
         super.addAdditionalSaveData(tag);
         tag.putInt("Variant", this.getVariant().id());
         tag.putBoolean("NaturalDropping", this.isNaturalDropping());
+        tag.putBoolean("LaxativeDropping", this.isLaxativeDropping());
         tag.putInt("LifeTicks", this.lifeTicks);
         if (this.sourceBirdUuid != null) {
             tag.putUUID("SourceBirdUuid", this.sourceBirdUuid);
@@ -209,6 +248,7 @@ public class BirdDroppingProjectileEntity extends ThrowableItemProjectile implem
         super.readAdditionalSaveData(tag);
         this.setVariant(BirdDroppingVariant.byId(tag.getInt("Variant")));
         this.entityData.set(DATA_NATURAL_DROPPING, tag.getBoolean("NaturalDropping"));
+        this.laxativeDropping = tag.getBoolean("LaxativeDropping");
         this.lifeTicks = Math.max(0, tag.getInt("LifeTicks"));
         if (tag.hasUUID("SourceBirdUuid")) {
             this.sourceBirdUuid = tag.getUUID("SourceBirdUuid");

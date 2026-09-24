@@ -88,6 +88,25 @@ public class BirdDroppingSplatEntity extends Entity implements GeoEntity {
         return cap > 0 && level.getEntitiesOfClass(BirdDroppingSplatEntity.class, area).size() < cap;
     }
 
+    /**
+     * Landing rule for laxative droppings. The projectile spawn path already counts all nearby
+     * dropping forms against the hard ceiling; this second check prevents landed splats from ever
+     * exceeding that ceiling while intentionally ignoring the ambient configurable soft cap.
+     */
+    public static boolean canAddHardCappedSplatAt(Level level, Vec3 position) {
+        double radius = BirdAmbientDropControl.LOCAL_CAP_RADIUS;
+        AABB area = new AABB(
+                position.x - radius,
+                position.y - radius,
+                position.z - radius,
+                position.x + radius,
+                position.y + radius,
+                position.z + radius
+        );
+        return level.getEntitiesOfClass(BirdDroppingSplatEntity.class, area).size()
+                < BirdAmbientDropControl.HARD_MAX_DROPPINGS_NEARBY;
+    }
+
     public static BirdDroppingSplatEntity onBlock(Level level, Vec3 position, Direction direction, BlockPos anchorBlock) {
         BirdDroppingSplatEntity splat = new BirdDroppingSplatEntity(GuaniaoEntityTypes.BIRD_DROPPING_SPLAT.get(), level);
         Vec3 offset = Vec3.atLowerCornerOf(direction.getNormal()).scale(0.0125D);

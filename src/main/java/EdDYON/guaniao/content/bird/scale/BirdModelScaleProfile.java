@@ -41,6 +41,9 @@ public final class BirdModelScaleProfile {
             BirdModelScaleConfig.KESTREL, 9.980F);
     public static final BirdModelScaleProfile CASSOWARY = visualHeightProfile(
             BirdModelScaleConfig.CASSOWARY, 29.424F);
+    // Measured with _measure_model_height.py (rest-pose Y span, crest raised).
+    public static final BirdModelScaleProfile UMBRELLA_COCKATOO = visualHeightProfile(
+            BirdModelScaleConfig.UMBRELLA_COCKATOO, 18.307F);
 
     private final float baseRenderScale;
     private final float targetHeightBlocks;

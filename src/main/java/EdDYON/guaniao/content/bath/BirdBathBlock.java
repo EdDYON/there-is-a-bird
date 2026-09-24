@@ -84,14 +84,6 @@ public class BirdBathBlock extends BaseEntityBlock {
     }
 
     @Override
-    public void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (blockEntity instanceof BirdBathBlockEntity birdBath) {
-            birdBath.environmentTick(level, pos, state, random);
-        }
-    }
-
-    @Override
     public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
         if (level instanceof ServerLevel serverLevel
                 && level.getBlockEntity(pos) instanceof BirdBathBlockEntity birdBath

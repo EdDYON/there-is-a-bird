@@ -28,6 +28,7 @@ public final class BirdTags {
     public static final TagKey<Item> WOODCOCK_FOODS = item("foods/woodcock");
     public static final TagKey<Item> KESTREL_FOODS = item("foods/kestrel");
     public static final TagKey<Item> CASSOWARY_FOODS = item("foods/cassowary");
+    public static final TagKey<Item> UMBRELLA_COCKATOO_FOODS = item("foods/umbrella_cockatoo");
 
     public static final TagKey<Item> SEAGULL_STEALABLE_FOODS = item("seagull_stealable_foods");
     public static final TagKey<Item> CROW_SHINY_ITEMS = item("crow_shiny_items");
@@ -40,6 +41,7 @@ public final class BirdTags {
     public static final TagKey<Block> BIRD_PERCHES = block("bird_perches");
     public static final TagKey<Block> KIWI_FORAGE_GROUND = block("kiwi_forage_ground");
     public static final TagKey<Block> WOODCOCK_FORAGE_GROUND = block("woodcock_forage_ground");
+    public static final TagKey<Block> UMBRELLA_COCKATOO_INTERESTING_BLOCKS = block("umbrella_cockatoo_interesting_blocks");
     public static final TagKey<EntityType<?>> BIRDS = entityType("birds");
     public static final TagKey<EntityType<?>> NIGHT_HERON_PREY = entityType("night_heron_prey");
     public static final TagKey<EntityType<?>> KESTREL_PREY = entityType("kestrel_prey");

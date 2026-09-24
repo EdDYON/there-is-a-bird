@@ -37,6 +37,7 @@ import EdDYON.guaniao.client.entity.sparrow.SparrowRenderer;
 import EdDYON.guaniao.client.entity.longtailedtit.LongTailedTitRenderer;
 import EdDYON.guaniao.client.entity.cockatiel.CockatielRenderer;
 import EdDYON.guaniao.client.entity.macaw.MacawRenderer;
+import EdDYON.guaniao.client.entity.umbrellacockatoo.UmbrellaCockatooRenderer;
 import EdDYON.guaniao.content.enchantment.GuaniaoEnchantments;
 import EdDYON.guaniao.registry.GuaniaoBlockEntityTypes;
 import EdDYON.guaniao.registry.GuaniaoBlocks;
@@ -54,7 +55,6 @@ import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraftforge.client.event.EntityRenderersEvent;
-import net.minecraftforge.client.event.RegisterColorHandlersEvent;
 import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
 import net.minecraftforge.client.event.RegisterParticleProvidersEvent;
 import net.minecraftforge.client.event.RegisterShadersEvent;
@@ -85,6 +85,7 @@ public final class ClientModEvents {
         event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.WOODCOCK.get(), WoodcockRenderer::new);
         event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.KESTREL.get(), KestrelRenderer::new);
         event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.CASSOWARY.get(), CassowaryRenderer::new);
+        event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.UMBRELLA_COCKATOO.get(), UmbrellaCockatooRenderer::new);
         event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.PHOTOGRAPH.get(), PhotographEntityRenderer::new);
         event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.BIRD_DROPPING_PROJECTILE.get(), BirdDroppingProjectileRenderer::new);
         event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.BIRD_DROPPING_SPLAT.get(), BirdDroppingSplatRenderer::new);
@@ -110,30 +111,6 @@ public final class ClientModEvents {
     @SubscribeEvent
     public static void onRegisterShaders(RegisterShadersEvent event) throws java.io.IOException {
         CameraOpticsShader.register(event);
-    }
-
-    @SubscribeEvent
-    public static void onRegisterItemColors(RegisterColorHandlersEvent.Item event) {
-        // These spawn eggs use complete, full-color icons rather than vanilla's two tint masks.
-        // Returning white prevents ForgeSpawnEggItem's base/spot colors from darkening layer0.
-        event.register(
-                (stack, tintIndex) -> 0xFFFFFFFF,
-                GuaniaoItems.NIGHT_HERON_SPAWN_EGG.get(),
-                GuaniaoItems.SPARROW_SPAWN_EGG.get(),
-                GuaniaoItems.LONG_TAILED_TIT_SPAWN_EGG.get(),
-                GuaniaoItems.COCKATIEL_SPAWN_EGG.get(),
-                GuaniaoItems.MACAW_SPAWN_EGG.get(),
-                GuaniaoItems.BUDGERIGAR_SPAWN_EGG.get(),
-                GuaniaoItems.SPOTTED_DOVE_SPAWN_EGG.get(),
-                GuaniaoItems.PIGEON_SPAWN_EGG.get(),
-                GuaniaoItems.CROW_SPAWN_EGG.get(),
-                GuaniaoItems.SEAGULL_SPAWN_EGG.get(),
-                GuaniaoItems.KIWI_SPAWN_EGG.get(),
-                GuaniaoItems.MYNA_SPAWN_EGG.get(),
-                GuaniaoItems.WOODCOCK_SPAWN_EGG.get(),
-                GuaniaoItems.KESTREL_SPAWN_EGG.get(),
-                GuaniaoItems.CASSOWARY_SPAWN_EGG.get()
-        );
     }
 
     @SubscribeEvent

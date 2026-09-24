@@ -29,6 +29,8 @@ public final class PhotographTextureCache {
     private static final ResourceLocation FALLBACK = new ResourceLocation(GuaniaoMod.MOD_ID, "textures/item/photograph.png");
     private static final Map<String, CachedTexture> TEXTURES = new LinkedHashMap<>(MAX_TEXTURES + 1, 0.75F, true);
     private static final Set<String> DECODING = new HashSet<>();
+    /** Keys whose jpeg could not be decoded; retried only after a logout clears it. */
+    private static final Set<String> FAILED = new HashSet<>();
     private static final ArrayDeque<DecodedImage> READY = new ArrayDeque<>();
     private static final ExecutorService DECODER = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = new Thread(runnable, "Guaniao-Photo-Texture-Decode");
@@ -54,7 +56,7 @@ public final class PhotographTextureCache {
         }
 
         byte[] jpeg = PhotoClientRepository.getOrRequest(photoId, contentHash);
-        if (jpeg != null && DECODING.add(key)) {
+        if (jpeg != null && !FAILED.contains(key) && DECODING.add(key)) {
             int decodeGeneration = generation;
             DECODER.execute(() -> decode(key, jpeg, decodeGeneration));
         }
@@ -98,6 +100,7 @@ public final class PhotographTextureCache {
         }
         TEXTURES.clear();
         DECODING.clear();
+        FAILED.clear();
         synchronized (READY) {
             while (!READY.isEmpty()) {
                 READY.removeFirst().image.close();
@@ -133,7 +136,12 @@ public final class PhotographTextureCache {
                 READY.addLast(new DecodedImage(key, image, decodeGeneration));
             }
         } catch (IOException | RuntimeException exception) {
-            Minecraft.getInstance().execute(() -> DECODING.remove(key));
+            // Mark the key failed so a broken photo cannot resubmit itself to the
+            // decoder every frame.
+            Minecraft.getInstance().execute(() -> {
+                DECODING.remove(key);
+                FAILED.add(key);
+            });
         }
     }
 

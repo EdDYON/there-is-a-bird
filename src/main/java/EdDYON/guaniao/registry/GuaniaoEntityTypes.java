@@ -32,6 +32,8 @@ import EdDYON.guaniao.content.bird.cockatiel.CockatielDefinition;
 import EdDYON.guaniao.content.bird.cockatiel.CockatielEntity;
 import EdDYON.guaniao.content.bird.macaw.MacawDefinition;
 import EdDYON.guaniao.content.bird.macaw.MacawEntity;
+import EdDYON.guaniao.content.bird.umbrellacockatoo.UmbrellaCockatooDefinition;
+import EdDYON.guaniao.content.bird.umbrellacockatoo.UmbrellaCockatooEntity;
 import EdDYON.guaniao.content.camera.PhotographEntity;
 import EdDYON.guaniao.content.dropping.BirdDroppingProjectileEntity;
 import EdDYON.guaniao.content.dropping.BirdDroppingSplatEntity;
@@ -63,6 +65,7 @@ public final class GuaniaoEntityTypes {
     public static final RegistryObject<EntityType<WoodcockEntity>> WOODCOCK = GuaniaoEntityTypes.registerCreature(WoodcockDefinition.ENTITY_ID, WoodcockEntity::new, WoodcockDefinition.WIDTH, WoodcockDefinition.HEIGHT);
     public static final RegistryObject<EntityType<KestrelEntity>> KESTREL = GuaniaoEntityTypes.registerCreature(KestrelDefinition.ENTITY_ID, KestrelEntity::new, KestrelDefinition.WIDTH, KestrelDefinition.HEIGHT);
     public static final RegistryObject<EntityType<CassowaryEntity>> CASSOWARY = GuaniaoEntityTypes.registerCreature(CassowaryDefinition.ENTITY_ID, CassowaryEntity::new, CassowaryDefinition.WIDTH, CassowaryDefinition.HEIGHT);
+    public static final RegistryObject<EntityType<UmbrellaCockatooEntity>> UMBRELLA_COCKATOO = GuaniaoEntityTypes.registerCreature(UmbrellaCockatooDefinition.ENTITY_ID, UmbrellaCockatooEntity::new, UmbrellaCockatooDefinition.WIDTH, UmbrellaCockatooDefinition.HEIGHT);
     public static final RegistryObject<EntityType<PhotographEntity>> PHOTOGRAPH = ENTITY_TYPES.register("photograph", () ->
             EntityType.Builder.<PhotographEntity>of(PhotographEntity::new, MobCategory.MISC)
                     .sized(0.5F, 0.5F)

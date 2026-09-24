@@ -1162,5 +1162,18 @@
   "item.guaniao.cooked_fries": "炸薯条",
   "block.guaniao.bagged_fries": "袋装薯条",
   "item.guaniao.laxative": "泻药",
-  "subtitles.guaniao.cassowary.call": "鹤鸵鸣叫"
+  "subtitles.guaniao.cassowary.call": "鹤鸵鸣叫",
+  "item.guaniao.music_disc_uwu_funk": "UwU Funk 唱片",
+  "item.guaniao.music_disc_uwu_funk.desc": "UwU Funk —— 疯狂的鸽子",
+  "entity.guaniao.umbrella_cockatoo": "雨伞巴丹",
+  "item.guaniao.umbrella_cockatoo_spawn_egg": "雨伞巴丹刷怪蛋",
+  "gui.guaniao.bird_guide.entry.umbrella_cockatoo.title": "雨伞巴丹",
+  "gui.guaniao.bird_guide.entry.umbrella_cockatoo.subtitle": "树冠上会撑开一把白伞的大嗓门",
+  "gui.guaniao.bird_guide.entry.umbrella_cockatoo.intro.title": "先混个脸熟",
+  "gui.guaniao.bird_guide.entry.umbrella_cockatoo.intro.body": "雨伞巴丹是丛林树冠上的大个子，一身白羽，激动时会把头顶那撮黄色羽冠整片撑开，像撑起一把伞。它不爱落地，喜欢停在高处的原木和树冠上，从上面俯视你。野生个体起初并不亲近人，只是好奇地盯着你看，还会把头歪向一侧，像在琢磨你在干什么。想让它记住你，得有点耐心：一次一次地喂它，别动手打它，信任是一点点攒起来的。它也会留意附近的箱子、木桶、工作台和唱片机，看着好奇，但从不乱翻东西。它和金刚鹦鹉、玄凤鹦鹉处得来，学会了谁的声音就学谁叫。等它真正信任你之后，它会落在你的肩膀或头顶，陪你到处走。",
+  "gui.guaniao.bird_guide.entry.umbrella_cockatoo.info.activity": "白天 / 清晨 / 傍晚",
+  "gui.guaniao.bird_guide.entry.umbrella_cockatoo.info.diet": "果实 / 浆果 / 种子 / 坚果",
+  "gui.guaniao.bird_guide.entry.umbrella_cockatoo.info.environment": "热带雨林 / 树冠层",
+  "gui.guaniao.bird_guide.entry.umbrella_cockatoo.info.behavior": "观察 / 歪头 / 展冠 / 学舌",
+  "gui.guaniao.bird_guide.tag.mimic": "学舌"
 }

@@ -11,7 +11,7 @@ import software.bernie.geckolib.renderer.GeoEntityRenderer;
 public final class CassowaryRenderer extends GeoEntityRenderer<CassowaryEntity> {
     public CassowaryRenderer(EntityRendererProvider.Context context) {
         super(context, new CassowaryModel());
-        this.shadowRadius = 0.58F;
+        this.shadowRadius = 0.493F;
     }
 
     @Override

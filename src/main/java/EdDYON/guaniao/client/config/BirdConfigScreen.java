@@ -571,6 +571,7 @@ public class BirdConfigScreen extends Screen {
             case WOODCOCK -> 40;
             case KESTREL -> 38;
             case CASSOWARY -> 15;
+            case UMBRELLA_COCKATOO -> 36;
         };
         return BirdModelScale.fitPreviewScale(scale);
     }

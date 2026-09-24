@@ -1162,5 +1162,18 @@
   "item.guaniao.cooked_fries": "French Fries",
   "block.guaniao.bagged_fries": "Bagged Fries",
   "item.guaniao.laxative": "Laxative",
-  "subtitles.guaniao.cassowary.call": "Cassowary calls"
+  "subtitles.guaniao.cassowary.call": "Cassowary calls",
+  "item.guaniao.music_disc_uwu_funk": "UwU Funk Music Disc",
+  "item.guaniao.music_disc_uwu_funk.desc": "UwU Funk - pigeons can't resist",
+  "entity.guaniao.umbrella_cockatoo": "Umbrella Cockatoo",
+  "item.guaniao.umbrella_cockatoo_spawn_egg": "Umbrella Cockatoo Spawn Egg",
+  "gui.guaniao.bird_guide.entry.umbrella_cockatoo.title": "Umbrella Cockatoo",
+  "gui.guaniao.bird_guide.entry.umbrella_cockatoo.subtitle": "The canopy's big voice, with an umbrella it can raise",
+  "gui.guaniao.bird_guide.entry.umbrella_cockatoo.intro.title": "Get to know it slowly",
+  "gui.guaniao.bird_guide.entry.umbrella_cockatoo.intro.body": "The umbrella cockatoo is a big white bird of the jungle canopy. When something excites it, the yellow crest on its head opens all the way up like an umbrella. It hates the ground and prefers to sit on high logs and in the canopy, looking down at you. A wild one is not friendly at first: it just watches you, head tilted, trying to work out what you are. Earning its trust takes patience - feed it again and again and never hit it, because trust builds in small steps. It also takes an interest in nearby chests, barrels, crafting tables and jukeboxes - curious, but it never rummages through anything. It gets along with macaws and cockatiels, and once it learns a neighbour's voice it answers in kind. When it finally trusts you, it will ride on your shoulder or your head and follow you around.",
+  "gui.guaniao.bird_guide.entry.umbrella_cockatoo.info.activity": "Daytime / dawn / dusk",
+  "gui.guaniao.bird_guide.entry.umbrella_cockatoo.info.diet": "Fruit / berries / seeds / nuts",
+  "gui.guaniao.bird_guide.entry.umbrella_cockatoo.info.environment": "Rainforest / canopy",
+  "gui.guaniao.bird_guide.entry.umbrella_cockatoo.info.behavior": "Observe / head-tilt / crest display / mimicry",
+  "gui.guaniao.bird_guide.tag.mimic": "Mimicry"
 }

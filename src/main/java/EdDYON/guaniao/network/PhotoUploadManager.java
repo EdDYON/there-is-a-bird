@@ -154,6 +154,13 @@ public final class PhotoUploadManager {
             return;
         }
 
+        // Photos are private to their owner; other players (even with a leaked id)
+        // get the same "missing" answer. Ops keep access via their permission level.
+        if (!indexed.owner().equals(playerId) && !player.hasPermissions(2)) {
+            sendMissing(player, photoId);
+            return;
+        }
+
         MinecraftServer server = player.server;
         PENDING_DOWNLOADS.add(playerId);
         boolean accepted = PhotoIoService.submit(

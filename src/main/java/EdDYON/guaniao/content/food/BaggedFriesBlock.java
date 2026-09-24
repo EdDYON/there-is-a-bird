@@ -1,6 +1,7 @@
 package EdDYON.guaniao.content.food;
 
 import EdDYON.guaniao.client.particle.PlaceableBlockBreakEffects;
+import EdDYON.guaniao.registry.GuaniaoBlockEntityTypes;
 import EdDYON.guaniao.registry.GuaniaoItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -13,6 +14,8 @@ import net.minecraft.stats.Stats;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
@@ -24,6 +27,8 @@ import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -95,6 +100,24 @@ public final class BaggedFriesBlock extends BaseEntityBlock {
             return InteractionResult.PASS;
         }
 
+        if (player.getItemInHand(hand).is(GuaniaoItems.LAXATIVE.get())
+                && level.getBlockEntity(pos) instanceof BaggedFriesBlockEntity fries
+                && fries.hasRemainingFries()) {
+            if (!level.isClientSide && !fries.isLaxative()) {
+                fries.setLaxative(true);
+                if (!player.getAbilities().instabuild) {
+                    player.getItemInHand(hand).shrink(1);
+                }
+                fries.syncToClient();
+                level.playSound(null, pos, SoundEvents.BREWING_STAND_BREW, SoundSource.BLOCKS, 0.65F, 0.8F);
+                level.gameEvent(player, GameEvent.BLOCK_CHANGE, pos);
+                if (level instanceof ServerLevel serverLevel) {
+                    BaggedFriesBlockEntity.spawnPollutionBurst(serverLevel, pos);
+                }
+            }
+            return InteractionResult.sidedSuccess(level.isClientSide);
+        }
+
         int remaining = state.getValue(FRIES);
         if (remaining <= 0) {
             if (!level.isClientSide) {
@@ -110,12 +133,17 @@ public final class BaggedFriesBlock extends BaseEntityBlock {
         }
 
         if (!level.isClientSide && level.getBlockEntity(pos) instanceof BaggedFriesBlockEntity fries) {
+            boolean laxative = fries.isLaxative();
             int removed = fries.removeRandomFries(level.random);
             if (removed > 0) {
                 int nowRemaining = fries.getRemainingFries();
                 level.setBlock(pos, state.setValue(FRIES, nowRemaining), Block.UPDATE_CLIENTS);
                 fries.syncToClient();
                 player.getFoodData().eat(removed, 0.12F);
+                if (laxative) {
+                    player.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 20 * 12, 0));
+                    player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 20 * 6, 0));
+                }
                 player.awardStat(Stats.ITEM_USED.get(GuaniaoItems.BAGGED_FRIES.get()));
                 level.playSound(null, pos, SoundEvents.GENERIC_EAT, SoundSource.PLAYERS,
                         0.75F, 0.9F + level.random.nextFloat() * 0.2F);
@@ -146,6 +174,19 @@ public final class BaggedFriesBlock extends BaseEntityBlock {
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new BaggedFriesBlockEntity(pos, state);
+    }
+
+    @Nullable
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+        if (type != GuaniaoBlockEntityTypes.BAGGED_FRIES.get()) {
+            return null;
+        }
+        return (tickLevel, tickPos, tickState, blockEntity) -> {
+            if (blockEntity instanceof BaggedFriesBlockEntity fries) {
+                fries.tick(tickLevel, tickPos, tickState);
+            }
+        };
     }
 
     @Override

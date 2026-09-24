@@ -222,6 +222,9 @@ public final class SkyBirdManager {
             case SWALLOW -> spawnSwallowFlight(level, player, minecraft, ecologyCenter);
             case CRANE -> spawnCraneMigration(level, player, minecraft, ecologyCenter);
             case VULTURE -> spawnVultureThermal(level, player, ecologyCenter);
+            // Unreachable from this pool: starlings carry zero natural weight and
+            // are spawned by tickAmbientStarlings instead. Kept so the exhaustive
+            // switch covers the enum if weights ever change.
             case STARLING -> spawnStarlingMurmuration(level, player, minecraft, ecologyCenter);
         }
         this.emptySkyMisses = 0;

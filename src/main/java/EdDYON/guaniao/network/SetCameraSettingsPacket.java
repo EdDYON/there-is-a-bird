@@ -49,6 +49,9 @@ public record SetCameraSettingsPacket(InteractionHand hand, CameraState state) {
             if (player == null) {
                 return;
             }
+            if (!Double.isFinite(packet.state.focalLength()) || !Double.isFinite(packet.state.focusDistance())) {
+                return;
+            }
             ItemStack camera = player.getItemInHand(packet.hand);
             if (camera.is(GuaniaoItems.NIKON_D750.get())) {
                 CameraSettingsData.setState(camera, packet.state);

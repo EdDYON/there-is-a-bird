@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "guaniao:item/umbrella_cockatoo_spawn_egg"
+  }
+}

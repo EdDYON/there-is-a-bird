@@ -15,6 +15,7 @@ import EdDYON.guaniao.content.bird.sparrow.SparrowEntity;
 import EdDYON.guaniao.content.bird.longtailedtit.LongTailedTitEntity;
 import EdDYON.guaniao.content.bird.cockatiel.CockatielEntity;
 import EdDYON.guaniao.content.bird.macaw.MacawEntity;
+import EdDYON.guaniao.content.bird.umbrellacockatoo.UmbrellaCockatooEntity;
 import EdDYON.guaniao.content.dropping.BirdDroppingUtil;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
 import EdDYON.guaniao.registry.GuaniaoItems;
@@ -57,6 +58,7 @@ public final class GuaniaoModEvents {
         event.put((EntityType)GuaniaoEntityTypes.WOODCOCK.get(), WoodcockEntity.createAttributes().build());
         event.put((EntityType)GuaniaoEntityTypes.KESTREL.get(), KestrelEntity.createAttributes().build());
         event.put((EntityType)GuaniaoEntityTypes.CASSOWARY.get(), CassowaryEntity.createAttributes().build());
+        event.put((EntityType)GuaniaoEntityTypes.UMBRELLA_COCKATOO.get(), UmbrellaCockatooEntity.createUmbrellaCockatooAttributes().build());
     }
 
     @SubscribeEvent
@@ -76,14 +78,15 @@ public final class GuaniaoModEvents {
         event.register(GuaniaoEntityTypes.WOODCOCK.get(), SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, WoodcockEntity::canWoodcockSpawn, SpawnPlacementRegisterEvent.Operation.REPLACE);
         event.register(GuaniaoEntityTypes.KESTREL.get(), SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING, KestrelEntity::canSpawn, SpawnPlacementRegisterEvent.Operation.REPLACE);
         event.register(GuaniaoEntityTypes.CASSOWARY.get(), SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, CassowaryEntity::canSpawn, SpawnPlacementRegisterEvent.Operation.REPLACE);
+        event.register(GuaniaoEntityTypes.UMBRELLA_COCKATOO.get(), SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING, UmbrellaCockatooEntity::canUmbrellaCockatooSpawn, SpawnPlacementRegisterEvent.Operation.REPLACE);
     }
 
     @SubscribeEvent
     public static void onBuildCreativeModeTabContents(BuildCreativeModeTabContentsEvent event) {
-        if (CreativeModeTabs.INGREDIENTS.equals((Object)event.getTabKey())) {
+        if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
             event.accept((ItemLike)GuaniaoItems.EARTHWORM.get());
         }
-        if (CreativeModeTabs.SPAWN_EGGS.equals((Object)event.getTabKey())) {
+        if (event.getTabKey() == CreativeModeTabs.SPAWN_EGGS) {
             event.accept((ItemLike)GuaniaoItems.NIGHT_HERON_SPAWN_EGG.get());
             event.accept((ItemLike)GuaniaoItems.SPARROW_SPAWN_EGG.get());
             event.accept((ItemLike)GuaniaoItems.LONG_TAILED_TIT_SPAWN_EGG.get());
@@ -99,6 +102,7 @@ public final class GuaniaoModEvents {
             event.accept((ItemLike)GuaniaoItems.WOODCOCK_SPAWN_EGG.get());
             event.accept((ItemLike)GuaniaoItems.KESTREL_SPAWN_EGG.get());
             event.accept((ItemLike)GuaniaoItems.CASSOWARY_SPAWN_EGG.get());
+            event.accept((ItemLike)GuaniaoItems.UMBRELLA_COCKATOO_SPAWN_EGG.get());
         }
     }
 }

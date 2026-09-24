@@ -74,6 +74,8 @@ public final class GuaniaoSoundEvents {
             register("item.feather_fan.hunt_turn");
     public static final RegistryObject<SoundEvent> FEATHER_FAN_HUNT_HIT =
             register("item.feather_fan.hunt_hit");
+    public static final RegistryObject<SoundEvent> MUSIC_DISC_UWU_FUNK =
+            register("music_disc.uwu_funk");
 
     private GuaniaoSoundEvents() {
     }

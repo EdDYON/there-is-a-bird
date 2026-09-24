@@ -72,26 +72,35 @@ public final class BirdDroppingEvents {
     }
 
     private static boolean trySpawnDropping(ServerLevel level, LivingEntity bird) {
+        return trySpawnDropping(level, bird, false);
+    }
+
+    private static boolean trySpawnDropping(ServerLevel level, LivingEntity bird, boolean laxative) {
         if (bird.isDeadOrDying() || bird.isRemoved() || bird.isInWaterOrBubble() || !bird.isAlive()) {
             return false;
         }
         Vec3 spawnPosition = droppingSpawnPosition(bird);
         BlockPos areaPosition = BlockPos.containing(spawnPosition);
-        // A cheap area check avoids repeated entity scans while another bird's drop is cooling down.
-        if (!BirdDroppingAreaLimiter.canDrop(level, areaPosition)) {
-            return false;
-        }
-        if (!hasNaturalDroppingCapacity(level, bird)) {
-            return false;
-        }
-
-        if (!BirdDroppingSplatEntity.canAddSplatAt(level, spawnPosition)) {
-            return false;
+        if (laxative) {
+            if (!hasLaxativeDroppingCapacity(level, spawnPosition)) {
+                return false;
+            }
+        } else {
+            // Ordinary ambient droppings share a regional cooldown and the configurable soft cap.
+            if (!BirdDroppingAreaLimiter.canDrop(level, areaPosition)
+                    || !hasNaturalDroppingCapacity(level, bird)
+                    || !BirdDroppingSplatEntity.canAddSplatAt(level, spawnPosition)) {
+                return false;
+            }
         }
 
         BirdDroppingVariant variant = chooseVariantForBird(bird);
         BirdDroppingProjectileEntity dropping = new BirdDroppingProjectileEntity(level, bird, variant);
-        dropping.markNaturalDropping(bird.getUUID());
+        if (laxative) {
+            dropping.markLaxativeDropping(bird.getUUID());
+        } else {
+            dropping.markNaturalDropping(bird.getUUID());
+        }
         Vec3 birdMotion = bird.getDeltaMovement();
         RandomSource random = bird.getRandom();
         double horizontalX = Mth.nextDouble(random, -0.035D, 0.035D);
@@ -108,8 +117,53 @@ public final class BirdDroppingEvents {
         if (!level.addFreshEntity(dropping)) {
             return false;
         }
-        BirdDroppingAreaLimiter.recordDrop(level, areaPosition, random);
+        if (!laxative) {
+            BirdDroppingAreaLimiter.recordDrop(level, areaPosition, random);
+        }
         return true;
+    }
+
+    /** Server-side entry point for the delayed laxative effect on seagulls. */
+    public static boolean spawnLaxativeDropping(ServerLevel level, LivingEntity bird) {
+        return trySpawnDropping(level, bird, true);
+    }
+
+    /**
+     * Laxative droppings deliberately bypass the ambient soft cap and area cooldown, but never the
+     * fixed nearby entity ceiling. Falling natural projectiles are included so one gull cannot queue
+     * more droppings than the area may safely contain.
+     */
+    private static boolean hasLaxativeDroppingCapacity(ServerLevel level, Vec3 position) {
+        double radius = BirdAmbientDropControl.LOCAL_CAP_RADIUS;
+        AABB area = new AABB(
+                position.x - radius,
+                position.y - radius,
+                position.z - radius,
+                position.x + radius,
+                position.y + radius,
+                position.z + radius
+        );
+        int cap = BirdAmbientDropControl.HARD_MAX_DROPPINGS_NEARBY;
+        int count = level.getEntitiesOfClass(
+                BirdDroppingProjectileEntity.class,
+                area,
+                projectile -> projectile.isAlive() && projectile.isNaturalDropping()
+        ).size();
+        if (count >= cap) {
+            return false;
+        }
+
+        count += level.getEntitiesOfClass(BirdDroppingSplatEntity.class, area, Entity::isAlive).size();
+        if (count >= cap) {
+            return false;
+        }
+
+        count += level.getEntitiesOfClass(
+                ItemEntity.class,
+                area,
+                item -> item.isAlive() && item.getItem().getItem() instanceof BirdDroppingItem
+        ).size();
+        return count < cap;
     }
 
     private static boolean hasNaturalDroppingCapacity(ServerLevel level, LivingEntity bird) {

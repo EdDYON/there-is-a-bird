@@ -15,7 +15,10 @@ public final class BirdModelScaleConfig {
     public static final Scale MYNA = new Scale(0.55F, 0.94F, 1.06F);
     public static final Scale WOODCOCK = new Scale(0.46F, 0.94F, 1.06F);
     public static final Scale KESTREL = new Scale(0.52F, 0.94F, 1.06F);
-    public static final Scale CASSOWARY = new Scale(2.65F, 0.94F, 1.06F);
+    public static final Scale CASSOWARY = new Scale(2.2525F, 0.94F, 1.06F);
+    // A large parrot, a little shorter than the macaw; the authored span includes
+    // the raised crest, so the body reads slightly smaller than the number implies.
+    public static final Scale UMBRELLA_COCKATOO = new Scale(1.05F, 0.94F, 1.06F);
 
     private BirdModelScaleConfig() {
     }

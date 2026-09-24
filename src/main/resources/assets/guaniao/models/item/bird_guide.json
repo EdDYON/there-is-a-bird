@@ -1,6 +1,24 @@
 {
   "parent": "minecraft:item/generated",
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
   "textures": {
-    "layer0": "guaniao:item/bird_guide"
+    "layer0": "guaniao:item/bird_guide",
+    "particle": "guaniao:item/bird_guide"
+  },
+  "base": {
+    "parent": "minecraft:item/generated",
+    "textures": {
+      "layer0": "guaniao:item/bird_guide"
+    }
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "gui_light": "front",
+      "textures": {
+        "layer0": "guaniao:item/bird_guide_icon"
+      }
+    }
   }
 }

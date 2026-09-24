@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -30,7 +29,6 @@ public class CrowNestMenu extends AbstractContainerMenu {
     public static final int PLAYER_START_X = 8;
     public static final int PLAYER_START_Y = 140;
 
-    private final Container lootContainer;
     @Nullable
     private final CrowNestBlockEntity nest;
     private final boolean clientSide;
@@ -52,7 +50,6 @@ public class CrowNestMenu extends AbstractContainerMenu {
     private CrowNestMenu(int containerId, Inventory inventory, @Nullable CrowNestBlockEntity nest, boolean clientSide) {
         super(GuaniaoMenuTypes.CROW_NEST.get(), containerId);
         this.nest = nest;
-        this.lootContainer = nest == null ? new SimpleContainer(TREASURE_SLOT_COUNT) : nest;
         this.clientSide = clientSide;
 
         for (int slot = 0; slot < EGG_SLOT_COUNT; slot++) {
@@ -206,10 +203,10 @@ public class CrowNestMenu extends AbstractContainerMenu {
     }
 
     public ItemStack getTreasureStack(int slot) {
-        if (slot < 0 || slot >= TREASURE_SLOT_COUNT) {
+        if (slot < 0 || slot >= TREASURE_SLOT_COUNT || this.nest == null) {
             return ItemStack.EMPTY;
         }
-        return this.lootContainer.getItem(slot);
+        return this.nest.getItem(slot);
     }
 
     public List<CrowNestLootLayout.Placement> getLootLayout() {

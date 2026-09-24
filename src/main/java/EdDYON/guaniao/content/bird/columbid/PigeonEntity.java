@@ -47,6 +47,11 @@ public class PigeonEntity extends AbstractColumbidEntity {
     }
 
     @Override
+    protected boolean canDanceToMusic() {
+        return true;
+    }
+
+    @Override
     public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType spawnType, SpawnGroupData spawnGroupData, CompoundTag compoundTag) {
         SpawnGroupData data = super.finalizeSpawn(level, difficulty, spawnType, spawnGroupData, compoundTag);
         if (compoundTag == null || !compoundTag.contains("PigeonVariant", 3)) {

@@ -9,8 +9,10 @@ public final class CassowaryDefinition {
     public static final int SPAWN_EGG_BASE_COLOR = 0x16242C;
     public static final int SPAWN_EGG_SPOT_COLOR = 0x28768E;
 
-    public static final float WIDTH = 1.15F;
-    public static final float HEIGHT = 2.62F;
+    /** Approved 0.85x size applies to the entity collision box as well as rendering. */
+    public static final float SIZE_MULTIPLIER = 0.85F;
+    public static final float WIDTH = 1.15F * SIZE_MULTIPLIER;
+    public static final float HEIGHT = 2.62F * SIZE_MULTIPLIER;
     public static final double MAX_HEALTH = 30.0D;
     public static final double ATTACK_DAMAGE = 7.0D;
     public static final double ATTACK_KNOCKBACK = 1.8D;

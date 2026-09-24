@@ -77,7 +77,8 @@ public class BirdGuideScreen extends Screen {
             new BirdGuideEntry("myna", List.of("intro")),
             new BirdGuideEntry("woodcock", List.of("intro")),
             new BirdGuideEntry("kestrel", List.of("intro")),
-            new BirdGuideEntry("cassowary", List.of("intro"))
+            new BirdGuideEntry("cassowary", List.of("intro")),
+            new BirdGuideEntry("umbrella_cockatoo", List.of("intro"))
     );
     private static final PoseKind[] POSES = PoseKind.values();
     private static final List<String> LAYOUT_RECT_IDS = List.of(
@@ -552,7 +553,8 @@ public class BirdGuideScreen extends Screen {
 
     private LivingEntity previewEntity() {
         if (this.previewEntity == null && this.minecraft != null && this.minecraft.level != null) {
-            this.previewEntity = this.selectedEntry(this.selectedIndex).entityType().create((Level)this.minecraft.level);
+            EntityType<? extends LivingEntity> type = this.selectedEntry(this.selectedIndex).entityType();
+            this.previewEntity = type == null ? null : type.create((Level)this.minecraft.level);
             if (this.previewEntity != null) {
                 if (this.previewEntity instanceof Mob mob) {
                     mob.setNoAi(true);
@@ -745,6 +747,8 @@ public class BirdGuideScreen extends Screen {
         } else if (entity instanceof SparrowEntity sparrow) {
             sparrow.setGuidePreviewAnimation(this.toSparrowPreviewAnimation(this.previewAnimation));
         } else if (entity instanceof BudgerigarEntity budgerigar) {
+            // Subclasses with a richer crest (the umbrella cockatoo) override this method
+            // and re-map the budgerigar poses onto their own overlay animations.
             budgerigar.setGuidePreviewAnimation(this.toBudgerigarPreviewAnimation(this.previewAnimation));
         } else if (entity instanceof AbstractColumbidEntity columbid) {
             columbid.setGuidePreviewAnimation(this.toColumbidPreviewAnimation(this.previewAnimation));
@@ -876,6 +880,7 @@ public class BirdGuideScreen extends Screen {
             case "woodcock" -> List.of("nocturnal", "forest", "insect_eater", "alert", "solitary");
             case "kestrel" -> List.of("diurnal", "farmland", "predator", "alert", "solitary", "tameable");
             case "cassowary" -> List.of("diurnal", "forest", "omnivore", "alert", "solitary");
+            case "umbrella_cockatoo" -> List.of("diurnal", "jungle", "fruit_eater", "social", "tameable", "mimic");
             default -> List.of();
         };
     }
@@ -897,6 +902,7 @@ public class BirdGuideScreen extends Screen {
             case "woodcock" -> 0xFF9A6A45;
             case "kestrel" -> 0xFFC36F3D;
             case "cassowary" -> 0xFF2E8392;
+            case "umbrella_cockatoo" -> 0xFFF2CE55;
             default -> ACCENT_TEXT_COLOR;
         };
     }
@@ -1273,17 +1279,18 @@ public class BirdGuideScreen extends Screen {
 
     private int detailTextHeight(BirdGuideEntry entry, int textW) {
         int height = 0;
+        int safeWidth = Math.max(1, textW);
         for (String section : entry.sections()) {
             MutableComponent body = Component.translatable("gui.guaniao.bird_guide.entry." + entry.id() + "." + section + ".body");
-            height += this.font.split((FormattedText)body, textW).size() * 12 + 7;
+            height += this.font.split((FormattedText)body, safeWidth).size() * 12 + 7;
         }
         return height;
     }
 
     private int maxTextScroll(BirdGuideEntry entry) {
         GuiLayoutRect note = this.infoCardRect();
-        int visibleHeight = note.h() - 52;
-        return Math.max(0, this.detailTextHeight(entry, note.w() - 28) - visibleHeight + 8);
+        int visibleHeight = Math.max(1, note.h() - 52);
+        return Math.max(0, this.detailTextHeight(entry, Math.max(1, note.w() - 28)) - visibleHeight + 8);
     }
 
     private int poseButtonH(GuiLayoutRect rect) {
@@ -1690,7 +1697,11 @@ public class BirdGuideScreen extends Screen {
                 case "woodcock" -> GuaniaoEntityTypes.WOODCOCK.get();
                 case "kestrel" -> GuaniaoEntityTypes.KESTREL.get();
                 case "cassowary" -> GuaniaoEntityTypes.CASSOWARY.get();
-                default -> GuaniaoEntityTypes.NIGHT_HERON.get();
+                case "umbrella_cockatoo" -> GuaniaoEntityTypes.UMBRELLA_COCKATOO.get();
+                // Explicit so a mistyped entry id surfaces as null (skipped preview)
+                // instead of silently rendering a night heron.
+                case "night_heron" -> GuaniaoEntityTypes.NIGHT_HERON.get();
+                default -> null;
             };
         }
     }

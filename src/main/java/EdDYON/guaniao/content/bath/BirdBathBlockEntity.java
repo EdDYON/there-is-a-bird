@@ -264,12 +264,6 @@ public class BirdBathBlockEntity extends BlockEntity implements GeoBlockEntity {
         }
     }
 
-    public void environmentTick(ServerLevel level, BlockPos pos, BlockState state, RandomSource random) {
-        if (this.runEnvironmentTick(level, pos, state, random, ENVIRONMENT_TICK_INTERVAL)) {
-            this.sync();
-        }
-    }
-
     private boolean runEnvironmentTick(ServerLevel level, BlockPos pos, BlockState state, RandomSource random, int elapsedTicks) {
         boolean changed = false;
         boolean openToSky = level.canSeeSky(pos.above());
@@ -382,7 +376,6 @@ public class BirdBathBlockEntity extends BlockEntity implements GeoBlockEntity {
         boolean changed = false;
         if (this.occupiedTicks > 0) {
             this.occupiedTicks = Math.max(0, this.occupiedTicks - 1);
-            this.setChanged();
             if (this.occupiedTicks == 0) {
                 this.currentUser = null;
                 changed = true;
@@ -390,11 +383,12 @@ public class BirdBathBlockEntity extends BlockEntity implements GeoBlockEntity {
         }
         if (this.recentBirdUseTicks > 0) {
             this.recentBirdUseTicks = Math.max(0, this.recentBirdUseTicks - 1);
-            this.setChanged();
             if (this.recentBirdUseTicks == 0) {
                 changed = true;
             }
         }
+        // No setChanged() while merely counting down: serverTick() calls sync()
+        // (which marks the chunk dirty) only when something actually changed.
         return changed;
     }
 
@@ -464,8 +458,11 @@ public class BirdBathBlockEntity extends BlockEntity implements GeoBlockEntity {
             this.cleanliness = dirtierOf(this.cleanliness, BirdBathCleanliness.DIRTY);
             this.spoilTicks = 0;
             BirdBathEffects.spoiled(level, pos);
+            return true;
         }
-        return true;
+        // Merely accumulating spoilTicks is not a state change: syncing here would
+        // push a block update to clients every environment tick for every food bath.
+        return false;
     }
 
     private boolean tickLongTermDirt(RandomSource random) {
