@@ -40,7 +40,6 @@ ms：https://modrinth.com/mod/bird-watching
 ## 文档与贡献
 
 - [贡献指南](CONTRIBUTING.md)：开发环境、分支目标、验证与素材规则。
-- [版本迁移指南](docs/PORTING.md)：迁移范围、验证命令及尚需人工检查的项目。
 - [服务端管理](docs/SERVER_ADMIN.md)：照片存储、维护命令与问题报告。
 - [更新记录](CHANGELOG.md)：版本功能与修复历史。
 - [安全策略](SECURITY.md)：私密报告漏洞的方式。
