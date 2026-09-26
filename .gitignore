@@ -30,11 +30,12 @@ javac.*.args
 
 # local restore/decompile/tooling scratch
 .backup*
-.codex_restore_from_jar
-.restore_from_eqqq
-.restore_tools
+.*restore*
 .tmp_*
 .tools
 
 # Files from Forge MDK
 forge*changelog.txt
+
+# Local development instructions
+AGENTS.md

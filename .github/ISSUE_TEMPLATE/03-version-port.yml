@@ -25,8 +25,8 @@ body:
     id: loader
     attributes:
       label: 目标加载器与版本
-      description: 必须与维护者已经确定的迁移目标一致。
-      placeholder: 例如 NeoForge x.x.x（待维护者确认）
+      description: 当前 1.21.1 分支使用 NeoForge，请填写复现问题时使用的版本。
+      placeholder: NeoForge 21.1.248（Minecraft 1.21.1）
     validations:
       required: true
   - type: textarea

@@ -23,7 +23,7 @@
 | Java | 17 |
 | GeckoLib | 4.4.x |
 | `main` | 当前维护的 1.20.1 版本 |
-| `port/1.21.1` | 计划中的迁移工作分支，不代表已经兼容 |
+| `port/1.21.1` | Minecraft 1.21.1 / NeoForge 21.1.248 / Java 21 的独立维护分支 |
 
 ## 下载与安装
 
@@ -40,7 +40,7 @@ ms：https://modrinth.com/mod/bird-watching
 ## 文档与贡献
 
 - [贡献指南](CONTRIBUTING.md)：开发环境、分支目标、验证与素材规则。
-- [版本迁移指南](docs/PORTING.md)：1.21.1 迁移模块、认领方式与完成标准。
+- [版本迁移指南](docs/PORTING.md)：两个版本的维护目标、开发环境与跨版本修复要求。
 - [服务端管理](docs/SERVER_ADMIN.md)：照片存储、维护命令与问题报告。
 - [更新记录](CHANGELOG.md)：版本功能与修复历史。
 - [安全策略](SECURITY.md)：私密报告漏洞的方式。
