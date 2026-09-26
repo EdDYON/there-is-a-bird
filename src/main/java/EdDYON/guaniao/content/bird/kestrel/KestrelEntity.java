@@ -1820,6 +1820,7 @@ public class KestrelEntity extends TamableAnimal implements GeoEntity, FlyingAni
 
     private <T extends KestrelEntity> PlayState movementController(AnimationState<T> animationState) {
         animationState.getController().setAnimationSpeed(1.0D);
+        animationState.getController().transitionLength(3);
         if (this.guidePreviewAnimation.animation != null) {
             return animationState.setAndContinue(this.guidePreviewAnimation.animation);
         }

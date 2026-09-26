@@ -75,6 +75,7 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 mixin {
     add sourceSets.main, 'guaniao.refmap.json'
+    config 'guaniao.mixins.json'
 }
 
 repositories {
@@ -137,4 +138,65 @@ publishing {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+}
+
+// These regressions use main methods and need separate JVMs, not a JUnit engine.
+def regressionTasks = fileTree('src/test/java').matching { include '**/*Test.java' }.files.sort().collect { source ->
+    def className = file('src/test/java').toPath().relativize(source.toPath()).toString()
+            .replace(File.separator, '.').replaceAll(/\.java$/, '')
+    tasks.register("regression_${className.replace('.', '_')}", JavaExec) {
+        group = 'verification'
+        description = "Runs ${className}."
+        dependsOn tasks.named('testClasses')
+        classpath = sourceSets.test.runtimeClasspath
+        mainClass = className
+        javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(17) }
+        workingDir = projectDir
+        systemProperty 'java.awt.headless', 'true'
+    }
+}
+
+tasks.register('regressionTest') {
+    group = 'verification'
+    description = 'Runs every standalone Java regression test in its own JVM.'
+    dependsOn regressionTasks
+}
+
+tasks.register('verifyReleaseJar') {
+    group = 'verification'
+    description = 'Checks version metadata and Mixin registration in the reobfuscated release JAR.'
+    dependsOn 'reobfJar'
+    doLast {
+        def archive = tasks.named('jar', Jar).get().archiveFile.get().asFile
+        new java.util.jar.JarFile(archive).withCloseable { jarFile ->
+            def attributes = jarFile.manifest.mainAttributes
+            if (attributes.getValue('Implementation-Version') != project.version.toString()) {
+                throw new GradleException('Release JAR version does not match mod_version')
+            }
+            def configs = (attributes.getValue('MixinConfigs') ?: '').split(',')*.trim()
+            if (!configs.contains('guaniao.mixins.json')) {
+                throw new GradleException('Release JAR does not register guaniao.mixins.json')
+            }
+            def readJson = { String name ->
+                def entry = jarFile.getJarEntry(name)
+                if (entry == null) throw new GradleException("Release JAR is missing ${name}")
+                jarFile.getInputStream(entry).withCloseable { stream ->
+                    new groovy.json.JsonSlurper().parse(stream, 'UTF-8')
+                }
+            }
+            def config = readJson('guaniao.mixins.json')
+            def refmap = readJson(config.refmap)
+            config.mixins.each { mixinName ->
+                def classPath = "${config.package.replace('.', '/')}/${mixinName}"
+                if (jarFile.getJarEntry("${classPath}.class") == null || !refmap.mappings[classPath]) {
+                    throw new GradleException("Release JAR is missing the class or mappings for ${mixinName}")
+                }
+            }
+            logger.lifecycle("Verified release JAR: ${archive.name}")
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn 'regressionTest', 'verifyReleaseJar'
 }

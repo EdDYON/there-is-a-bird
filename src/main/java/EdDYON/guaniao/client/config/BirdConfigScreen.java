@@ -22,6 +22,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.resources.ResourceLocation;
+import EdDYON.guaniao.client.gui.layout.GuiLayoutRect;
+import EdDYON.guaniao.content.bird.kiwi.KiwiEntity;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.network.chat.Component;
@@ -40,99 +44,184 @@ import java.util.function.DoubleConsumer;
 import java.util.function.DoubleSupplier;
 
 public class BirdConfigScreen extends Screen {
-    private static final int MARGIN = 14;
-    private static final int GAP = 10;
-    private static final int LIST_ROW_HEIGHT = 25;
-    private static final int SETTING_ROW_HEIGHT = 31;
-    private static final int FIELD_TOP = 72;
-    private static final int BOTTOM_HEIGHT = 42;
-    private static final int PANEL = 0xD9182026;
-    private static final int PANEL_ALT = 0xD91D272E;
-    private static final int ROW = 0x88263239;
-    private static final int ROW_HOVER = 0xAA31424B;
-    private static final int SELECTED = 0xAA3B474E;
-    private static final int OUTLINE = 0xAA59666C;
-    private static final int TEXT = 0xFFF1F5F5;
-    private static final int MUTED = 0xFFB8C5C7;
-
+    private static final ResourceLocation RECIPE_BOOK = new ResourceLocation("minecraft", "textures/gui/recipe_book.png");
+    private static final int TEXT = 0xFF404040;
+    private static final int MUTED = 0xFF606060;
     private BirdConfigData data;
     private final List<NumericInput> numericInputs = new ArrayList<>();
     private final List<SettingSpec> visibleSettings = new ArrayList<>();
-    private int selectedIndex;
+    private BirdConfigLayout layout;
+    private boolean speciesMode;
+    private BirdConfigCategory category = BirdConfigCategory.GENERAL;
+    private int selectedIndex = 1;
     private int listScroll;
     private int fieldScroll;
+    private int settingCount;
     private Component status = Component.empty();
     private LivingEntity previewEntity;
     private float previewLookX = 18.0F;
     private float previewLookY = -8.0F;
     private boolean draggingPreview;
+    private boolean draggingFields;
+    private double fieldDragOffset;
 
     public BirdConfigScreen(BirdConfigData data) {
         super(Component.translatable("gui.guaniao.bird_config.title"));
         this.data = data.copy();
     }
 
-    @Override
-    public boolean isPauseScreen() {
-        return false;
+    void acceptServerConfig(BirdConfigData data) {
+        this.data = data.copy();
+        this.status = Component.translatable("message.guaniao.bird_config.saved");
+        refreshWidgets();
     }
 
     @Override
+    public boolean isPauseScreen() { return false; }
+
+    @Override
     protected void init() {
+        this.draggingFields = false;
+        this.layout = new BirdConfigLayout(this.width, this.height);
         refreshWidgets();
+    }
+
+    @Override
+    public void resize(Minecraft minecraft, int width, int height) {
+        // Valid edits survive GUI scale/window changes, as they do category changes.
+        captureNumericValues();
+        super.resize(minecraft, width, height);
+    }
+
+    private Button button(GuiLayoutRect r, Component message, Button.OnPress action) {
+        return this.addRenderableWidget(Button.builder(message, action).bounds(r.x(), r.y(), r.w(), r.h()).build());
+    }
+
+    private void choice(GuiLayoutRect r, Component message, boolean selected, Button.OnPress action) {
+        Button button = new Button(r.x(), r.y(), r.w(), r.h(), fit(message, r.w() - 8), action, value -> value.get()) {
+            @Override
+            public void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+                super.renderWidget(graphics, mouseX, mouseY, partialTick);
+                if (selected) graphics.renderOutline(getX(), getY(), getWidth(), getHeight(), 0xFFFFFFFF);
+            }
+        };
+        button.setTooltip(Tooltip.create(message));
+        this.addRenderableWidget(button);
     }
 
     private void refreshWidgets() {
         this.clearWidgets();
         this.numericInputs.clear();
         this.visibleSettings.clear();
-
-        int bottomY = this.height - MARGIN - 22;
-        int buttonX = rightX() + 8;
-        int buttonGap = 6;
-        int buttonW = Math.max(34, (rightW() - 16 - buttonGap * 2) / 3);
-        this.addRenderableWidget(Button.builder(Component.translatable("gui.guaniao.bird_config.save"), button -> save())
-                .bounds(buttonX, bottomY, buttonW, 20).build());
-        this.addRenderableWidget(Button.builder(Component.translatable("gui.guaniao.bird_config.reset"), button -> resetDefaults())
-                .bounds(buttonX + buttonW + buttonGap, bottomY, buttonW, 20).build());
-        this.addRenderableWidget(Button.builder(Component.translatable("gui.guaniao.bird_config.close"), button -> onClose())
-                .bounds(buttonX + (buttonW + buttonGap) * 2, bottomY, buttonW, 20).build());
-
+        choice(this.layout.mode(0), Component.translatable("gui.guaniao.bird_config.mode.categories"), !this.speciesMode,
+                b -> changeMode(false));
+        choice(this.layout.mode(1), Component.translatable("gui.guaniao.bird_config.mode.species"), this.speciesMode,
+                b -> changeMode(true));
+        int subjects = this.speciesMode ? BirdSpecies.values().length : BirdConfigCategory.values().length;
+        this.listScroll = Mth.clamp(this.listScroll, 0, Math.max(0, subjects - this.layout.listRows()));
+        for (int row = 0; row < this.layout.listRows() && row + this.listScroll < subjects; row++) {
+            int index = row + this.listScroll;
+            Component name = this.speciesMode ? Component.translatable(BirdSpecies.values()[index].translationKey())
+                    : Component.translatable(BirdConfigCategory.values()[index].translationKey());
+            boolean selected = this.speciesMode ? this.selectedIndex == index + 1 : this.category.ordinal() == index;
+            choice(this.layout.subject(row), name, selected, b -> selectSubject(index));
+        }
+        button(this.layout.listArrow(false), Component.literal("<"), b -> scrollSubjects(-this.layout.listRows())).active = this.listScroll > 0;
+        button(this.layout.listArrow(true), Component.literal(">"), b -> scrollSubjects(this.layout.listRows())).active = this.listScroll + this.layout.listRows() < subjects;
+        if (this.speciesMode) {
+            for (int i = 0; i < BirdConfigCategory.SPECIES.size(); i++) {
+                BirdConfigCategory target = BirdConfigCategory.SPECIES.get(i);
+                choice(this.layout.tab(i), Component.translatable(target.translationKey() + ".short"), this.category == target,
+                        b -> selectCategory(target));
+            }
+        }
         List<SettingSpec> settings = settingsForSelection();
-        int visibleRows = visibleSettingRows();
-        this.fieldScroll = Mth.clamp(this.fieldScroll, 0, Math.max(0, settings.size() - visibleRows));
-        int controlX = controlX();
-        int controlW = 96;
-
-        for (int row = 0; row < visibleRows && this.fieldScroll + row < settings.size(); row++) {
+        this.settingCount = settings.size();
+        int rows = this.layout.fieldRows(this.speciesMode);
+        this.fieldScroll = Mth.clamp(this.fieldScroll, 0, Math.max(0, settings.size() - rows));
+        for (int row = 0; row < rows && this.fieldScroll + row < settings.size(); row++) {
             SettingSpec setting = settings.get(this.fieldScroll + row);
             this.visibleSettings.add(setting);
-            int y = FIELD_TOP + row * SETTING_ROW_HEIGHT + 5;
+            GuiLayoutRect r = this.layout.control(row, this.speciesMode);
             if (setting.storageScopeRow()) {
-                Button scope = Button.builder(scopeLabel(), this::toggleStorageScope)
-                        .bounds(controlX, y, controlW, 20)
-                        .build();
+                Button scope = button(r, scopeLabel(), this::toggleStorageScope);
                 scope.active = this.data.worldScopeAllowed;
-                this.addRenderableWidget(scope);
             } else if (setting.toggle()) {
-                Button toggle = Button.builder(toggleLabel(setting.booleanGetter().getAsBoolean()), button -> {
-                            boolean next = !setting.booleanGetter().getAsBoolean();
-                            setting.booleanSetter().accept(next);
-                            button.setMessage(toggleLabel(next));
-                            this.status = Component.translatable("gui.guaniao.bird_config.unsaved");
-                        })
-                        .bounds(controlX, y, controlW, 20)
-                        .build();
-                this.addRenderableWidget(toggle);
+                button(r, toggleLabel(setting.booleanGetter().getAsBoolean()), b -> {
+                    boolean next = !setting.booleanGetter().getAsBoolean();
+                    setting.booleanSetter().accept(next);
+                    b.setMessage(toggleLabel(next));
+                    this.status = Component.translatable("gui.guaniao.bird_config.unsaved");
+                });
             } else {
-                EditBox box = new EditBox(this.font, controlX, y, controlW, 20, setting.label());
+                EditBox box = new EditBox(this.font, r.x(), r.y(), r.w(), r.h(), setting.label());
                 box.setMaxLength(16);
                 box.setFilter(BirdConfigScreen::isNumericText);
                 box.setValue(format(setting.numberGetter().getAsDouble(), setting.integer()));
+                box.setResponder(value -> this.status = Component.translatable("gui.guaniao.bird_config.unsaved"));
                 this.numericInputs.add(new NumericInput(setting, box));
                 this.addRenderableWidget(box);
             }
         }
+        button(this.layout.footer(0), Component.translatable("gui.guaniao.bird_config.save"), b -> save());
+        button(this.layout.footer(1), Component.translatable("gui.guaniao.bird_config.reset_all"), b -> resetDefaults())
+                .setTooltip(Tooltip.create(Component.translatable("gui.guaniao.bird_config.reset_all.description")));
+        button(this.layout.footer(2), Component.translatable("gui.guaniao.bird_config.close"), b -> onClose());
+    }
+
+    private List<SettingSpec> settingsForSelection() {
+        return allSettingsForSelection().stream().filter(setting -> this.category.contains(setting.key())).toList();
+    }
+
+    private void changeMode(boolean species) {
+        if (this.speciesMode == species || !captureNumericValues()) return;
+        this.speciesMode = species;
+        this.category = species ? BirdConfigCategory.ECOLOGY : BirdConfigCategory.GENERAL;
+        this.listScroll = 0;
+        this.fieldScroll = 0;
+        this.previewEntity = null;
+        refreshWidgets();
+    }
+
+    private void selectSubject(int index) {
+        if (!captureNumericValues()) return;
+        if (this.speciesMode) {
+            this.selectedIndex = index + 1;
+            this.previewEntity = null;
+        } else {
+            this.category = BirdConfigCategory.values()[index];
+        }
+        this.fieldScroll = 0;
+        refreshWidgets();
+    }
+
+    private void selectCategory(BirdConfigCategory category) {
+        if (!captureNumericValues()) return;
+        this.category = category;
+        this.fieldScroll = 0;
+        refreshWidgets();
+    }
+
+    private void scrollSubjects(int amount) {
+        if (!captureNumericValues()) return;
+        this.listScroll += amount;
+        refreshWidgets();
+    }
+
+    private void scrollFields(int amount) {
+        scrollFieldsTo(this.fieldScroll + amount);
+    }
+
+    private void scrollFieldsTo(int offset) {
+        int next = Mth.clamp(offset, 0, this.layout.maxFieldScroll(this.speciesMode, this.settingCount));
+        if (next == this.fieldScroll) return;
+        if (!captureNumericValues()) return;
+        this.fieldScroll = next;
+        refreshWidgets();
+    }
+
+    private void dragFieldsTo(double mouseY) {
+        scrollFieldsTo(this.layout.fieldScrollAt(this.speciesMode, this.settingCount, mouseY - this.fieldDragOffset));
     }
 
     private void save() {
@@ -198,125 +287,119 @@ public class BirdConfigScreen extends Screen {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
         this.renderBackground(graphics);
-        renderPanels(graphics);
-        graphics.drawString(this.font, this.title, MARGIN + 3, 16, TEXT, false);
-        renderCategoryList(graphics, mouseX, mouseY);
-        renderSettings(graphics, mouseX, mouseY);
-        renderPreview(graphics);
-        if (!this.status.getString().isBlank()) {
-            graphics.drawString(this.font, fit(this.status, rightW() - 28), rightX() + 14, this.height - MARGIN - 36, MUTED, false);
-        }
-        super.render(graphics, mouseX, mouseY, partialTicks);
-        renderHoveredDescription(graphics, mouseX, mouseY);
-    }
-
-    private void renderPanels(GuiGraphics graphics) {
-        int top = 52;
-        int bottom = this.height - MARGIN;
-        graphics.fill(MARGIN, top, MARGIN + leftW(), bottom, PANEL);
-        graphics.fill(rightX(), top, rightX() + rightW(), bottom, PANEL_ALT);
-    }
-
-    private void renderCategoryList(GuiGraphics graphics, int mouseX, int mouseY) {
-        int top = 66;
-        int count = BirdSpecies.values().length + 1;
-        int visibleRows = visibleListRows();
-        this.listScroll = Mth.clamp(this.listScroll, 0, Math.max(0, count - visibleRows));
-
-        for (int row = 0; row < visibleRows && this.listScroll + row < count; row++) {
-            int index = this.listScroll + row;
-            int y = top + row * LIST_ROW_HEIGHT;
-            boolean selected = index == this.selectedIndex;
-            boolean hovered = mouseX >= MARGIN + 7 && mouseX <= MARGIN + leftW() - 7 && mouseY >= y && mouseY < y + LIST_ROW_HEIGHT - 3;
-            graphics.fill(MARGIN + 7, y, MARGIN + leftW() - 7, y + LIST_ROW_HEIGHT - 3, selected ? SELECTED : hovered ? ROW_HOVER : ROW);
-            Component name = index == 0
-                    ? Component.translatable("gui.guaniao.bird_config.global")
-                    : Component.translatable(BirdSpecies.values()[index - 1].translationKey());
-            graphics.drawString(this.font, fit(name, leftW() - 30), MARGIN + 15, y + 7, selected ? TEXT : MUTED, false);
-        }
-    }
-
-    private void renderSettings(GuiGraphics graphics, int mouseX, int mouseY) {
-        int labelX = rightX() + 15;
-        int rowRight = previewVisible() ? previewX() - 10 : rightX() + rightW() - 12;
-        Component heading = selectedSpecies() == null
-                ? Component.translatable("gui.guaniao.bird_config.global_heading")
-                : Component.translatable(selectedSpecies().translationKey());
-        graphics.drawString(this.font, heading, labelX, 59, TEXT, false);
-
+        GuiLayoutRect left = this.layout.left;
+        GuiLayoutRect right = this.layout.right;
+        graphics.blitNineSliced(RECIPE_BOOK, left.x(), left.y(), left.w(), left.h(), 5, 147, 166, 1, 1);
+        drawContainer(graphics, right);
+        graphics.drawString(this.font, fit(this.title, left.w() - 14), left.x() + 7, left.y() + 10, 0xFFFFFFFF, false);
+        Component heading = this.speciesMode ? Component.translatable(selectedSpecies().translationKey())
+                : Component.translatable(this.category.translationKey());
+        graphics.drawString(this.font, heading, right.x() + 8, right.y() + 10, TEXT, false);
+        if (!this.speciesMode) graphics.drawString(this.font,
+                fit(Component.translatable("gui.guaniao.bird_config.browse_hint"), right.w() - 16), right.x() + 8, right.y() + 25, MUTED, false);
         for (int row = 0; row < this.visibleSettings.size(); row++) {
-            int y = FIELD_TOP + row * SETTING_ROW_HEIGHT;
-            boolean hovered = mouseX >= labelX - 5 && mouseX <= rowRight && mouseY >= y && mouseY < y + SETTING_ROW_HEIGHT - 2;
-            graphics.fill(labelX - 5, y, rowRight, y + SETTING_ROW_HEIGHT - 2, hovered ? ROW_HOVER : ROW);
-            graphics.drawString(this.font, fit(this.visibleSettings.get(row).label(), Math.max(40, controlX() - labelX - 10)), labelX, y + 11, TEXT, false);
+            GuiLayoutRect r = this.layout.row(row, this.speciesMode);
+            GuiLayoutRect control = this.layout.control(row, this.speciesMode);
+            graphics.fill(r.x(), r.y(), r.right(), r.bottom(), r.contains(mouseX, mouseY) ? 0xFFB8B8B8 : 0xFFBEBEBE);
+            var lines = this.font.split(this.visibleSettings.get(row).label(), control.x() - r.x() - 9);
+            int lineY = r.y() + (r.h() - Math.min(2, lines.size()) * 9) / 2;
+            for (int i = 0; i < Math.min(2, lines.size()); i++) {
+                graphics.drawString(this.font, lines.get(i), r.x() + 4, lineY + i * 9, TEXT, false);
+            }
         }
+        int subjects = this.speciesMode ? BirdSpecies.values().length : BirdConfigCategory.values().length;
+        int listRows = this.layout.listRows();
+        int pages = (subjects + listRows - 1) / listRows;
+        int page = Math.min(pages, (this.listScroll + listRows * 2 - 1) / listRows);
+        drawCentered(graphics, Component.literal(page + "/" + pages),
+                left.centerX(), left.bottom() - 21, 0xFFFFFFFF);
+        renderFieldScrollbar(graphics, mouseX, mouseY);
+        GuiLayoutRect statusBox = this.layout.status();
+        graphics.drawString(this.font, fit(this.status, statusBox.w()), statusBox.x(), statusBox.y(), MUTED, false);
+        renderPreview(graphics);
+        super.render(graphics, mouseX, mouseY, partialTicks);
+        for (int row = 0; row < this.visibleSettings.size(); row++) {
+            if (this.layout.row(row, this.speciesMode).contains(mouseX, mouseY)) {
+                SettingSpec setting = this.visibleSettings.get(row);
+                Component text = setting.label().copy().append("\n").append(setting.description());
+                if (!setting.toggle() && !setting.storageScopeRow()) text = text.copy().append("\n").append(Component.translatable(
+                        "gui.guaniao.bird_config.number_range", format(setting.min(), setting.integer()), format(setting.max(), setting.integer())));
+                graphics.renderTooltip(this.font, this.font.split(text, 220), mouseX, mouseY);
+            }
+        }
+        if (statusBox.contains(mouseX, mouseY) && !this.status.getString().isBlank()) {
+            graphics.renderTooltip(this.font, this.font.split(this.status, 220), mouseX, mouseY);
+        }
+    }
+
+    private void drawCentered(GuiGraphics graphics, Component text, int x, int y, int color) {
+        graphics.drawString(this.font, text, x - this.font.width(text) / 2, y, color, false);
+    }
+
+    private void renderFieldScrollbar(GuiGraphics graphics, int mouseX, int mouseY) {
+        GuiLayoutRect track = this.layout.fieldScrollbar(this.speciesMode);
+        GuiLayoutRect thumb = this.layout.fieldThumb(this.speciesMode, this.settingCount, this.fieldScroll);
+        graphics.fill(track.x(), track.y(), track.right(), track.bottom(), 0xFF555555);
+        boolean enabled = this.layout.maxFieldScroll(this.speciesMode, this.settingCount) > 0;
+        boolean hovered = enabled && (this.draggingFields || thumb.contains(mouseX, mouseY));
+        graphics.fill(thumb.x(), thumb.y(), thumb.right(), thumb.bottom(), enabled ? 0xFF373737 : 0xFF777777);
+        graphics.fill(thumb.x(), thumb.y(), thumb.right() - 1, thumb.bottom() - 1, enabled ? 0xFFFFFFFF : 0xFFAAAAAA);
+        graphics.fill(thumb.x() + 1, thumb.y() + 1, thumb.right() - 1, thumb.bottom() - 1,
+                hovered ? 0xFFDDDDDD : enabled ? 0xFFC6C6C6 : 0xFF999999);
+    }
+
+    private static void drawContainer(GuiGraphics graphics, GuiLayoutRect r) {
+        graphics.fill(r.x() + 2, r.y(), r.right() - 2, r.bottom(), 0xFF000000);
+        graphics.fill(r.x(), r.y() + 2, r.right(), r.bottom() - 2, 0xFF000000);
+        graphics.fill(r.x() + 1, r.y() + 2, r.right() - 1, r.bottom() - 2, 0xFF555555);
+        graphics.fill(r.x() + 2, r.y() + 1, r.right() - 2, r.bottom() - 1, 0xFF555555);
+        graphics.fill(r.x() + 2, r.y() + 2, r.right() - 3, r.bottom() - 3, 0xFFFFFFFF);
+        graphics.fill(r.x() + 4, r.y() + 4, r.right() - 4, r.bottom() - 4, 0xFFC6C6C6);
     }
 
     private void renderPreview(GuiGraphics graphics) {
-        if (!previewVisible()) {
-            return;
-        }
-        int x = previewX();
-        int y = 67;
-        int w = 132;
-        int h = 112;
-        graphics.fill(x, y, x + w, y + h, 0xAA10171C);
-        graphics.renderOutline(x, y, w, h, OUTLINE);
+        if (!this.layout.hasPreview(this.speciesMode)) return;
+        GuiLayoutRect r = this.layout.preview();
+        graphics.fill(r.x(), r.y(), r.right(), r.bottom(), 0xFFB0B0B0);
+        graphics.renderOutline(r.x(), r.y(), r.w(), r.h(), 0xFF8B8B8B);
         LivingEntity entity = previewEntity();
         if (entity != null) {
-            InventoryScreen.renderEntityInInventoryFollowsMouse(
-                    graphics,
-                    x + w / 2,
-                    y + h - 8,
-                    previewScale(selectedSpecies()),
-                    this.previewLookX,
-                    this.previewLookY,
-                    entity
-            );
+            float height = entity instanceof EdDYON.guaniao.content.bird.scale.ScalableBirdModel bird
+                    ? bird.modelScaleProfile().targetHeightBlocks() * bird.getIndividualModelScale() : entity.getBbHeight();
+            int scale = BirdModelScale.fitPreviewScale(Math.max(1, Math.round(66 / Math.max(0.2F, height))));
+            graphics.enableScissor(r.x(), r.y(), r.right(), r.bottom());
+            InventoryScreen.renderEntityInInventoryFollowsMouse(graphics, r.centerX(), r.bottom() - 8,
+                    scale, this.previewLookX, this.previewLookY, entity);
+            graphics.disableScissor();
         }
-        graphics.drawCenteredString(this.font, Component.translatable("gui.guaniao.bird_config.preview_hint"), x + w / 2, y + h + 4, MUTED);
-    }
-
-    private void renderHoveredDescription(GuiGraphics graphics, int mouseX, int mouseY) {
-        int labelX = rightX() + 10;
-        int rowRight = previewVisible() ? previewX() - 10 : rightX() + rightW() - 12;
-        if (mouseX < labelX || mouseX > rowRight || mouseY < FIELD_TOP) {
-            return;
-        }
-        int row = (mouseY - FIELD_TOP) / SETTING_ROW_HEIGHT;
-        if (row >= 0 && row < this.visibleSettings.size()) {
-            graphics.renderTooltip(this.font, this.visibleSettings.get(row).description(), mouseX, mouseY);
-        }
+        drawCentered(graphics, Component.translatable("gui.guaniao.bird_config.preview_hint"), r.centerX(), r.bottom() + 4, MUTED);
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0 && previewVisible() && isInPreview(mouseX, mouseY)) {
+        if (button == 0 && this.layout.fieldScrollbar(this.speciesMode).contains(mouseX, mouseY)) {
+            if (this.layout.maxFieldScroll(this.speciesMode, this.settingCount) == 0 || !captureNumericValues()) return true;
+            GuiLayoutRect thumb = this.layout.fieldThumb(this.speciesMode, this.settingCount, this.fieldScroll);
+            this.fieldDragOffset = thumb.contains(mouseX, mouseY) ? mouseY - thumb.y() : thumb.h() / 2.0D;
+            this.draggingFields = true;
+            this.setFocused(null);
+            dragFieldsTo(mouseY);
+            return true;
+        }
+        if (super.mouseClicked(mouseX, mouseY, button)) return true;
+        if (button == 0 && this.layout.hasPreview(this.speciesMode) && this.layout.preview().contains(mouseX, mouseY)) {
             this.draggingPreview = true;
             return true;
         }
-        int top = 66;
-        if (mouseX >= MARGIN + 7 && mouseX <= MARGIN + leftW() - 7 && mouseY >= top) {
-            int row = ((int)mouseY - top) / LIST_ROW_HEIGHT;
-            int index = this.listScroll + row;
-            if (row >= 0 && row < visibleListRows() && index >= 0 && index <= BirdSpecies.values().length) {
-                if (!captureNumericValues()) {
-                    return true;
-                }
-                this.selectedIndex = index;
-                this.fieldScroll = 0;
-                this.previewEntity = null;
-                this.previewLookX = 18.0F;
-                this.previewLookY = -8.0F;
-                refreshWidgets();
-                return true;
-            }
-        }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return false;
     }
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (button == 0 && this.draggingFields) {
+            dragFieldsTo(mouseY);
+            return true;
+        }
         if (button == 0 && this.draggingPreview) {
             this.previewLookX = Mth.clamp(this.previewLookX + (float)dragX * 1.4F, -80.0F, 80.0F);
             this.previewLookY = Mth.clamp(this.previewLookY + (float)dragY, -40.0F, 40.0F);
@@ -327,6 +410,10 @@ public class BirdConfigScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (button == 0 && this.draggingFields) {
+            this.draggingFields = false;
+            return true;
+        }
         if (button == 0 && this.draggingPreview) {
             this.draggingPreview = false;
             return true;
@@ -336,31 +423,29 @@ public class BirdConfigScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        if (!captureNumericValues()) {
+        if (this.layout.left.contains(mouseX, mouseY)) {
+            scrollSubjects(-(int)Math.signum(delta));
             return true;
         }
-        int direction = (int)Math.signum(delta);
-        if (mouseX < rightX()) {
-            int max = Math.max(0, BirdSpecies.values().length + 1 - visibleListRows());
-            this.listScroll = Mth.clamp(this.listScroll - direction, 0, max);
-        } else {
-            int max = Math.max(0, settingsForSelection().size() - visibleSettingRows());
-            this.fieldScroll = Mth.clamp(this.fieldScroll - direction, 0, max);
+        if (this.layout.fields(this.speciesMode).contains(mouseX, mouseY)
+                || this.layout.fieldScrollbar(this.speciesMode).contains(mouseX, mouseY)) {
+            scrollFields(-(int)Math.signum(delta));
+            return true;
         }
-        refreshWidgets();
-        return true;
+        return super.mouseScrolled(mouseX, mouseY, delta);
     }
 
     @Override
     public void tick() {
         super.tick();
+        for (NumericInput input : this.numericInputs) input.box().tick();
         if (this.previewEntity != null) {
             ++this.previewEntity.tickCount;
             applyPreviewIdle(this.previewEntity);
         }
     }
 
-    private List<SettingSpec> settingsForSelection() {
+    private List<SettingSpec> allSettingsForSelection() {
         List<SettingSpec> settings = new ArrayList<>();
         BirdSpecies species = selectedSpecies();
         if (species == null) {
@@ -457,7 +542,9 @@ public class BirdConfigScreen extends Screen {
     }
 
     private static void applyPreviewIdle(LivingEntity entity) {
-        if (entity instanceof MynaEntity bird) {
+        if (entity instanceof KiwiEntity bird) {
+            bird.setGuidePreviewAnimation(KiwiEntity.GuidePreviewAnimation.IDLE);
+        } else if (entity instanceof MynaEntity bird) {
             bird.setGuidePreviewAnimation(MynaEntity.GuidePreviewAnimation.IDLE);
         } else if (entity instanceof NightHeronEntity bird) {
             bird.setGuidePreviewAnimation(NightHeronEntity.GuidePreviewAnimation.IDLE);
@@ -479,7 +566,7 @@ public class BirdConfigScreen extends Screen {
     }
 
     private BirdSpecies selectedSpecies() {
-        return this.selectedIndex <= 0 ? null : BirdSpecies.values()[this.selectedIndex - 1];
+        return !this.speciesMode || this.selectedIndex <= 0 ? null : BirdSpecies.values()[this.selectedIndex - 1];
     }
 
     private static Component toggleLabel(boolean enabled) {
@@ -517,65 +604,6 @@ public class BirdConfigScreen extends Screen {
         return String.format(Locale.ROOT, "%.3f", value).replaceAll("0+$", "").replaceAll("\\.$", "");
     }
 
-    private int leftW() {
-        return Mth.clamp(this.width / 4, 126, 184);
-    }
-
-    private int rightX() {
-        return MARGIN + leftW() + GAP;
-    }
-
-    private int rightW() {
-        return Math.max(1, this.width - rightX() - MARGIN);
-    }
-
-    private int visibleListRows() {
-        return Math.max(1, (this.height - 66 - BOTTOM_HEIGHT - MARGIN) / LIST_ROW_HEIGHT);
-    }
-
-    private int visibleSettingRows() {
-        return Math.max(1, (this.height - FIELD_TOP - BOTTOM_HEIGHT - MARGIN) / SETTING_ROW_HEIGHT);
-    }
-
-    private boolean previewVisible() {
-        return selectedSpecies() != null && rightW() >= 430;
-    }
-
-    private int previewX() {
-        return rightX() + rightW() - 144;
-    }
-
-    private int controlX() {
-        return previewVisible() ? previewX() - 106 : rightX() + rightW() - 110;
-    }
-
-    private boolean isInPreview(double mouseX, double mouseY) {
-        return mouseX >= previewX() && mouseX <= previewX() + 132 && mouseY >= 67 && mouseY <= 179;
-    }
-
-    private int previewScale(BirdSpecies species) {
-        if (species == null) {
-            return BirdModelScale.fitPreviewScale(40);
-        }
-        int scale = switch (species) {
-            case NIGHT_HERON -> 27;
-            case SPARROW -> 54;
-            case LONG_TAILED_TIT -> 51;
-            case COCKATIEL -> 45;
-            case MACAW -> 34;
-            case BUDGERIGAR -> 48;
-            case SPOTTED_DOVE, PIGEON -> 42;
-            case CROW, SEAGULL -> 37;
-            case KIWI -> 43;
-            case MYNA -> 47;
-            case WOODCOCK -> 40;
-            case KESTREL -> 38;
-            case CASSOWARY -> 15;
-            case UMBRELLA_COCKATOO -> 36;
-        };
-        return BirdModelScale.fitPreviewScale(scale);
-    }
-
     private Component fit(Component text, int maxWidth) {
         return Component.literal(this.font.plainSubstrByWidth(text.getString(), Math.max(12, maxWidth)));
     }
@@ -584,6 +612,7 @@ public class BirdConfigScreen extends Screen {
     }
 
     private record SettingSpec(
+            String key,
             Component label,
             Component description,
             boolean storageScopeRow,
@@ -598,7 +627,7 @@ public class BirdConfigScreen extends Screen {
     ) {
         private static SettingSpec storageScope() {
             return new SettingSpec(
-                    Component.translatable("gui.guaniao.bird_config.setting.scope"),
+                    "scope", Component.translatable("gui.guaniao.bird_config.setting.scope"),
                     Component.translatable("gui.guaniao.bird_config.setting.scope.description"),
                     true, false, null, null, null, null, 0.0D, 1.0D, false
             );
@@ -606,7 +635,7 @@ public class BirdConfigScreen extends Screen {
 
         private static SettingSpec toggle(String key, BooleanSupplier getter, Consumer<Boolean> setter) {
             return new SettingSpec(
-                    Component.translatable("gui.guaniao.bird_config.setting." + key),
+                    key, Component.translatable("gui.guaniao.bird_config.setting." + key),
                     Component.translatable("gui.guaniao.bird_config.setting." + key + ".description"),
                     false, true, getter, setter, null, null, 0.0D, 1.0D, false
             );
@@ -614,7 +643,7 @@ public class BirdConfigScreen extends Screen {
 
         private static SettingSpec number(String key, DoubleSupplier getter, DoubleConsumer setter, double min, double max, boolean integer) {
             return new SettingSpec(
-                    Component.translatable("gui.guaniao.bird_config.setting." + key),
+                    key, Component.translatable("gui.guaniao.bird_config.setting." + key),
                     Component.translatable("gui.guaniao.bird_config.setting." + key + ".description"),
                     false, false, null, null, getter, setter, min, max, integer
             );

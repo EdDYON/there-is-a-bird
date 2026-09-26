@@ -14,6 +14,8 @@ public final class BirdFlightController {
     private static final float GROUND_YAW_TURN_RATE = 18.0F;
     private static final double TAKEOFF_VERTICAL_SPEED = 0.055D;
     private static final double TAKEOFF_HORIZONTAL_SPEED_SQR = 0.025D;
+    // Above the deliberate 0.23 ground hop, below the 0.28 normal launch.
+    private static final double TAKEOFF_VERTICAL_ONLY_SPEED = 0.26D;
     private static final Map<Mob, FlightProgress> FLIGHT_PROGRESS = Collections.synchronizedMap(new WeakHashMap<>());
 
     private BirdFlightController() {
@@ -158,7 +160,7 @@ public final class BirdFlightController {
         // Velocity can reach the client before the synced behavior state or
         // on-ground flag. Treat an obvious upward launch as flight so the
         // model opens its wings on the first moving frame instead of sliding.
-        if (isTakeoffMotion(movement)) {
+        if (isTakeoffMotion(movement) || noGravity && movement.y > TAKEOFF_VERTICAL_SPEED) {
             return true;
         }
         if (onGround) {
@@ -179,9 +181,10 @@ public final class BirdFlightController {
         return movement.horizontalDistanceSqr() > 0.001D;
     }
 
-    private static boolean isTakeoffMotion(Vec3 movement) {
+    static boolean isTakeoffMotion(Vec3 movement) {
         return movement.y > TAKEOFF_VERTICAL_SPEED
-                && movement.horizontalDistanceSqr() > TAKEOFF_HORIZONTAL_SPEED_SQR;
+                && (movement.horizontalDistanceSqr() > TAKEOFF_HORIZONTAL_SPEED_SQR
+                || movement.y >= TAKEOFF_VERTICAL_ONLY_SPEED);
     }
 
     private static boolean isNearGroundForAnimation(Mob bird, double distance) {

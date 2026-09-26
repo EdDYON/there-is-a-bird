@@ -17,6 +17,11 @@ public final class BirdConfigClient {
     }
 
     public static void open(BirdConfigData data) {
-        Minecraft.getInstance().setScreen(new BirdConfigScreen(data));
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.screen instanceof BirdConfigScreen screen) {
+            screen.acceptServerConfig(data);
+        } else {
+            minecraft.setScreen(new BirdConfigScreen(data));
+        }
     }
 }

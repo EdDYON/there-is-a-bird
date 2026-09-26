@@ -1511,6 +1511,7 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
 
     private <T extends AbstractColumbidEntity> PlayState movementController(AnimationState<T> animationState) {
         animationState.getController().setAnimationSpeed(1.0D);
+        animationState.getController().transitionLength(4);
         RawAnimation preview = this.guidePreviewAnimation.animation();
         if (preview != null) {
             return animationState.setAndContinue(preview);

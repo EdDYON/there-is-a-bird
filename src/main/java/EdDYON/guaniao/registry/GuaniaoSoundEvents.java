@@ -32,6 +32,17 @@ public final class GuaniaoSoundEvents {
     public static final RegistryObject<SoundEvent> MACAW_AMBIENT = register("entity.macaw.ambient");
     public static final RegistryObject<SoundEvent> MACAW_HURT = register("entity.macaw.hurt");
     public static final RegistryObject<SoundEvent> MACAW_DEATH = register("entity.macaw.death");
+    public static final RegistryObject<SoundEvent> UMBRELLA_COCKATOO_CALL_01 = register("entity.umbrella_cockatoo.call_01");
+    public static final RegistryObject<SoundEvent> UMBRELLA_COCKATOO_CALL_02 = register("entity.umbrella_cockatoo.call_02");
+    public static final RegistryObject<SoundEvent> UMBRELLA_COCKATOO_CALL_03 = register("entity.umbrella_cockatoo.call_03");
+    public static final RegistryObject<SoundEvent> UMBRELLA_COCKATOO_CALL_04 = register("entity.umbrella_cockatoo.call_04");
+    public static final RegistryObject<SoundEvent> UMBRELLA_COCKATOO_CALL_05 = register("entity.umbrella_cockatoo.call_05");
+    public static final RegistryObject<SoundEvent> UMBRELLA_COCKATOO_CALL_07 = register("entity.umbrella_cockatoo.call_07");
+    public static final RegistryObject<SoundEvent> UMBRELLA_COCKATOO_CALL_08 = register("entity.umbrella_cockatoo.call_08");
+    public static final RegistryObject<SoundEvent> UMBRELLA_COCKATOO_PHRASE_01 = register("entity.umbrella_cockatoo.phrase_01");
+    public static final RegistryObject<SoundEvent> UMBRELLA_COCKATOO_PHRASE_02 = register("entity.umbrella_cockatoo.phrase_02");
+    public static final RegistryObject<SoundEvent> UMBRELLA_COCKATOO_PHRASE_03 = register("entity.umbrella_cockatoo.phrase_03");
+    public static final RegistryObject<SoundEvent> UMBRELLA_COCKATOO_PHRASE_04 = register("entity.umbrella_cockatoo.phrase_04");
     public static final RegistryObject<SoundEvent> SPOTTED_DOVE_AMBIENT = register("entity.spotted_dove.ambient");
     public static final RegistryObject<SoundEvent> SPOTTED_DOVE_HURT = register("entity.spotted_dove.hurt");
     public static final RegistryObject<SoundEvent> SPOTTED_DOVE_DEATH = register("entity.spotted_dove.death");

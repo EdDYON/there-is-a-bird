@@ -261,6 +261,7 @@ public class LongTailedTitEntity extends SparrowEntity {
 
     private <T extends LongTailedTitEntity> PlayState movementController(AnimationState<T> state) {
         state.getController().setAnimationSpeed(1.0D);
+        state.getController().transitionLength(4);
         RawAnimation preview = this.guidePreviewAnimation.animation;
         if (preview != null) {
             return state.setAndContinue(preview);

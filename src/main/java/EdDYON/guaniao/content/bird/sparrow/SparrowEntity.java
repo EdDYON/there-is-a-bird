@@ -2116,6 +2116,7 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
 
     private <T extends SparrowEntity> PlayState movementController(AnimationState<T> animationState) {
         animationState.getController().setAnimationSpeed(1.0D);
+        animationState.getController().transitionLength(4);
         RawAnimation guidePreviewRawAnimation = this.guidePreviewAnimation.animation();
         if (guidePreviewRawAnimation != null) {
             return animationState.setAndContinue(guidePreviewRawAnimation);

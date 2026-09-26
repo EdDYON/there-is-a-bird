@@ -53,6 +53,8 @@
 
 ### 验证
 
+`build` 会通过 `check` 在独立 JVM 中运行 `src/test/java` 下的所有 `*Test.java` 主方法测试，并检查正式 JAR 的版本信息、Mixin 注册及映射。新增这类测试时须提供 `public static void main(String[] args)`；失败时抛出异常或返回非零退出码。仅运行这些回归测试可使用 `gradlew.bat regressionTest`（Linux / macOS 使用 `./gradlew regressionTest`）。这些自动检查不能替代客户端和专用服务器实机验证。
+
 Pull Request 至少应包含：
 
 - `./gradlew build` 或 `gradlew.bat build` 通过。

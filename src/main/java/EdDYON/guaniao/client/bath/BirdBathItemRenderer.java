@@ -5,8 +5,10 @@ import EdDYON.guaniao.content.bath.BirdBathCleanliness;
 import EdDYON.guaniao.content.bath.BirdBathItem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.math.Axis;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.world.item.ItemDisplayContext;
 import software.bernie.geckolib.cache.object.BakedGeoModel;
 import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.renderer.GeoItemRenderer;
@@ -18,9 +20,22 @@ public class BirdBathItemRenderer extends GeoItemRenderer<BirdBathItem> {
 
     @Override
     public void preRender(PoseStack poseStack, BirdBathItem animatable, BakedGeoModel model, MultiBufferSource bufferSource, VertexConsumer buffer, boolean isReRender, float partialTick, int packedLight, int packedOverlay, float red, float green, float blue, float alpha) {
-        poseStack.translate(itemOffsetX(), itemOffsetY(), itemOffsetZ());
-        float scale = itemScale();
-        poseStack.scale(scale, scale, scale);
+        if (this.renderPerspective == ItemDisplayContext.GUI) {
+            // Fill the slot with the basin's top, without changing the held model.
+            poseStack.translate(0.5F, 0.5F, 0.5F);
+            poseStack.mulPose(Axis.XP.rotationDegrees(90.0F));
+            // Leave room for the second design's small birds along the rim.
+            poseStack.scale(0.8F, 0.8F, 0.8F);
+            poseStack.translate(0.0F, -1.4F, 0.0F);
+            if (!isReRender) {
+                // GeoItemRenderer adds this model-origin offset in preRender.
+                poseStack.translate(-0.5F, -0.51F, -0.5F);
+            }
+        } else {
+            poseStack.translate(itemOffsetX(), itemOffsetY(), itemOffsetZ());
+            float scale = itemScale();
+            poseStack.scale(scale, scale, scale);
+        }
         super.preRender(poseStack, animatable, model, bufferSource, buffer, isReRender, partialTick, packedLight, packedOverlay, red, green, blue, alpha);
     }
 

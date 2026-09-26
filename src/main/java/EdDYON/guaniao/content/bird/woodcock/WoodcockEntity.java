@@ -909,6 +909,7 @@ public class WoodcockEntity extends SparrowEntity
 
     private <T extends WoodcockEntity> PlayState movementController(AnimationState<T> animationState) {
         animationState.getController().setAnimationSpeed(1.0D);
+        animationState.getController().transitionLength(1);
         if (this.isSpontaneouslyStill()) {
             animationState.getController().setAnimationSpeed(this.individualAnimationCadence());
             return animationState.setAndContinue(IDLE_ANIMATION);

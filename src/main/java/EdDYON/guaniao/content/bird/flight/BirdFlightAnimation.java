@@ -13,6 +13,10 @@ public final class BirdFlightAnimation {
 
     public static <T extends GeoAnimatable> PlayState play(AnimationState<T> state, RawAnimation animation) {
         AnimationController<T> controller = state.getController();
+        // Lift is applied immediately by the flight motor. A transition holds
+        // the new clip at time zero while the bird is already moving upward.
+        // Ground predicates restore their own blend duration on each frame.
+        controller.transitionLength(0);
         // GeckoLib 4.4 can skip polling the replacement when two transitions share
         // a seek time. The requested RawAnimation then matches, but the old clip
         // keeps running. Reload only that mismatch, never a healthy flight loop.

@@ -437,5 +437,71 @@
         "volume": 0.5
       }
     ]
+  },
+  "entity.umbrella_cockatoo.call_01": {
+    "subtitle": "subtitles.guaniao.entity.umbrella_cockatoo.ambient",
+    "sounds": [
+      "guaniao:entity/umbrella_cockatoo/call_01"
+    ]
+  },
+  "entity.umbrella_cockatoo.call_02": {
+    "subtitle": "subtitles.guaniao.entity.umbrella_cockatoo.ambient",
+    "sounds": [
+      "guaniao:entity/umbrella_cockatoo/call_02"
+    ]
+  },
+  "entity.umbrella_cockatoo.call_03": {
+    "subtitle": "subtitles.guaniao.entity.umbrella_cockatoo.ambient",
+    "sounds": [
+      "guaniao:entity/umbrella_cockatoo/call_03"
+    ]
+  },
+  "entity.umbrella_cockatoo.call_04": {
+    "subtitle": "subtitles.guaniao.entity.umbrella_cockatoo.ambient",
+    "sounds": [
+      "guaniao:entity/umbrella_cockatoo/call_04"
+    ]
+  },
+  "entity.umbrella_cockatoo.call_05": {
+    "subtitle": "subtitles.guaniao.entity.umbrella_cockatoo.ambient",
+    "sounds": [
+      "guaniao:entity/umbrella_cockatoo/call_05"
+    ]
+  },
+  "entity.umbrella_cockatoo.call_07": {
+    "subtitle": "subtitles.guaniao.entity.umbrella_cockatoo.ambient",
+    "sounds": [
+      "guaniao:entity/umbrella_cockatoo/call_07"
+    ]
+  },
+  "entity.umbrella_cockatoo.call_08": {
+    "subtitle": "subtitles.guaniao.entity.umbrella_cockatoo.ambient",
+    "sounds": [
+      "guaniao:entity/umbrella_cockatoo/call_08"
+    ]
+  },
+  "entity.umbrella_cockatoo.phrase_01": {
+    "subtitle": "subtitles.guaniao.entity.umbrella_cockatoo.interact",
+    "sounds": [
+      "guaniao:entity/umbrella_cockatoo/phrase_01"
+    ]
+  },
+  "entity.umbrella_cockatoo.phrase_02": {
+    "subtitle": "subtitles.guaniao.entity.umbrella_cockatoo.interact",
+    "sounds": [
+      "guaniao:entity/umbrella_cockatoo/phrase_02"
+    ]
+  },
+  "entity.umbrella_cockatoo.phrase_03": {
+    "subtitle": "subtitles.guaniao.entity.umbrella_cockatoo.interact",
+    "sounds": [
+      "guaniao:entity/umbrella_cockatoo/phrase_03"
+    ]
+  },
+  "entity.umbrella_cockatoo.phrase_04": {
+    "subtitle": "subtitles.guaniao.entity.umbrella_cockatoo.interact",
+    "sounds": [
+      "guaniao:entity/umbrella_cockatoo/phrase_04"
+    ]
   }
 }
