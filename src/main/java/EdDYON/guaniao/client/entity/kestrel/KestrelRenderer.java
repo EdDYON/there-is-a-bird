@@ -59,9 +59,9 @@ public final class KestrelRenderer extends GeoEntityRenderer<KestrelEntity> {
     public void preRender(PoseStack poseStack, KestrelEntity animatable, BakedGeoModel model,
                           MultiBufferSource bufferSource, com.mojang.blaze3d.vertex.VertexConsumer buffer,
                           boolean isReRender, float partialTick, int packedLight, int packedOverlay,
-                          float red, float green, float blue, float alpha) {
+                          int renderColor) {
         this.withScale(animatable.getModelRenderScale());
         super.preRender(poseStack, animatable, model, bufferSource, buffer, isReRender, partialTick,
-                packedLight, packedOverlay, red, green, blue, alpha);
+                packedLight, packedOverlay, renderColor);
     }
 }

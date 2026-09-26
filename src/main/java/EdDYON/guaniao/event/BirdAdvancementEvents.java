@@ -15,14 +15,14 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.tick.*;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 import java.util.EnumSet;
 import java.util.List;
 
-@Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
+@EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
 public final class BirdAdvancementEvents {
     private static final double NEARBY_BIRD_RADIUS = 24.0D;
     private static final double TIT_LINE_RADIUS = 14.0D;
@@ -32,8 +32,8 @@ public final class BirdAdvancementEvents {
     }
 
     @SubscribeEvent
-    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player) || player.isSpectator()) {
+    public static void onPlayerTick(PlayerTickEvent.Post event) {
+        if (!(event.getEntity() instanceof ServerPlayer player) || player.isSpectator()) {
             return;
         }
         int staggeredTick = player.tickCount + player.getId();

@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BirdDroppingItem extends Item {
-    private static final ResourceLocation EVIDENCE_COLLECTOR_ADVANCEMENT = new ResourceLocation(GuaniaoMod.MOD_ID, "husbandry/evidence_collector");
+    private static final ResourceLocation EVIDENCE_COLLECTOR_ADVANCEMENT = ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, "husbandry/evidence_collector");
     private static final int USE_DURATION_TICKS = 72000;
     private static final int MIN_THROW_CHARGE_TICKS = 3;
     private static final float MIN_THROW_SPEED = 0.45F;
@@ -65,7 +65,7 @@ public class BirdDroppingItem extends Item {
             return;
         }
 
-        int chargeTicks = this.getUseDuration(stack) - timeLeft;
+        int chargeTicks = this.getUseDuration(stack, entity) - timeLeft;
         if (chargeTicks < MIN_THROW_CHARGE_TICKS) {
             return;
         }
@@ -90,7 +90,7 @@ public class BirdDroppingItem extends Item {
     }
 
     @Override
-    public int getUseDuration(ItemStack stack) {
+    public int getUseDuration(ItemStack stack, net.minecraft.world.entity.LivingEntity entity) {
         return USE_DURATION_TICKS;
     }
 
@@ -168,7 +168,7 @@ public class BirdDroppingItem extends Item {
     }
 
     private static boolean isValidFertilizeTarget(Level level, BlockPos pos, BlockState state) {
-        return state.getBlock() instanceof BonemealableBlock crop && crop.isValidBonemealTarget(level, pos, state, false);
+        return state.getBlock() instanceof BonemealableBlock crop && crop.isValidBonemealTarget(level, pos, state);
     }
 
     private static float getThrowPower(int chargeTicks) {

@@ -2,7 +2,7 @@ package EdDYON.guaniao.content.bird.woodcock;
 
 import EdDYON.guaniao.content.bird.BirdTags;
 import EdDYON.guaniao.registry.GuaniaoItems;
-import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.world.entity.player.Player;
@@ -12,12 +12,12 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
-import net.minecraftforge.common.loot.IGlobalLootModifier;
-import net.minecraftforge.common.loot.LootModifier;
+import net.neoforged.neoforge.common.loot.IGlobalLootModifier;
+import net.neoforged.neoforge.common.loot.LootModifier;
 
 /** Adds worms to soil dug by survival players without replacing the block's normal drops. */
 public final class EarthwormLootModifier extends LootModifier {
-    public static final Codec<EarthwormLootModifier> CODEC = RecordCodecBuilder.create(instance ->
+    public static final MapCodec<EarthwormLootModifier> CODEC = RecordCodecBuilder.mapCodec(instance ->
             codecStart(instance).apply(instance, EarthwormLootModifier::new));
 
     private EarthwormLootModifier(LootItemCondition[] conditions) {
@@ -25,7 +25,7 @@ public final class EarthwormLootModifier extends LootModifier {
     }
 
     @Override
-    public Codec<? extends IGlobalLootModifier> codec() {
+    public MapCodec<? extends IGlobalLootModifier> codec() {
         return CODEC;
     }
 

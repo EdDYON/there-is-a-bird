@@ -10,11 +10,11 @@ import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.animal.Animal;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.entity.EntityLeaveLevelEvent;
-import net.minecraftforge.event.level.LevelEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
+import net.neoforged.neoforge.event.level.LevelEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -23,7 +23,7 @@ import java.util.UUID;
 import java.util.WeakHashMap;
 
 /** Incremental wild-bird counts; spawn checks never scan a large entity AABB. */
-@Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
+@EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
 public final class BirdPopulationTracker {
     private static final String LAST_NEARBY_PLAYER_TIME = "GuaniaoLastNearbyPlayerTime";
     private static final String TRANSIENT_FLYBY_SPAWN_TIME = "GuaniaoTransientFlybySpawnTime";

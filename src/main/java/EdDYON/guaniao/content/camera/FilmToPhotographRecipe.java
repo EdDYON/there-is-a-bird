@@ -2,10 +2,8 @@ package EdDYON.guaniao.content.camera;
 
 import EdDYON.guaniao.registry.GuaniaoItems;
 import EdDYON.guaniao.registry.GuaniaoRecipeSerializers;
-import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.inventory.CraftingContainer;
+import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.CraftingBookCategory;
@@ -15,17 +13,17 @@ import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
 
 public class FilmToPhotographRecipe extends CustomRecipe {
-    public FilmToPhotographRecipe(ResourceLocation id, CraftingBookCategory category) {
-        super(id, category);
+    public FilmToPhotographRecipe(CraftingBookCategory category) {
+        super(category);
     }
 
     @Override
-    public boolean matches(CraftingContainer container, @NotNull Level level) {
-        return container.getWidth() == 3 && container.getHeight() == 3 && !this.findFilm(container).isEmpty();
+    public boolean matches(CraftingInput container, @NotNull Level level) {
+        return container.width() == 3 && container.height() == 3 && !this.findFilm(container).isEmpty();
     }
 
     @Override
-    public @NotNull ItemStack assemble(CraftingContainer container, @NotNull RegistryAccess registryAccess) {
+    public @NotNull ItemStack assemble(CraftingInput container, @NotNull net.minecraft.core.HolderLookup.Provider registryAccess) {
         ItemStack film = this.findFilm(container);
         if (film.isEmpty()) {
             return ItemStack.EMPTY;
@@ -33,8 +31,8 @@ public class FilmToPhotographRecipe extends CustomRecipe {
 
         ItemStack result = new ItemStack(GuaniaoItems.PHOTOGRAPH.get());
         PhotographData.copyImage(film, result);
-        if (film.hasCustomHoverName()) {
-            result.setHoverName(Component.translatable("item.guaniao.photograph.named", film.getHoverName()));
+        if (film.has(net.minecraft.core.component.DataComponents.CUSTOM_NAME)) {
+            result.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.translatable("item.guaniao.photograph.named", film.getHoverName()));
         }
         return result;
     }
@@ -45,7 +43,7 @@ public class FilmToPhotographRecipe extends CustomRecipe {
     }
 
     @Override
-    public @NotNull ItemStack getResultItem(@NotNull RegistryAccess registryAccess) {
+    public @NotNull ItemStack getResultItem(@NotNull net.minecraft.core.HolderLookup.Provider registryAccess) {
         return new ItemStack(GuaniaoItems.PHOTOGRAPH.get());
     }
 
@@ -54,13 +52,13 @@ public class FilmToPhotographRecipe extends CustomRecipe {
         return GuaniaoRecipeSerializers.FILM_TO_PHOTOGRAPH.get();
     }
 
-    private ItemStack findFilm(CraftingContainer container) {
-        if (container.getWidth() != 3 || container.getHeight() != 3) {
+    private ItemStack findFilm(CraftingInput container) {
+        if (container.width() != 3 || container.height() != 3) {
             return ItemStack.EMPTY;
         }
 
         ItemStack film = ItemStack.EMPTY;
-        for (int slot = 0; slot < container.getContainerSize(); slot++) {
+        for (int slot = 0; slot < container.size(); slot++) {
             ItemStack stack = container.getItem(slot);
             if (slot == 4) {
                 if (!stack.is(GuaniaoItems.FILM.get()) || !PhotographData.hasImage(stack)) {

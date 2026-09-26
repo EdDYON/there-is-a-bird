@@ -16,16 +16,21 @@ public class CrowNestRenderer extends GeoBlockRenderer<CrowNestBlockEntity> {
     }
 
     @Override
+    public net.minecraft.world.phys.AABB getRenderBoundingBox(CrowNestBlockEntity blockEntity) {
+        return blockEntity.getRenderBoundingBox();
+    }
+
+    @Override
     public void renderRecursively(PoseStack poseStack, CrowNestBlockEntity nest, GeoBone bone, RenderType renderType,
                                   MultiBufferSource bufferSource, VertexConsumer buffer, boolean isReRender,
                                   float partialTick, int packedLight, int packedOverlay,
-                                  float red, float green, float blue, float alpha) {
+                                  int renderColor) {
         int eggs = nest.getBlockState().hasProperty(CrowNestBlock.EGGS)
                 ? nest.getBlockState().getValue(CrowNestBlock.EGGS)
                 : 0;
         applyEggVisibility(bone, eggs);
         super.renderRecursively(poseStack, nest, bone, renderType, bufferSource, buffer, isReRender,
-                partialTick, packedLight, packedOverlay, red, green, blue, alpha);
+                partialTick, packedLight, packedOverlay, renderColor);
     }
 
     @Override

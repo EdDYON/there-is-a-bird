@@ -19,7 +19,7 @@ public final class BaggedFriesRenderer extends GeoBlockRenderer<BaggedFriesBlock
     public void renderRecursively(PoseStack poseStack, BaggedFriesBlockEntity fries, GeoBone bone,
                                   RenderType renderType, MultiBufferSource bufferSource, VertexConsumer buffer,
                                   boolean isReRender, float partialTick, int packedLight, int packedOverlay,
-                                  float red, float green, float blue, float alpha) {
+                                  int renderColor) {
         int index = fryIndex(bone.getName());
         if (index > 0) {
             boolean visible = fries.isFryVisible(index);
@@ -27,7 +27,7 @@ public final class BaggedFriesRenderer extends GeoBlockRenderer<BaggedFriesBlock
             bone.setChildrenHidden(!visible);
         }
         super.renderRecursively(poseStack, fries, bone, renderType, bufferSource, buffer, isReRender,
-                partialTick, packedLight, packedOverlay, red, green, blue, alpha);
+                partialTick, packedLight, packedOverlay, renderColor);
     }
 
     private static int fryIndex(String name) {

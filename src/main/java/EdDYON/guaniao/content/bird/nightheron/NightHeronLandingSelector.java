@@ -26,11 +26,11 @@ import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.level.LevelEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.level.LevelEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
-@Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
+@EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
 public final class NightHeronLandingSelector {
     private static final int MAX_LANDING_CACHE_ENTRIES = 1024;
     private static final int MAX_COVER_CACHE_ENTRIES = 1024;

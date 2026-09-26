@@ -18,20 +18,20 @@ public class CrowNestItemRenderer extends GeoItemRenderer<CrowNestItem> {
     public void preRender(PoseStack poseStack, CrowNestItem animatable, BakedGeoModel model,
                           MultiBufferSource bufferSource, VertexConsumer buffer, boolean isReRender,
                           float partialTick, int packedLight, int packedOverlay,
-                          float red, float green, float blue, float alpha) {
+                          int renderColor) {
         poseStack.translate(0.25F, -0.18F, 0.0F);
         poseStack.scale(0.62F, 0.62F, 0.62F);
         super.preRender(poseStack, animatable, model, bufferSource, buffer, isReRender,
-                partialTick, packedLight, packedOverlay, red, green, blue, alpha);
+                partialTick, packedLight, packedOverlay, renderColor);
     }
 
     @Override
     public void renderRecursively(PoseStack poseStack, CrowNestItem animatable, GeoBone bone, RenderType renderType,
                                   MultiBufferSource bufferSource, VertexConsumer buffer, boolean isReRender,
                                   float partialTick, int packedLight, int packedOverlay,
-                                  float red, float green, float blue, float alpha) {
+                                  int renderColor) {
         CrowNestRenderer.applyEggVisibility(bone, 0);
         super.renderRecursively(poseStack, animatable, bone, renderType, bufferSource, buffer, isReRender,
-                partialTick, packedLight, packedOverlay, red, green, blue, alpha);
+                partialTick, packedLight, packedOverlay, renderColor);
     }
 }

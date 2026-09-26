@@ -7,11 +7,11 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.PlayLevelSoundEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.PlayLevelSoundEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
-@Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
+@EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
 public final class BirdSleepSoundEvents {
     private static final float LOUD_SOUND_VOLUME = 1.5F;
     private static final double MIN_WAKE_RADIUS = 12.0D;

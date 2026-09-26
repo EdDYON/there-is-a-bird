@@ -12,7 +12,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.MobSpawnSettings;
-import net.minecraftforge.common.world.ModifiableBiomeInfo;
+import net.neoforged.neoforge.common.world.ModifiableBiomeInfo;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -55,7 +55,7 @@ public final class GuaniaoBirdSpawnRegistry {
     }
 
     private static TagKey<Biome> habitatTag(BirdSpecies species) {
-        return TagKey.create(Registries.BIOME, new ResourceLocation(GuaniaoMod.MOD_ID, species.id() + "_habitat"));
+        return TagKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, species.id() + "_habitat"));
     }
 
     private static final class SpawnRule {

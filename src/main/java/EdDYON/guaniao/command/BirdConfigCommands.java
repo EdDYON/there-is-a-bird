@@ -40,11 +40,11 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
-@Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
+@EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
 public final class BirdConfigCommands {
     private BirdConfigCommands() {
     }
@@ -120,7 +120,7 @@ public final class BirdConfigCommands {
             BirdSpecies.NIGHT_HERON, BirdSpecies.MACAW, BirdSpecies.CASSOWARY
     };
 
-    // Lazily built: this class is a @Mod.EventBusSubscriber, so Forge loads it during mod
+    // Lazily built: this class is a @EventBusSubscriber, so Forge loads it during mod
     // construction, before DeferredRegister entries exist. Calling RegistryObject.get() in a
     // static initializer would NPE ("Registry Object not present"); the map is built on first
     // command use instead, when registries are fully populated.
@@ -251,7 +251,7 @@ public final class BirdConfigCommands {
             return false;
         }
         mob.moveTo(x, y, z, yRot, 0.0F);
-        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.COMMAND, null, null);
+        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.COMMAND, null);
         holder.setBirdMutation(mutation);
         // Freeze the summoned bird so it stays perfectly still for inspection: no AI goals run,
         // and no gravity so it never sinks or falls even if the ground is uneven.
@@ -314,7 +314,7 @@ public final class BirdConfigCommands {
         Vec3 toPlayer = player.position().subtract(position);
         float yaw = (float) Math.toDegrees(Math.atan2(toPlayer.z, toPlayer.x)) - 90.0F;
         mob.moveTo(position.x, player.getY(), position.z, yaw, 0.0F);
-        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.COMMAND, null, null);
+        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.COMMAND, null);
 
         float comparisonScale = minimum
                 ? scalable.modelScaleProfile().minIndividualScale()

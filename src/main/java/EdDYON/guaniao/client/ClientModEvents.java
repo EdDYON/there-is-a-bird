@@ -47,24 +47,27 @@ import EdDYON.guaniao.registry.GuaniaoEntityTypes;
 import EdDYON.guaniao.registry.GuaniaoMenuTypes;
 import EdDYON.guaniao.registry.GuaniaoParticleTypes;
 import EdDYON.guaniao.registry.GuaniaoItems;
-import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraftforge.api.distmarker.Dist;
+import net.neoforged.api.distmarker.Dist;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
-import net.minecraftforge.client.event.EntityRenderersEvent;
-import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
-import net.minecraftforge.client.event.RegisterParticleProvidersEvent;
-import net.minecraftforge.client.event.RegisterShadersEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
+import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
+import net.neoforged.neoforge.client.event.RegisterShadersEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 
-@Mod.EventBusSubscriber(modid="guaniao", bus=Mod.EventBusSubscriber.Bus.MOD, value={Dist.CLIENT})
+@EventBusSubscriber(modid="guaniao", bus=EventBusSubscriber.Bus.MOD, value={Dist.CLIENT})
 public final class ClientModEvents {
     private ClientModEvents() {
+    }
+
+    @SubscribeEvent
+    public static void registerScreens(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent event) {
+        event.register(GuaniaoMenuTypes.CROW_NEST.get(), CrowNestScreen::new);
     }
 
     @SubscribeEvent
@@ -126,24 +129,20 @@ public final class ClientModEvents {
             ItemBlockRenderTypes.setRenderLayer(GuaniaoBlocks.BREADCRUMBS.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(GuaniaoBlocks.BIRD_DROPPING_STAIN_LIGHT.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(GuaniaoBlocks.BIRD_DROPPING_STAIN_DARK.get(), RenderType.cutout());
-            MenuScreens.register(GuaniaoMenuTypes.CROW_NEST.get(), CrowNestScreen::new);
             ItemProperties.register(
                     GuaniaoItems.WIND_FEATHER_FAN.get(),
-                    new ResourceLocation(GuaniaoMod.MOD_ID, "burial_plume"),
-                    (stack, level, entity, seed) -> EnchantmentHelper.getItemEnchantmentLevel(
-                            GuaniaoEnchantments.BURIAL_PLUME.get(), stack) > 0 ? 1.0F : 0.0F
+                    ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, "burial_plume"),
+                    (stack, level, entity, seed) -> GuaniaoEnchantments.level(stack, GuaniaoEnchantments.BURIAL_PLUME) > 0 ? 1.0F : 0.0F
             );
             ItemProperties.register(
                     GuaniaoItems.WIND_FEATHER_FAN.get(),
-                    new ResourceLocation(GuaniaoMod.MOD_ID, "riven_plume"),
-                    (stack, level, entity, seed) -> EnchantmentHelper.getItemEnchantmentLevel(
-                            GuaniaoEnchantments.RIVEN_PLUME.get(), stack) > 0 ? 1.0F : 0.0F
+                    ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, "riven_plume"),
+                    (stack, level, entity, seed) -> GuaniaoEnchantments.level(stack, GuaniaoEnchantments.RIVEN_PLUME) > 0 ? 1.0F : 0.0F
             );
             ItemProperties.register(
                     GuaniaoItems.WIND_FEATHER_FAN.get(),
-                    new ResourceLocation(GuaniaoMod.MOD_ID, "hunting_return"),
-                    (stack, level, entity, seed) -> EnchantmentHelper.getItemEnchantmentLevel(
-                            GuaniaoEnchantments.HUNTING_RETURN.get(), stack) > 0 ? 1.0F : 0.0F
+                    ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, "hunting_return"),
+                    (stack, level, entity, seed) -> GuaniaoEnchantments.level(stack, GuaniaoEnchantments.HUNTING_RETURN) > 0 ? 1.0F : 0.0F
             );
         });
     }

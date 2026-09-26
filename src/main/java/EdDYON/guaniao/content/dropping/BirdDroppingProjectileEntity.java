@@ -23,16 +23,16 @@ import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.ThrowableItemProjectile;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.NotNull;
 import software.bernie.geckolib.animatable.GeoEntity;
-import software.bernie.geckolib.core.animatable.GeoAnimatable;
-import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.animation.AnimatableManager;
+import software.bernie.geckolib.animatable.GeoAnimatable;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animation.AnimatableManager;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.UUID;
@@ -57,19 +57,20 @@ public class BirdDroppingProjectileEntity extends ThrowableItemProjectile implem
     }
 
     @Override
-    protected void defineSynchedData() {
-        super.defineSynchedData();
-        this.entityData.define(DATA_VARIANT, BirdDroppingVariant.ONE.id());
-        this.entityData.define(DATA_NATURAL_DROPPING, false);
+    protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(DATA_VARIANT, BirdDroppingVariant.ONE.id());
+        builder.define(DATA_NATURAL_DROPPING, false);
     }
 
     @Override
     protected @NotNull Item getDefaultItem() {
-        return this.getVariant().item();
+        // 1.21 calls this while Entity is still building its synchronized data.
+        return BirdDroppingVariant.ONE.item();
     }
 
     @Override
-    protected float getGravity() {
+    protected double getDefaultGravity() {
         return 0.06F;
     }
 
@@ -158,6 +159,11 @@ public class BirdDroppingProjectileEntity extends ThrowableItemProjectile implem
 
         if (this.level() instanceof ServerLevel serverLevel) {
             BirdDroppingPressurePlatePulse.tryTrigger(serverLevel, result.getBlockPos(), this);
+            // Pressure plates have no collision shape: a falling projectile hits
+            // their support block, so resolve the plate above that top face too.
+            if (result.getDirection() == Direction.UP) {
+                BirdDroppingPressurePlatePulse.tryTrigger(serverLevel, result.getBlockPos().above(), this);
+            }
         }
         this.spawnBlockSplat(result);
         this.splat();
@@ -201,6 +207,7 @@ public class BirdDroppingProjectileEntity extends ThrowableItemProjectile implem
             variant = BirdDroppingVariant.ONE;
         }
         this.entityData.set(DATA_VARIANT, variant.id());
+        this.setItem(new ItemStack(variant.item()));
     }
 
     public boolean isNaturalDropping() {
@@ -256,8 +263,8 @@ public class BirdDroppingProjectileEntity extends ThrowableItemProjectile implem
     }
 
     @Override
-    public @NotNull Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
+    public @NotNull Packet<ClientGamePacketListener> getAddEntityPacket(net.minecraft.server.level.ServerEntity pairing) {
+        return super.getAddEntityPacket(pairing);
     }
 
     @Override

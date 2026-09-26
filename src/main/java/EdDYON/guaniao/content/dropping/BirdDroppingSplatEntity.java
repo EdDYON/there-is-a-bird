@@ -17,7 +17,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
@@ -33,12 +32,11 @@ import net.minecraft.world.level.block.BasePressurePlateBlock;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.NotNull;
 import software.bernie.geckolib.animatable.GeoEntity;
-import software.bernie.geckolib.core.animatable.GeoAnimatable;
-import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.animation.AnimatableManager;
+import software.bernie.geckolib.animatable.GeoAnimatable;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animation.AnimatableManager;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.UUID;
@@ -127,15 +125,21 @@ public class BirdDroppingSplatEntity extends Entity implements GeoEntity {
     }
 
     @Override
-    protected void defineSynchedData() {
-        this.entityData.define(DATA_SURFACE_DIRECTION, Direction.UP.get3DDataValue());
-        this.entityData.define(DATA_ATTACHED_ENTITY_ID, -1);
-        this.entityData.define(DATA_ATTACHMENT_PART, AttachmentPart.BODY.id);
-        this.entityData.define(DATA_LOCAL_DIRECTION, Direction.SOUTH.get3DDataValue());
-        this.entityData.define(DATA_LOCAL_X, 0.0F);
-        this.entityData.define(DATA_LOCAL_Y, 0.0F);
-        this.entityData.define(DATA_LOCAL_Z, 0.0F);
-        this.entityData.define(DATA_MAX_AGE_TICKS, MIN_AGE_TICKS);
+    protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
+        builder.define(DATA_SURFACE_DIRECTION, Direction.UP.get3DDataValue());
+        builder.define(DATA_ATTACHED_ENTITY_ID, -1);
+        builder.define(DATA_ATTACHMENT_PART, AttachmentPart.BODY.id);
+        builder.define(DATA_LOCAL_DIRECTION, Direction.SOUTH.get3DDataValue());
+        builder.define(DATA_LOCAL_X, 0.0F);
+        builder.define(DATA_LOCAL_Y, 0.0F);
+        builder.define(DATA_LOCAL_Z, 0.0F);
+        builder.define(DATA_MAX_AGE_TICKS, MIN_AGE_TICKS);
+    }
+
+    @Override
+    public boolean isIgnoringBlockTriggers() {
+        // The impact supplies a timed pulse; the remaining decal has no weight.
+        return true;
     }
 
     @Override
@@ -290,7 +294,7 @@ public class BirdDroppingSplatEntity extends Entity implements GeoEntity {
         level.sendParticles(ParticleTypes.POOF, this.getX(), this.getY() + 0.05D, this.getZ(), 8, 0.22D, 0.06D, 0.22D, 0.01D);
         level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.SLIME_BLOCK_BREAK, SoundSource.NEUTRAL, 0.6F, 0.85F + level.random.nextFloat() * 0.25F);
         if (!player.getAbilities().instabuild) {
-            brush.hurtAndBreak(1, player, brokenPlayer -> brokenPlayer.broadcastBreakEvent(hand));
+            brush.hurtAndBreak(1, player, LivingEntity.getSlotForHand(hand));
         }
         this.discard();
     }
@@ -358,8 +362,8 @@ public class BirdDroppingSplatEntity extends Entity implements GeoEntity {
     }
 
     @Override
-    public @NotNull Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
+    public @NotNull Packet<ClientGamePacketListener> getAddEntityPacket(net.minecraft.server.level.ServerEntity pairing) {
+        return super.getAddEntityPacket(pairing);
     }
 
     @Override

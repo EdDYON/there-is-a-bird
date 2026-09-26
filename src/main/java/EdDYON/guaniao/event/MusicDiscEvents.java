@@ -4,11 +4,11 @@ import EdDYON.guaniao.GuaniaoMod;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
-import net.minecraftforge.event.level.ChunkDataEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.level.ChunkDataEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
-@Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
+@EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
 public final class MusicDiscEvents {
     private static final String UWU_FUNK_ID = GuaniaoMod.MOD_ID + ":music_disc_uwu_funk";
 
@@ -27,11 +27,11 @@ public final class MusicDiscEvents {
         for (int i = 0; i < blockEntities.size(); i++) {
             CompoundTag blockEntity = blockEntities.getCompound(i);
             if ("minecraft:jukebox".equals(blockEntity.getString("id"))
-                    && UWU_FUNK_ID.equals(blockEntity.getCompound("RecordItem").getString("id"))
-                    && blockEntity.getBoolean("IsPlaying")) {
-                // Vanilla restores IsPlaying but does not restart the client sound.
+                    && UWU_FUNK_ID.equals(blockEntity.getCompound("RecordItem").getString("id"))) {
+                // NeoForge 1.21 restores the song timer without restarting the client sound.
                 // Keep the disc in place; reinserting it starts a fresh playback.
-                blockEntity.putBoolean("IsPlaying", false);
+                blockEntity.remove("ticks_since_song_started");
+                if (blockEntity.contains("IsPlaying")) blockEntity.putBoolean("IsPlaying", false);
             }
         }
     }

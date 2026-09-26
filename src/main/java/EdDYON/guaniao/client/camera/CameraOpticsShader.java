@@ -14,7 +14,7 @@ import java.io.IOException;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.client.event.RegisterShadersEvent;
+import net.neoforged.neoforge.client.event.RegisterShadersEvent;
 
 /** Full-screen optical pass: depth of field plus the selected lens distortion. */
 public final class CameraOpticsShader {
@@ -28,7 +28,7 @@ public final class CameraOpticsShader {
         event.registerShader(
                 new ShaderInstance(
                         event.getResourceProvider(),
-                        new ResourceLocation(GuaniaoMod.MOD_ID, "camera_optics"),
+                        ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, "camera_optics"),
                         DefaultVertexFormat.POSITION_TEX
                 ),
                 loaded -> shader = loaded
@@ -59,13 +59,12 @@ public final class CameraOpticsShader {
         RenderSystem.disableBlend();
         RenderSystem.setShader(() -> shader);
 
-        BufferBuilder builder = Tesselator.getInstance().getBuilder();
-        builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        builder.vertex(-1.0D, -1.0D, 0.0D).uv(0.0F, 0.0F).endVertex();
-        builder.vertex(1.0D, -1.0D, 0.0D).uv(1.0F, 0.0F).endVertex();
-        builder.vertex(1.0D, 1.0D, 0.0D).uv(1.0F, 1.0F).endVertex();
-        builder.vertex(-1.0D, 1.0D, 0.0D).uv(0.0F, 1.0F).endVertex();
-        BufferUploader.drawWithShader(builder.end());
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+        builder.addVertex(-1.0F, -1.0F, 0.0F).setUv(0.0F, 0.0F);
+        builder.addVertex(1.0F, -1.0F, 0.0F).setUv(1.0F, 0.0F);
+        builder.addVertex(1.0F, 1.0F, 0.0F).setUv(1.0F, 1.0F);
+        builder.addVertex(-1.0F, 1.0F, 0.0F).setUv(0.0F, 1.0F);
+        BufferUploader.drawWithShader(builder.buildOrThrow());
 
         RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();

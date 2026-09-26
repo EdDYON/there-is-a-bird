@@ -25,6 +25,6 @@ public final class MynaDefinition {
     }
 
     private static ResourceLocation resource(String path) {
-        return new ResourceLocation(GuaniaoMod.MOD_ID, path);
+        return ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, path);
     }
 }

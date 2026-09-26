@@ -437,7 +437,7 @@ public final class SkyFlock {
     private void updateTerrainClearance(ClientLevel level, Vec3 direction, double clearance) {
         int sampleX = Mth.floor(this.center.x + direction.x * 48.0D);
         int sampleZ = Mth.floor(this.center.z + direction.z * 48.0D);
-        if (!level.hasChunk(sampleX >> 4, sampleZ >> 4)) {
+        if (!level.getChunkSource().hasChunk(sampleX >> 4, sampleZ >> 4)) {
             return;
         }
 

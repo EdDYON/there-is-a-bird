@@ -18,7 +18,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.client.extensions.common.IClientBlockExtensions;
+import net.neoforged.neoforge.client.extensions.common.IClientBlockExtensions;
 
 public final class PlaceableBlockBreakEffects {
     private static final Color[] FRIES = colors(0.98F, 0.69F, 0.18F, 1.00F, 0.84F, 0.31F, 0.82F, 0.46F, 0.10F);

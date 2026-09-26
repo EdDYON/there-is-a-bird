@@ -16,7 +16,7 @@ public final class CrowNestTreasure {
     /** Items that may be present in a rummage nest, including harmless bits of crow junk. */
     public static boolean isAllowedNestLoot(ItemStack stack) {
         return FeatherFanEnchantmentBooks.isBook(stack)
-                || (!stack.isEmpty() && !stack.hasTag() && (isAccepted(stack) || isLegacyShiny(stack) || isJunk(stack)));
+                || (!stack.isEmpty() && !EdDYON.guaniao.util.ItemData.hasMetadata(stack) && (isAccepted(stack) || isLegacyShiny(stack) || isJunk(stack)));
     }
 
     public static boolean isShiny(ItemStack stack) {
@@ -25,7 +25,7 @@ public final class CrowNestTreasure {
 
     /** Load-only compatibility for treasure written by older versions. */
     private static boolean isLegacyShiny(ItemStack stack) {
-        return !stack.isEmpty() && !stack.hasCustomHoverName()
+        return !stack.isEmpty() && !stack.has(net.minecraft.core.component.DataComponents.CUSTOM_NAME)
                 && (stack.is(Items.GOLD_INGOT)
                 || stack.is(Items.IRON_INGOT)
                 || stack.is(Items.REDSTONE)
@@ -38,7 +38,7 @@ public final class CrowNestTreasure {
     }
 
     private static boolean isJunk(ItemStack stack) {
-        if (stack.isEmpty() || stack.hasCustomHoverName()) {
+        if (stack.isEmpty() || stack.has(net.minecraft.core.component.DataComponents.CUSTOM_NAME)) {
             return false;
         }
         return stack.is(Items.ROTTEN_FLESH)

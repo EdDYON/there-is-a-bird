@@ -62,13 +62,13 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoEntity;
-import software.bernie.geckolib.core.animatable.GeoAnimatable;
-import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.animation.AnimatableManager;
-import software.bernie.geckolib.core.animation.AnimationController;
-import software.bernie.geckolib.core.animation.AnimationState;
-import software.bernie.geckolib.core.animation.RawAnimation;
-import software.bernie.geckolib.core.object.PlayState;
+import software.bernie.geckolib.animatable.GeoAnimatable;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animation.AnimatableManager;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.AnimationState;
+import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.animation.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 /**
@@ -161,10 +161,10 @@ public class CassowaryEntity extends PathfinderMob
 
     public CassowaryEntity(EntityType<? extends CassowaryEntity> entityType, Level level) {
         super(entityType, level);
-        this.setPathfindingMalus(net.minecraft.world.level.pathfinder.BlockPathTypes.WATER, 8.0F);
-        this.setPathfindingMalus(net.minecraft.world.level.pathfinder.BlockPathTypes.DANGER_FIRE, 16.0F);
-        this.setPathfindingMalus(net.minecraft.world.level.pathfinder.BlockPathTypes.DAMAGE_FIRE, 16.0F);
-        this.setMaxUpStep(1.1F);
+        this.setPathfindingMalus(net.minecraft.world.level.pathfinder.PathType.WATER, 8.0F);
+        this.setPathfindingMalus(net.minecraft.world.level.pathfinder.PathType.DANGER_FIRE, 16.0F);
+        this.setPathfindingMalus(net.minecraft.world.level.pathfinder.PathType.DAMAGE_FIRE, 16.0F);
+        this.getAttribute(Attributes.STEP_HEIGHT).setBaseValue(1.1D);
     }
 
     public static AttributeSupplier.Builder createAttributes() {
@@ -220,28 +220,23 @@ public class CassowaryEntity extends PathfinderMob
     }
 
     @Override
-    protected void defineSynchedData() {
-        super.defineSynchedData();
-        this.entityData.define(BEHAVIOR_STATE, CassowaryBehaviorState.CALM.ordinal());
-        this.entityData.define(MODEL_SCALE, BirdModelScale.DEFAULT_INDIVIDUAL_SCALE);
-        this.entityData.define(MUTATION, BirdMutation.NONE.ordinal());
-        this.entityData.define(GAZE_TARGET_ID, -1);
-        this.entityData.define(GAZE_YAW, 0.0F);
-        this.entityData.define(GAZE_PITCH, 0.0F);
-        this.entityData.define(GAZE_WEIGHT, 0.0F);
+    protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(BEHAVIOR_STATE, CassowaryBehaviorState.CALM.ordinal());
+        builder.define(MODEL_SCALE, BirdModelScale.DEFAULT_INDIVIDUAL_SCALE);
+        builder.define(MUTATION, BirdMutation.NONE.ordinal());
+        builder.define(GAZE_TARGET_ID, -1);
+        builder.define(GAZE_YAW, 0.0F);
+        builder.define(GAZE_PITCH, 0.0F);
+        builder.define(GAZE_WEIGHT, 0.0F);
     }
 
     @Override
     public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty,
-                                        MobSpawnType spawnType, @Nullable SpawnGroupData spawnData,
-                                        @Nullable CompoundTag tag) {
-        SpawnGroupData result = super.finalizeSpawn(level, difficulty, spawnType, spawnData, tag);
-        if (tag == null || !tag.contains(BirdModelScale.NBT_KEY, Tag.TAG_FLOAT)) {
-            this.setIndividualModelScale(BirdModelScale.randomIndividualScale(this.getRandom(), this.modelScaleProfile()));
-        }
-        if (tag == null || !tag.contains(MUTATION_NBT_KEY, Tag.TAG_INT)) {
-            this.setBirdMutation(BirdMutation.randomMutation(this.getRandom()));
-        }
+                                        MobSpawnType spawnType, @Nullable SpawnGroupData spawnData) {
+        SpawnGroupData result = super.finalizeSpawn(level, difficulty, spawnType, spawnData);
+        this.setIndividualModelScale(BirdModelScale.randomIndividualScale(this.getRandom(), this.modelScaleProfile()));
+        this.setBirdMutation(BirdMutation.randomMutation(this.getRandom()));
         if (this.homeCenter == null) {
             this.homeCenter = this.blockPosition().immutable();
         }

@@ -1,0 +1,7 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="MIT"
+[[mods]]
+modId="guaniao_port_tests"
+version="1"
+displayName="Bird Watching migration tests"

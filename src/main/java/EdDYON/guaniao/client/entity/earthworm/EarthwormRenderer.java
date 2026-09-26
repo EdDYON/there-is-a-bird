@@ -15,7 +15,7 @@ import net.minecraft.util.Mth;
 
 /** Flat-faced block segments retain a pixel silhouette while the body wriggles. */
 public final class EarthwormRenderer extends EntityRenderer<EarthwormEntity> {
-    private static final ResourceLocation TEXTURE = new ResourceLocation("minecraft", "textures/block/white_concrete.png");
+    private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/block/white_concrete.png");
 
     public EarthwormRenderer(EntityRendererProvider.Context context) {
         super(context);
@@ -69,9 +69,9 @@ public final class EarthwormRenderer extends EntityRenderer<EarthwormEntity> {
 
     private static void vertex(VertexConsumer out, PoseStack.Pose pose, float x, float y, float z,
                                float u, float v, float nx, float ny, float nz, float shade, int light) {
-        out.vertex(pose.pose(), x, y, z).color(0.57F * shade, 0.29F * shade, 0.23F * shade, 1.0F)
-                .uv(u, v).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light)
-                .normal(pose.normal(), nx, ny, nz).endVertex();
+        out.addVertex(pose.pose(), x, y, z).setColor(0.57F * shade, 0.29F * shade, 0.23F * shade, 1.0F)
+                .setUv(u, v).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light)
+                .setNormal(pose, nx, ny, nz);
     }
 
     @Override public ResourceLocation getTextureLocation(EarthwormEntity entity) { return TEXTURE; }

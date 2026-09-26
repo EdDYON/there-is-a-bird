@@ -33,7 +33,7 @@ public class PhotographScreen extends Screen {
 
     @Override
     public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(graphics);
+        this.renderTransparentBackground(graphics);
         int textureWidth = Math.max(1, PhotographData.width(this.photograph));
         int textureHeight = Math.max(1, PhotographData.height(this.photograph));
         int imageSize = Math.min(PhotographData.IMAGE_SIZE, Math.min(this.width - 48, this.height - 96));
@@ -52,7 +52,7 @@ public class PhotographScreen extends Screen {
             graphics.drawCenteredString(this.font, Component.translatable("item.guaniao.photograph.tooltip.photographer", photographer), this.width / 2, y + imageSize + 12, 0xB8D7E6);
         }
 
-        super.render(graphics, mouseX, mouseY, partialTick);
+        for (var renderable : this.renderables) renderable.render(graphics, mouseX, mouseY, partialTick);
     }
 
     @Override

@@ -159,6 +159,6 @@ public final class NightHeronDefinition {
     }
 
     private static ResourceLocation resource(String path) {
-        return new ResourceLocation("guaniao", path);
+        return ResourceLocation.fromNamespaceAndPath("guaniao", path);
     }
 }

@@ -21,6 +21,6 @@ public final class SeagullDefinition {
     }
 
     private static ResourceLocation resource(String path) {
-        return new ResourceLocation("guaniao", path);
+        return ResourceLocation.fromNamespaceAndPath("guaniao", path);
     }
 }

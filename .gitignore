@@ -38,3 +38,13 @@ javac.*.args
 
 # Files from Forge MDK
 forge*changelog.txt
+
+# Isolated migration runtime checks
+run-gametest/
+run-client-smoke/
+
+# Local verification evidence and publication output
+docs/verification/
+mcmodsrepo/
+__pycache__/
+*.pyc

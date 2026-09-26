@@ -85,16 +85,16 @@ import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.pathfinder.BlockPathTypes;
+import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.phys.Vec3;
 import software.bernie.geckolib.animatable.GeoEntity;
-import software.bernie.geckolib.core.animatable.GeoAnimatable;
-import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.animation.AnimatableManager;
-import software.bernie.geckolib.core.animation.AnimationController;
-import software.bernie.geckolib.core.animation.AnimationState;
-import software.bernie.geckolib.core.animation.RawAnimation;
-import software.bernie.geckolib.core.object.PlayState;
+import software.bernie.geckolib.animatable.GeoAnimatable;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animation.AnimatableManager;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.AnimationState;
+import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.animation.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAnimal, ScalableBirdModel, BirdFlightAware, CommandableBird, FlockCompatibleBird, BirdSleepWakeable, BirdMutationHolder {
@@ -160,10 +160,10 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
     public SeagullEntity(EntityType<? extends SeagullEntity> entityType, Level level) {
         super(entityType, level);
         this.moveControl = new FlyingMoveControl(this, 12, true);
-        this.setPathfindingMalus(BlockPathTypes.LEAVES, 0.0F);
-        this.setPathfindingMalus(BlockPathTypes.WATER, -1.0F);
-        this.setPathfindingMalus(BlockPathTypes.DANGER_FIRE, 16.0F);
-        this.setPathfindingMalus(BlockPathTypes.DAMAGE_FIRE, 16.0F);
+        this.setPathfindingMalus(PathType.LEAVES, 0.0F);
+        this.setPathfindingMalus(PathType.WATER, -1.0F);
+        this.setPathfindingMalus(PathType.DANGER_FIRE, 16.0F);
+        this.setPathfindingMalus(PathType.DAMAGE_FIRE, 16.0F);
     }
 
     public static AttributeSupplier.Builder createAttributes() {
@@ -261,15 +261,15 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
     }
 
     @Override
-    protected void defineSynchedData() {
-        super.defineSynchedData();
-        this.entityData.define(MODEL_SCALE, BirdModelScale.DEFAULT_INDIVIDUAL_SCALE);
-        this.entityData.define(SLEEPING, false);
-        this.entityData.define(EATING, false);
-        this.entityData.define(FLYING_ANIMATION_ACTIVE, false);
-        this.entityData.define(HELD_FOOD, ItemStack.EMPTY);
-        this.entityData.define(COMMAND_MODE, BirdCommandMode.FREE.ordinal());
-        this.entityData.define(MUTATION, BirdMutation.NONE.ordinal());
+    protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(MODEL_SCALE, BirdModelScale.DEFAULT_INDIVIDUAL_SCALE);
+        builder.define(SLEEPING, false);
+        builder.define(EATING, false);
+        builder.define(FLYING_ANIMATION_ACTIVE, false);
+        builder.define(HELD_FOOD, ItemStack.EMPTY);
+        builder.define(COMMAND_MODE, BirdCommandMode.FREE.ordinal());
+        builder.define(MUTATION, BirdMutation.NONE.ordinal());
     }
 
     @Override
@@ -283,14 +283,10 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
     }
 
     @Override
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType spawnType, SpawnGroupData spawnGroupData, CompoundTag compoundTag) {
-        SpawnGroupData data = super.finalizeSpawn(level, difficulty, spawnType, spawnGroupData, compoundTag);
-        if (compoundTag == null || !compoundTag.contains(BirdModelScale.NBT_KEY, 5)) {
-            this.randomizeModelScale();
-        }
-        if (compoundTag == null || !compoundTag.contains(MUTATION_NBT_KEY, 3)) {
-            this.setBirdMutation(BirdMutation.randomMutation(this.getRandom()));
-        }
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType spawnType, SpawnGroupData spawnGroupData) {
+        SpawnGroupData data = super.finalizeSpawn(level, difficulty, spawnType, spawnGroupData);
+        this.randomizeModelScale();
+        this.setBirdMutation(BirdMutation.randomMutation(this.getRandom()));
         return data;
     }
 
@@ -302,7 +298,7 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
         compoundTag.putInt(MUTATION_NBT_KEY, this.getBirdMutation().ordinal());
         ItemStack heldFood = this.getHeldFoodForRendering();
         if (!heldFood.isEmpty()) {
-            compoundTag.put(NBT_HELD_FOOD, heldFood.save(new CompoundTag()));
+            compoundTag.put(NBT_HELD_FOOD, heldFood.save(this.registryAccess()));
             compoundTag.putInt(NBT_HELD_FOOD_TICKS, this.heldFoodTicks);
         }
         compoundTag.putInt(NBT_STEAL_COOLDOWN, this.stealCooldownTicks);
@@ -329,7 +325,7 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
             this.setBirdMutation(BirdMutation.byId(compoundTag.getInt(MUTATION_NBT_KEY)));
         }
         if (compoundTag.contains(NBT_HELD_FOOD, 10)) {
-            ItemStack heldFood = ItemStack.of(compoundTag.getCompound(NBT_HELD_FOOD));
+            ItemStack heldFood = EdDYON.guaniao.util.ItemData.load(this.registryAccess(), compoundTag.getCompound(NBT_HELD_FOOD));
             if (BirdItemSafety.isSeagullStealableFood(heldFood)) {
                 heldFood.setCount(1);
                 this.entityData.set(HELD_FOOD, heldFood);
@@ -497,8 +493,8 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
     }
 
     @Override
-    protected void dropCustomDeathLoot(DamageSource source, int looting, boolean recentlyHit) {
-        super.dropCustomDeathLoot(source, looting, recentlyHit);
+    protected void dropCustomDeathLoot(net.minecraft.server.level.ServerLevel level, DamageSource source, boolean recentlyHit) {
+        super.dropCustomDeathLoot(level, source, recentlyHit);
         ItemStack heldFood = this.getHeldFoodForRendering();
         if (!heldFood.isEmpty()) {
             this.spawnAtLocation(heldFood.copy());
@@ -532,6 +528,7 @@ public class SeagullEntity extends TamableAnimal implements GeoEntity, FlyingAni
 
     private <T extends SeagullEntity> PlayState movementController(AnimationState<T> animationState) {
         animationState.getController().setAnimationSpeed(1.0D);
+        animationState.getController().transitionLength(4);
         RawAnimation guidePreviewRawAnimation = this.guidePreviewAnimation.animation();
         if (guidePreviewRawAnimation != null) {
             return animationState.setAndContinue(guidePreviewRawAnimation);

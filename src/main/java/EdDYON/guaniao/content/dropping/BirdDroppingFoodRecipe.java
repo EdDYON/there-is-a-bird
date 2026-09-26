@@ -1,9 +1,7 @@
 package EdDYON.guaniao.content.dropping;
 
 import EdDYON.guaniao.registry.GuaniaoRecipeSerializers;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.inventory.CraftingContainer;
+import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingBookCategory;
 import net.minecraft.world.item.crafting.CustomRecipe;
@@ -12,22 +10,22 @@ import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
 
 public class BirdDroppingFoodRecipe extends CustomRecipe {
-    public BirdDroppingFoodRecipe(ResourceLocation id, CraftingBookCategory category) {
-        super(id, category);
+    public BirdDroppingFoodRecipe(CraftingBookCategory category) {
+        super(category);
     }
 
     @Override
-    public boolean matches(CraftingContainer container, @NotNull Level level) {
+    public boolean matches(CraftingInput container, @NotNull Level level) {
         return !this.assemble(container, level.registryAccess()).isEmpty();
     }
 
     @Override
-    public @NotNull ItemStack assemble(CraftingContainer container, @NotNull RegistryAccess registryAccess) {
+    public @NotNull ItemStack assemble(CraftingInput container, @NotNull net.minecraft.core.HolderLookup.Provider registryAccess) {
         ItemStack food = ItemStack.EMPTY;
         ItemStack dropping = ItemStack.EMPTY;
         int occupiedSlots = 0;
 
-        for (int slot = 0; slot < container.getContainerSize(); slot++) {
+        for (int slot = 0; slot < container.size(); slot++) {
             ItemStack stack = container.getItem(slot);
             if (stack.isEmpty()) {
                 continue;
@@ -61,7 +59,7 @@ public class BirdDroppingFoodRecipe extends CustomRecipe {
     }
 
     @Override
-    public @NotNull ItemStack getResultItem(@NotNull RegistryAccess registryAccess) {
+    public @NotNull ItemStack getResultItem(@NotNull net.minecraft.core.HolderLookup.Provider registryAccess) {
         return ItemStack.EMPTY;
     }
 

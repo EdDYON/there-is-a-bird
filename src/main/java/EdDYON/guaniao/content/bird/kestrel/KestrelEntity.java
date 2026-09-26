@@ -1,7 +1,6 @@
 package EdDYON.guaniao.content.bird.kestrel;
 
 import EdDYON.guaniao.config.BirdConfigManager;
-import EdDYON.guaniao.config.BirdSpecies;
 import EdDYON.guaniao.content.advancement.BirdAdvancements;
 import EdDYON.guaniao.content.bird.BirdFlockSoundLimiter;
 import EdDYON.guaniao.content.bird.BirdFoodSafety;
@@ -84,17 +83,16 @@ import net.minecraft.world.level.block.FenceBlock;
 import net.minecraft.world.level.block.WallBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.level.pathfinder.BlockPathTypes;
-import net.minecraft.world.phys.AABB;
+import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.phys.Vec3;
 import software.bernie.geckolib.animatable.GeoEntity;
-import software.bernie.geckolib.core.animatable.GeoAnimatable;
-import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.animation.AnimatableManager;
-import software.bernie.geckolib.core.animation.AnimationController;
-import software.bernie.geckolib.core.animation.AnimationState;
-import software.bernie.geckolib.core.animation.RawAnimation;
-import software.bernie.geckolib.core.object.PlayState;
+import software.bernie.geckolib.animatable.GeoAnimatable;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animation.AnimatableManager;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.AnimationState;
+import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.animation.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 /** A solitary diurnal falcon with its own perch, hover, dive and recovery loop. */
@@ -216,9 +214,9 @@ public class KestrelEntity extends TamableAnimal implements GeoEntity, FlyingAni
                 super.tick();
             }
         };
-        this.setPathfindingMalus(BlockPathTypes.LEAVES, 0.0F);
-        this.setPathfindingMalus(BlockPathTypes.DANGER_FIRE, 16.0F);
-        this.setPathfindingMalus(BlockPathTypes.DAMAGE_FIRE, 16.0F);
+        this.setPathfindingMalus(PathType.LEAVES, 0.0F);
+        this.setPathfindingMalus(PathType.DANGER_FIRE, 16.0F);
+        this.setPathfindingMalus(PathType.DAMAGE_FIRE, 16.0F);
     }
 
     public static AttributeSupplier.Builder createAttributes() {
@@ -289,31 +287,26 @@ public class KestrelEntity extends TamableAnimal implements GeoEntity, FlyingAni
     }
 
     @Override
-    protected void defineSynchedData() {
-        super.defineSynchedData();
-        this.entityData.define(MODEL_SCALE, BirdModelScale.DEFAULT_INDIVIDUAL_SCALE);
-        this.entityData.define(BEHAVIOR_STATE, KestrelBehaviorState.PERCHED.ordinal());
-        this.entityData.define(COMMAND_MODE, BirdCommandMode.FREE.ordinal());
-        this.entityData.define(MUTATION, BirdMutation.NONE.ordinal());
-        this.entityData.define(CARRIED_ITEM, ItemStack.EMPTY);
-        this.entityData.define(LEARNING_ITEM, false);
-        this.entityData.define(WING_MODE, WING_GLIDE);
-        this.entityData.define(GRIP_X, 0.0F);
-        this.entityData.define(GRIP_Y, 0.0F);
-        this.entityData.define(GRIP_Z, 0.0F);
+    protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(MODEL_SCALE, BirdModelScale.DEFAULT_INDIVIDUAL_SCALE);
+        builder.define(BEHAVIOR_STATE, KestrelBehaviorState.PERCHED.ordinal());
+        builder.define(COMMAND_MODE, BirdCommandMode.FREE.ordinal());
+        builder.define(MUTATION, BirdMutation.NONE.ordinal());
+        builder.define(CARRIED_ITEM, ItemStack.EMPTY);
+        builder.define(LEARNING_ITEM, false);
+        builder.define(WING_MODE, WING_GLIDE);
+        builder.define(GRIP_X, 0.0F);
+        builder.define(GRIP_Y, 0.0F);
+        builder.define(GRIP_Z, 0.0F);
     }
 
     @Override
     public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty,
-                                        MobSpawnType spawnType, @Nullable SpawnGroupData spawnData,
-                                        @Nullable CompoundTag tag) {
-        SpawnGroupData result = super.finalizeSpawn(level, difficulty, spawnType, spawnData, tag);
-        if (tag == null || !tag.contains(BirdModelScale.NBT_KEY, 5)) {
-            this.randomizeModelScale();
-        }
-        if (tag == null || !tag.contains(MUTATION_NBT_KEY, 3)) {
-            this.setBirdMutation(BirdMutation.randomMutation(this.getRandom()));
-        }
+                                        MobSpawnType spawnType, @Nullable SpawnGroupData spawnData) {
+        SpawnGroupData result = super.finalizeSpawn(level, difficulty, spawnType, spawnData);
+        this.randomizeModelScale();
+        this.setBirdMutation(BirdMutation.randomMutation(this.getRandom()));
         this.activityCenter = this.position();
         this.stateTicks = this.perchWaitTicks(80, 300);
         return result;
@@ -340,7 +333,7 @@ public class KestrelEntity extends TamableAnimal implements GeoEntity, FlyingAni
         }
         ItemStack carried = this.getCarriedItem();
         if (!carried.isEmpty()) {
-            tag.put(CARRIED_ITEM_NBT_KEY, carried.save(new CompoundTag()));
+            tag.put(CARRIED_ITEM_NBT_KEY, carried.save(this.registryAccess()));
         }
         this.birdBrain.save(tag);
     }
@@ -373,7 +366,7 @@ public class KestrelEntity extends TamableAnimal implements GeoEntity, FlyingAni
             }
         }
         if (tag.contains(CARRIED_ITEM_NBT_KEY, 10)) {
-            ItemStack carried = ItemStack.of(tag.getCompound(CARRIED_ITEM_NBT_KEY));
+            ItemStack carried = EdDYON.guaniao.util.ItemData.load(this.registryAccess(), tag.getCompound(CARRIED_ITEM_NBT_KEY));
             if (isValidFetchItem(carried)) {
                 carried.setCount(Math.min(16, carried.getCount()));
                 this.setCarriedItem(carried);
@@ -1510,7 +1503,7 @@ public class KestrelEntity extends TamableAnimal implements GeoEntity, FlyingAni
     }
 
     private static boolean isValidFetchItem(ItemStack stack) {
-        return BirdItemSafety.isSafeDisposableItem(stack) && !stack.isEdible();
+        return BirdItemSafety.isSafeDisposableItem(stack) && !stack.has(net.minecraft.core.component.DataComponents.FOOD);
     }
 
     private boolean matchesLearnedItem(ItemStack stack) {
@@ -1820,6 +1813,7 @@ public class KestrelEntity extends TamableAnimal implements GeoEntity, FlyingAni
 
     private <T extends KestrelEntity> PlayState movementController(AnimationState<T> animationState) {
         animationState.getController().setAnimationSpeed(1.0D);
+        animationState.getController().transitionLength(3);
         if (this.guidePreviewAnimation.animation != null) {
             return animationState.setAndContinue(this.guidePreviewAnimation.animation);
         }

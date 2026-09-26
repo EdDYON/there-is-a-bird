@@ -96,6 +96,13 @@ public final class SkyBirdManager {
             return;
         }
 
+        // ClientLevel.hasChunk always returns true, even before chunk packets
+        // arrive. EmptyChunk heightmaps report the world bottom (-64).
+        BlockPos regionCenter = ecologyRegionCenter(level, player);
+        if (!level.getChunkSource().hasChunk(regionCenter.getX() >> 4, regionCenter.getZ() >> 4)) {
+            return;
+        }
+
         updateTextureAvailability(minecraft);
         if (this.readySpecies.isEmpty()) {
             clearFlocks();
@@ -677,7 +684,7 @@ public final class SkyBirdManager {
     private static int surfaceHeightAt(ClientLevel level, Vec3 position) {
         int x = Mth.floor(position.x);
         int z = Mth.floor(position.z);
-        if (!level.hasChunk(x >> 4, z >> 4)) {
+        if (!level.getChunkSource().hasChunk(x >> 4, z >> 4)) {
             return level.getSeaLevel();
         }
         // NO_LEAVES is not sent in chunk packets: its client heightmap can
@@ -710,7 +717,7 @@ public final class SkyBirdManager {
         for (double[] offset : offsets) {
             int x = Mth.floor(center.x + offset[0]);
             int z = Mth.floor(center.z + offset[1]);
-            if (level.hasChunk(x >> 4, z >> 4)) {
+            if (level.getChunkSource().hasChunk(x >> 4, z >> 4)) {
                 highest = Math.max(highest,
                         level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z));
             }

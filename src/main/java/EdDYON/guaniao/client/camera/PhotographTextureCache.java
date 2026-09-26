@@ -26,7 +26,7 @@ public final class PhotographTextureCache {
     private static final int MAX_TEXTURES = 96;
     private static final int MAX_UPLOADS_PER_FRAME = 2;
     private static final long UNUSED_TEXTURE_MILLIS = 60_000L;
-    private static final ResourceLocation FALLBACK = new ResourceLocation(GuaniaoMod.MOD_ID, "textures/item/photograph.png");
+    private static final ResourceLocation FALLBACK = ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, "textures/item/photograph.png");
     private static final Map<String, CachedTexture> TEXTURES = new LinkedHashMap<>(MAX_TEXTURES + 1, 0.75F, true);
     private static final Set<String> DECODING = new HashSet<>();
     /** Keys whose jpeg could not be decoded; retried only after a logout clears it. */
@@ -123,19 +123,46 @@ public final class PhotographTextureCache {
         Path directory = Minecraft.getInstance().gameDirectory.toPath().resolve("guaniao_photos");
         Files.createDirectories(directory);
         Path file = directory.resolve(safe(photoId) + ".png");
-        try (NativeImage image = NativeImage.read(new ByteArrayInputStream(jpeg))) {
+        try (NativeImage image = decodeJpeg(jpeg)) {
             image.writeToFile(file);
         }
         return file;
     }
 
+    private static NativeImage decodeJpeg(byte[] jpeg) throws IOException {
+        // Since 1.21 NativeImage.read validates a PNG header before decoding.
+        // Keep the existing JPEG files; decode on the existing worker, then copy ABGR pixels.
+        var dimensions = EdDYON.guaniao.content.camera.PhotoImageCodec.validateJpeg(jpeg);
+        java.awt.image.BufferedImage decoded = javax.imageio.ImageIO.read(new ByteArrayInputStream(jpeg));
+        if (decoded == null || decoded.getWidth() != dimensions.width() || decoded.getHeight() != dimensions.height()) {
+            throw new IOException("Unable to decode photograph JPEG");
+        }
+        NativeImage image = new NativeImage(dimensions.width(), dimensions.height(), false);
+        try {
+            for (int y = 0; y < dimensions.height(); y++) {
+                for (int x = 0; x < dimensions.width(); x++) {
+                    int argb = decoded.getRGB(x, y);
+                    int abgr = (argb & 0xFF00FF00) | (argb >>> 16 & 0xFF) | ((argb & 0xFF) << 16);
+                    image.setPixelRGBA(x, y, abgr);
+                }
+            }
+            return image;
+        } catch (RuntimeException | Error failure) {
+            image.close();
+            throw failure;
+        } finally {
+            decoded.flush();
+        }
+    }
+
     private static void decode(String key, byte[] jpeg, int decodeGeneration) {
         try {
-            NativeImage image = NativeImage.read(new ByteArrayInputStream(jpeg));
+            NativeImage image = decodeJpeg(jpeg);
             synchronized (READY) {
                 READY.addLast(new DecodedImage(key, image, decodeGeneration));
             }
         } catch (IOException | RuntimeException exception) {
+            EdDYON.guaniao.GuaniaoMod.LOGGER.warn("Unable to decode photograph {}", key, exception);
             // Mark the key failed so a broken photo cannot resubmit itself to the
             // decoder every frame.
             Minecraft.getInstance().execute(() -> {

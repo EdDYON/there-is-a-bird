@@ -9,8 +9,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.client.event.RenderLevelStageEvent;
-import org.joml.Matrix3f;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import org.joml.Matrix4f;
 
 public final class SkyBirdRenderer {
@@ -30,9 +29,9 @@ public final class SkyBirdRenderer {
         Minecraft minecraft = Minecraft.getInstance();
         Camera camera = event.getCamera();
         Vec3 cameraPosition = camera.getPosition();
-        PoseStack poseStack = event.getPoseStack();
+        PoseStack poseStack = cameraPose(event);
         MultiBufferSource.BufferSource buffers = minecraft.renderBuffers().bufferSource();
-        float partialTick = event.getPartialTick();
+        float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
         int renderedBirds = 0;
         int candidates = 0;
         int invalidMotion = 0;
@@ -124,6 +123,14 @@ public final class SkyBirdRenderer {
         );
     }
 
+    static PoseStack cameraPose(RenderLevelStageEvent event) {
+        // AFTER_SKY supplies an empty pose stack in 1.21, before the global
+        // render stack receives the camera rotation. Apply the event's view once.
+        PoseStack poseStack = new PoseStack();
+        poseStack.mulPose(event.getModelViewMatrix());
+        return poseStack;
+    }
+
     private static float distanceAlpha(double distance, double farStart, double farEnd) {
         float nearAlpha;
         if (distance <= SkyBirdManager.NEAR_FADE_START) {
@@ -205,7 +212,7 @@ public final class SkyBirdRenderer {
         int alphaByte = Mth.clamp((int)(alpha * 255.0F), 0, 255);
         PoseStack.Pose pose = poseStack.last();
         Matrix4f matrix = pose.pose();
-        Matrix3f normal = pose.normal();
+        PoseStack.Pose normal = pose;
 
         vertex(vertices, matrix, normal, topLeft.subtract(cameraPosition), u0, v0, alphaByte, surfaceNormal);
         vertex(vertices, matrix, normal, bottomLeft.subtract(cameraPosition), u0, v1, alphaByte, surfaceNormal);
@@ -222,14 +229,14 @@ public final class SkyBirdRenderer {
         vertex(vertices, matrix, normal, topLeft.subtract(cameraPosition), u0, v0, alphaByte, reverseNormal);
     }
 
-    private static void vertex(VertexConsumer vertices, Matrix4f matrix, Matrix3f normal,
+    private static void vertex(VertexConsumer vertices, Matrix4f matrix, PoseStack.Pose normal,
                                Vec3 position, float u, float v, int alpha, Vec3 surfaceNormal) {
-        vertices.vertex(matrix, (float)position.x, (float)position.y, (float)position.z)
-                .color(255, 255, 255, alpha)
-                .uv(u, v)
-                .uv2(LightTexture.FULL_BRIGHT)
-                .normal(normal, (float)surfaceNormal.x, (float)surfaceNormal.y, (float)surfaceNormal.z)
-                .endVertex();
+        vertices.addVertex(matrix, (float)position.x, (float)position.y, (float)position.z)
+                .setColor(255, 255, 255, alpha)
+                .setUv(u, v)
+                .setLight(LightTexture.FULL_BRIGHT)
+                .setNormal(normal, (float)surfaceNormal.x, (float)surfaceNormal.y, (float)surfaceNormal.z)
+                ;
     }
 
     private static int animationFrame(SkyFlock flock, SkyBird bird, float partialTick) {

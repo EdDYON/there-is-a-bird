@@ -7,7 +7,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.PotionItem;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -165,7 +165,7 @@ public final class PrankFoodUtil {
     }
 
     public static boolean isPrankFood(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = EdDYON.guaniao.util.ItemData.read(stack);
         return !stack.isEmpty() && tag != null && tag.getBoolean(TAG_PRANK_FOOD);
     }
 
@@ -195,7 +195,7 @@ public final class PrankFoodUtil {
     }
 
     public static boolean isEligibleFood(ItemStack stack) {
-        return !stack.isEmpty() && (stack.isEdible() || stack.getItem() instanceof PotionItem) && !isPrankFood(stack) && !isDropping(stack);
+        return !stack.isEmpty() && (stack.has(net.minecraft.core.component.DataComponents.FOOD) || stack.getItem() instanceof PotionItem) && !isPrankFood(stack) && !isDropping(stack);
     }
 
     public static ItemStack makePrankFood(ItemStack food, ItemStack dropping) {
@@ -205,16 +205,17 @@ public final class PrankFoodUtil {
 
         ItemStack result = food.copy();
         result.setCount(1);
-        ResourceLocation originalItem = ForgeRegistries.ITEMS.getKey(food.getItem());
+        ResourceLocation originalItem = BuiltInRegistries.ITEM.getKey(food.getItem());
         Component prankName = makePrankDisplayName(food.getHoverName());
 
-        CompoundTag tag = result.getOrCreateTag();
+        CompoundTag tag = EdDYON.guaniao.util.ItemData.copy(result);
         tag.putBoolean(TAG_PRANK_FOOD, true);
         tag.putString(TAG_ORIGINAL_ITEM, originalItem == null ? "unknown" : originalItem.toString());
         tag.putInt(TAG_DROPPING_VARIANT, droppingVariant(dropping));
         tag.putString(TAG_PRANK_NAME, prankName.getString());
+        EdDYON.guaniao.util.ItemData.write(result, tag);
 
-        result.setHoverName(prankName);
+        result.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, prankName);
         return result;
     }
 
@@ -225,7 +226,7 @@ public final class PrankFoodUtil {
     }
 
     public static Component storedPrankDisplayName(ItemStack stack, Component fallbackOriginalName) {
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = EdDYON.guaniao.util.ItemData.read(stack);
         if (tag != null && tag.contains(TAG_PRANK_NAME)) {
             return Component.literal(sanitizeQuestionMarks(tag.getString(TAG_PRANK_NAME))).withStyle(fallbackOriginalName.getStyle());
         }

@@ -6,13 +6,13 @@ import EdDYON.guaniao.network.FeatherFanPiercePacket;
 import EdDYON.guaniao.network.GuaniaoNetwork;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import org.lwjgl.glfw.GLFW;
 
-@Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = GuaniaoMod.MOD_ID, value = Dist.CLIENT)
 public final class FeatherFanClientEvents {
     private FeatherFanClientEvents() {
     }

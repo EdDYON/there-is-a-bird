@@ -15,12 +15,11 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.extensions.common.IClientItemExtensions;
-import net.minecraftforge.fml.DistExecutor;
+import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
+import EdDYON.guaniao.util.ClientActions;
 import software.bernie.geckolib.animatable.GeoItem;
-import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.animation.AnimatableManager;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animation.AnimatableManager;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 public class NikonD750Item extends Item implements GeoItem {
@@ -40,7 +39,7 @@ public class NikonD750Item extends Item implements GeoItem {
         level.playSound(player, player.blockPosition(), SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.PLAYERS, 0.7F, 1.35F);
 
         if (level.isClientSide) {
-            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+            ClientActions.run(() -> () -> {
                 try {
                     Class.forName("EdDYON.guaniao.client.camera.CameraClientCapture")
                             .getMethod("openViewfinder", InteractionHand.class)

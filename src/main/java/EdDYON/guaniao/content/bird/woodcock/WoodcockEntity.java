@@ -63,12 +63,12 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.AABB;
-import software.bernie.geckolib.core.animatable.GeoAnimatable;
-import software.bernie.geckolib.core.animation.AnimatableManager;
-import software.bernie.geckolib.core.animation.AnimationController;
-import software.bernie.geckolib.core.animation.AnimationState;
-import software.bernie.geckolib.core.animation.RawAnimation;
-import software.bernie.geckolib.core.object.PlayState;
+import software.bernie.geckolib.animatable.GeoAnimatable;
+import software.bernie.geckolib.animation.AnimatableManager;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.AnimationState;
+import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.animation.PlayState;
 
 /**
  * A solitary woodland ground bird. Its signature locomotion alternates two
@@ -235,17 +235,16 @@ public class WoodcockEntity extends SparrowEntity
     }
 
     @Override
-    protected void defineSynchedData() {
-        super.defineSynchedData();
-        this.entityData.define(ACTION_STATE, WoodcockBehaviorState.IDLE.ordinal());
-        this.entityData.define(SPONTANEOUS_STILL, false);
+    protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(ACTION_STATE, WoodcockBehaviorState.IDLE.ordinal());
+        builder.define(SPONTANEOUS_STILL, false);
     }
 
     @Override
     public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, net.minecraft.world.DifficultyInstance difficulty,
-                                        MobSpawnType spawnType, @Nullable SpawnGroupData spawnData,
-                                        @Nullable CompoundTag tag) {
-        SpawnGroupData result = super.finalizeSpawn(level, difficulty, spawnType, spawnData, tag);
+                                        MobSpawnType spawnType, @Nullable SpawnGroupData spawnData) {
+        SpawnGroupData result = super.finalizeSpawn(level, difficulty, spawnType, spawnData);
         if (this.territoryCenter == null) {
             this.territoryCenter = this.blockPosition().immutable();
         }
@@ -909,6 +908,7 @@ public class WoodcockEntity extends SparrowEntity
 
     private <T extends WoodcockEntity> PlayState movementController(AnimationState<T> animationState) {
         animationState.getController().setAnimationSpeed(1.0D);
+        animationState.getController().transitionLength(1);
         if (this.isSpontaneouslyStill()) {
             animationState.getController().setAnimationSpeed(this.individualAnimationCadence());
             return animationState.setAndContinue(IDLE_ANIMATION);

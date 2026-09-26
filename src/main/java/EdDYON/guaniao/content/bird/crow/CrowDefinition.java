@@ -13,9 +13,9 @@ public final class CrowDefinition {
     public static final double WALK_SPEED = 0.25D;
     public static final double FLYING_SPEED = 0.42D;
     public static final double FOLLOW_RANGE = 18.0D;
-    public static final ResourceLocation MODEL = new ResourceLocation("guaniao", "geo/crow.geo.json");
-    public static final ResourceLocation TEXTURE = new ResourceLocation("guaniao", "textures/entity/crow.png");
-    public static final ResourceLocation ANIMATION = new ResourceLocation("guaniao", "animations/crow.animation.json");
+    public static final ResourceLocation MODEL = ResourceLocation.fromNamespaceAndPath("guaniao", "geo/crow.geo.json");
+    public static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath("guaniao", "textures/entity/crow.png");
+    public static final ResourceLocation ANIMATION = ResourceLocation.fromNamespaceAndPath("guaniao", "animations/crow.animation.json");
 
     private CrowDefinition() {
     }

@@ -13,7 +13,7 @@ public enum BirdCageVariant {
     LARGE("large_bird_cage", "geo/large_bird_cage.geo.json", "textures/block/large_bird_cage.png",
             Block.box(0.0, 0.0, 0.0, 16.0, 48.0, 16.0));
 
-    public static final ResourceLocation ANIMATION = new ResourceLocation(GuaniaoMod.MOD_ID, "animations/bird_cage.animation.json");
+    public static final ResourceLocation ANIMATION = ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, "animations/bird_cage.animation.json");
 
     private final String id;
     private final ResourceLocation model;
@@ -22,8 +22,8 @@ public enum BirdCageVariant {
 
     BirdCageVariant(String id, String modelPath, String texturePath, VoxelShape shape) {
         this.id = id;
-        this.model = new ResourceLocation(GuaniaoMod.MOD_ID, modelPath);
-        this.texture = new ResourceLocation(GuaniaoMod.MOD_ID, texturePath);
+        this.model = ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, modelPath);
+        this.texture = ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, texturePath);
         this.shape = shape;
     }
 

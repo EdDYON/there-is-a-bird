@@ -1,20 +1,20 @@
 package EdDYON.guaniao.content.bird.flight;
 
 import java.util.Map;
-import software.bernie.geckolib.core.animatable.GeoAnimatable;
-import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.animatable.model.CoreBakedGeoModel;
-import software.bernie.geckolib.core.animatable.model.CoreGeoModel;
-import software.bernie.geckolib.core.animation.AnimatableManager;
-import software.bernie.geckolib.core.animation.Animation;
-import software.bernie.geckolib.core.animation.AnimationController;
-import software.bernie.geckolib.core.animation.AnimationProcessor;
-import software.bernie.geckolib.core.animation.AnimationState;
-import software.bernie.geckolib.core.animation.RawAnimation;
-import software.bernie.geckolib.core.keyframe.BoneAnimation;
-import software.bernie.geckolib.core.keyframe.event.data.CustomInstructionKeyframeData;
-import software.bernie.geckolib.core.keyframe.event.data.ParticleKeyframeData;
-import software.bernie.geckolib.core.keyframe.event.data.SoundKeyframeData;
+import software.bernie.geckolib.animatable.GeoAnimatable;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.model.GeoModel;
+import net.minecraft.resources.ResourceLocation;
+import software.bernie.geckolib.animation.AnimatableManager;
+import software.bernie.geckolib.animation.Animation;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.AnimationProcessor;
+import software.bernie.geckolib.animation.AnimationState;
+import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.animation.keyframe.BoneAnimation;
+import software.bernie.geckolib.animation.keyframe.event.data.CustomInstructionKeyframeData;
+import software.bernie.geckolib.animation.keyframe.event.data.ParticleKeyframeData;
+import software.bernie.geckolib.animation.keyframe.event.data.SoundKeyframeData;
 
 /** Standalone regression using the real GeckoLib controller, without a Minecraft client. */
 public final class BirdFlightAnimationTest {
@@ -135,9 +135,11 @@ public final class BirdFlightAnimationTest {
         public double getTick(Object object) { return 0; }
     }
 
-    private static final class Model implements CoreGeoModel<Bird> {
+    private static final class Model extends GeoModel<Bird> {
         private final AnimationProcessor<Bird> processor = new AnimationProcessor<>(this);
-        public CoreBakedGeoModel getBakedGeoModel(String location) { return null; }
+        public ResourceLocation getModelResource(Bird bird) { return ResourceLocation.fromNamespaceAndPath("guaniao", "test_model"); }
+        public ResourceLocation getTextureResource(Bird bird) { return ResourceLocation.fromNamespaceAndPath("guaniao", "test_texture"); }
+        public ResourceLocation getAnimationResource(Bird bird) { return ResourceLocation.fromNamespaceAndPath("guaniao", "test_animation"); }
         public AnimationProcessor<Bird> getAnimationProcessor() { return processor; }
         public void handleAnimations(Bird bird, long id, AnimationState<Bird> state) {}
 

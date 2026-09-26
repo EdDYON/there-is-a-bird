@@ -1,35 +1,30 @@
 package EdDYON.guaniao.content.enchantment;
 
-import EdDYON.guaniao.GuaniaoMod;
-import EdDYON.guaniao.content.fan.FeatherFanItem;
+import net.minecraft.core.Holder;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraft.world.item.enchantment.EnchantmentCategory;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 
 public final class GuaniaoEnchantments {
-    public static final DeferredRegister<Enchantment> ENCHANTMENTS =
-            DeferredRegister.create(ForgeRegistries.ENCHANTMENTS, GuaniaoMod.MOD_ID);
-
-    public static final EnchantmentCategory FEATHER_FAN = EnchantmentCategory.create(
-            "feather_fan",
-            item -> item instanceof FeatherFanItem
-    );
-
-    public static final RegistryObject<Enchantment> BURIAL_PLUME = ENCHANTMENTS.register(
-            "burial_plume",
-            BurialPlumeEnchantment::new
-    );
-    public static final RegistryObject<Enchantment> RIVEN_PLUME = ENCHANTMENTS.register(
-            "riven_plume",
-            RivenPlumeEnchantment::new
-    );
-    public static final RegistryObject<Enchantment> HUNTING_RETURN = ENCHANTMENTS.register(
-            "hunting_return",
-            HuntingReturnEnchantment::new
-    );
-
-    private GuaniaoEnchantments() {
+    public static final ResourceKey<Enchantment> BURIAL_PLUME = key("burial_plume");
+    public static final ResourceKey<Enchantment> RIVEN_PLUME = key("riven_plume");
+    public static final ResourceKey<Enchantment> HUNTING_RETURN = key("hunting_return");
+    private GuaniaoEnchantments() {}
+    private static ResourceKey<Enchantment> key(String id) {
+        return ResourceKey.create(Registries.ENCHANTMENT, ResourceLocation.fromNamespaceAndPath("guaniao", id));
+    }
+    public static int level(ItemStack stack, ResourceKey<Enchantment> key) {
+        for (var entry : stack.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY).entrySet()) {
+            if (entry.getKey().is(key)) return entry.getIntValue();
+        }
+        return 0;
+    }
+    public static Holder<Enchantment> holder(HolderLookup.Provider registries, ResourceKey<Enchantment> key) {
+        return registries.lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(key);
     }
 }

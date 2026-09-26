@@ -22,7 +22,7 @@ public final class PhotographData {
     }
 
     public static boolean hasImage(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = EdDYON.guaniao.util.ItemData.read(stack);
         return tag != null
                 && tag.contains(TAG_PHOTO_ID)
                 && PhotoTransferLimits.isValidPhotoId(tag.getString(TAG_PHOTO_ID))
@@ -31,47 +31,47 @@ public final class PhotographData {
     }
 
     public static String id(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = EdDYON.guaniao.util.ItemData.read(stack);
         return tag == null ? "" : tag.getString(TAG_PHOTO_ID);
     }
 
     public static String photographer(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = EdDYON.guaniao.util.ItemData.read(stack);
         return tag == null ? "" : tag.getString(TAG_PHOTOGRAPHER);
     }
 
     public static UUID photographerId(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = EdDYON.guaniao.util.ItemData.read(stack);
         return tag != null && tag.hasUUID(TAG_PHOTOGRAPHER_ID) ? tag.getUUID(TAG_PHOTOGRAPHER_ID) : null;
     }
 
     public static long gameTime(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = EdDYON.guaniao.util.ItemData.read(stack);
         return tag == null ? 0L : tag.getLong(TAG_GAME_TIME);
     }
 
     public static int[] pixels(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = EdDYON.guaniao.util.ItemData.read(stack);
         return tag == null ? new int[0] : tag.getIntArray(TAG_PIXELS);
     }
 
     public static boolean hasLegacyPixels(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = EdDYON.guaniao.util.ItemData.read(stack);
         return tag != null && tag.getIntArray(TAG_PIXELS).length == LEGACY_IMAGE_SIZE * LEGACY_IMAGE_SIZE;
     }
 
     public static String contentHash(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = EdDYON.guaniao.util.ItemData.read(stack);
         return tag == null ? "" : tag.getString(TAG_CONTENT_HASH);
     }
 
     public static int width(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = EdDYON.guaniao.util.ItemData.read(stack);
         return tag == null ? 0 : imageWidth(tag);
     }
 
     public static int height(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = EdDYON.guaniao.util.ItemData.read(stack);
         return tag == null ? 0 : imageHeight(tag);
     }
 
@@ -93,7 +93,7 @@ public final class PhotographData {
                 || !PhotoImageCodec.isSha256(contentHash)) {
             throw new IllegalArgumentException("Invalid photograph reference");
         }
-        CompoundTag tag = stack.getOrCreateTag();
+        CompoundTag tag = EdDYON.guaniao.util.ItemData.copy(stack);
         tag.putString(TAG_PHOTO_ID, id);
         tag.putString(TAG_PHOTOGRAPHER, photographer);
         tag.putUUID(TAG_PHOTOGRAPHER_ID, photographerId);
@@ -102,15 +102,16 @@ public final class PhotographData {
         tag.putInt(TAG_HEIGHT, height);
         tag.putString(TAG_CONTENT_HASH, contentHash);
         tag.remove(TAG_PIXELS);
+        EdDYON.guaniao.util.ItemData.write(stack, tag);
     }
 
     public static void copyImage(ItemStack from, ItemStack to) {
-        CompoundTag source = from.getTag();
+        CompoundTag source = EdDYON.guaniao.util.ItemData.read(from);
         if (source == null) {
             return;
         }
 
-        CompoundTag target = to.getOrCreateTag();
+        CompoundTag target = EdDYON.guaniao.util.ItemData.copy(to);
         if (source.contains(TAG_PHOTO_ID)) {
             target.putString(TAG_PHOTO_ID, source.getString(TAG_PHOTO_ID));
         }
@@ -135,10 +136,11 @@ public final class PhotographData {
         if (source.getIntArray(TAG_PIXELS).length == LEGACY_IMAGE_SIZE * LEGACY_IMAGE_SIZE) {
             target.putIntArray(TAG_PIXELS, source.getIntArray(TAG_PIXELS));
         }
+        EdDYON.guaniao.util.ItemData.write(to, target);
     }
 
     public static void finishLegacyMigration(ItemStack stack, String contentHash) {
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = EdDYON.guaniao.util.ItemData.read(stack);
         if (tag == null || !PhotoImageCodec.isSha256(contentHash)) {
             return;
         }
@@ -146,6 +148,7 @@ public final class PhotographData {
         tag.putInt(TAG_HEIGHT, LEGACY_IMAGE_SIZE);
         tag.putString(TAG_CONTENT_HASH, contentHash);
         tag.remove(TAG_PIXELS);
+        EdDYON.guaniao.util.ItemData.write(stack, tag);
     }
 
     private static int imageWidth(CompoundTag tag) {

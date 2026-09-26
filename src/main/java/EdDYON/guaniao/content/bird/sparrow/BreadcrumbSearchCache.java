@@ -14,15 +14,15 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.saveddata.SavedData;
-import net.minecraftforge.event.level.LevelEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.level.LevelEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Persistent per-chunk breadcrumb index. Sparrow queries scale with the number of
  * real breadcrumb piles instead of the volume of the surrounding block region.
  */
-@Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
+@EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
 public final class BreadcrumbSearchCache {
     private static final String DATA_NAME = "guaniao_breadcrumb_index";
     private static final String TAG_POSITIONS = "Positions";
@@ -170,9 +170,7 @@ public final class BreadcrumbSearchCache {
         private final Map<Long, Set<Long>> positionsByChunk = new HashMap<>();
 
         private static BreadcrumbIndexData get(ServerLevel level) {
-            return level.getDataStorage().computeIfAbsent(
-                    BreadcrumbIndexData::load,
-                    BreadcrumbIndexData::new,
+            return level.getDataStorage().computeIfAbsent(new SavedData.Factory<>(BreadcrumbIndexData::new, (tag, registries) -> BreadcrumbIndexData.load(tag)),
                     DATA_NAME
             );
         }
@@ -216,7 +214,7 @@ public final class BreadcrumbSearchCache {
         }
 
         @Override
-        public CompoundTag save(CompoundTag tag) {
+        public CompoundTag save(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
             int size = this.positionsByChunk.values().stream().mapToInt(Set::size).sum();
             long[] positions = new long[size];
             int index = 0;

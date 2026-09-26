@@ -21,9 +21,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.fml.common.Mod;
 
-@Mod.EventBusSubscriber(modid = "guaniao")
 public final class BirdDroppingEvents {
     private static final String TAG_COOLDOWN = "GuaniaoDroppingCooldown";
     private static final int CHECK_INTERVAL_TICKS = 20;

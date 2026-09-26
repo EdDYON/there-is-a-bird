@@ -33,11 +33,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
 public final class BirdDroppingPrankHandler {
-    private static final ResourceLocation SKY_DELIVERY_ADVANCEMENT = new ResourceLocation(GuaniaoMod.MOD_ID, "husbandry/sky_delivery");
-    private static final ResourceLocation LUCKY_ADVANCEMENT = new ResourceLocation(GuaniaoMod.MOD_ID, "husbandry/good_luck_i_guess");
-    private static final ResourceLocation HELMET_ADVANCEMENT = new ResourceLocation(GuaniaoMod.MOD_ID, "husbandry/helmet_saved_the_day");
-    private static final ResourceLocation VILLAGER_ADVANCEMENT = new ResourceLocation(GuaniaoMod.MOD_ID, "husbandry/not_very_civilized");
-    private static final ResourceLocation CAKE_ADVANCEMENT = new ResourceLocation(GuaniaoMod.MOD_ID, "husbandry/cake_no_longer_cake");
+    private static final ResourceLocation SKY_DELIVERY_ADVANCEMENT = ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, "husbandry/sky_delivery");
+    private static final ResourceLocation LUCKY_ADVANCEMENT = ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, "husbandry/good_luck_i_guess");
+    private static final ResourceLocation HELMET_ADVANCEMENT = ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, "husbandry/helmet_saved_the_day");
+    private static final ResourceLocation VILLAGER_ADVANCEMENT = ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, "husbandry/not_very_civilized");
+    private static final ResourceLocation CAKE_ADVANCEMENT = ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, "husbandry/cake_no_longer_cake");
 
     private static final String VILLAGER_HIT_PREFIX = "GuaniaoDroppingHitBy_";
     private static final String VILLAGER_TRADE_PENALTY = "GuaniaoDroppingTradePenalty";
@@ -66,7 +66,7 @@ public final class BirdDroppingPrankHandler {
 
         if (!helmet.isEmpty()) {
             if (!player.getAbilities().instabuild && helmet.isDamageableItem()) {
-                helmet.hurtAndBreak(1, player, living -> living.broadcastBreakEvent(EquipmentSlot.HEAD));
+                helmet.hurtAndBreak(1, player, EquipmentSlot.HEAD);
             }
             player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 20, 0));
             playWetHit(level, player.position(), 0.55F);

@@ -78,23 +78,22 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.FenceBlock;
 import net.minecraft.world.level.block.FenceGateBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.pathfinder.BlockPathTypes;
+import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.phys.Vec3;
 import software.bernie.geckolib.animatable.GeoEntity;
-import software.bernie.geckolib.core.animatable.GeoAnimatable;
-import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.animation.AnimatableManager;
-import software.bernie.geckolib.core.animation.AnimationController;
-import software.bernie.geckolib.core.animation.AnimationState;
-import software.bernie.geckolib.core.animation.RawAnimation;
-import software.bernie.geckolib.core.object.PlayState;
+import software.bernie.geckolib.animatable.GeoAnimatable;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animation.AnimatableManager;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.AnimationState;
+import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.animation.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal, ScalableBirdModel, BirdFlightAware, BirdBathMountable, BirdBathFeedingAnimatable, CommandableBird, FlockCompatibleBird, BirdSleepWakeable, BirdMutationHolder {
@@ -181,10 +180,10 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
     public CrowEntity(EntityType<? extends CrowEntity> entityType, Level level) {
         super(entityType, level);
         this.moveControl = new FlyingMoveControl(this, 12, true);
-        this.setPathfindingMalus(BlockPathTypes.LEAVES, 0.0F);
-        this.setPathfindingMalus(BlockPathTypes.WATER, -1.0F);
-        this.setPathfindingMalus(BlockPathTypes.DANGER_FIRE, 16.0F);
-        this.setPathfindingMalus(BlockPathTypes.DAMAGE_FIRE, 16.0F);
+        this.setPathfindingMalus(PathType.LEAVES, 0.0F);
+        this.setPathfindingMalus(PathType.WATER, -1.0F);
+        this.setPathfindingMalus(PathType.DANGER_FIRE, 16.0F);
+        this.setPathfindingMalus(PathType.DAMAGE_FIRE, 16.0F);
         this.nestBuildCooldown = this.nextNestBuildInterval();
     }
 
@@ -262,16 +261,16 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
     }
 
     @Override
-    protected void defineSynchedData() {
-        super.defineSynchedData();
-        this.entityData.define(BEHAVIOR_STATE, CrowBehaviorState.IDLE.ordinal());
-        this.entityData.define(MODEL_SCALE, BirdModelScale.DEFAULT_INDIVIDUAL_SCALE);
-        this.entityData.define(FLYING_ANIMATION_ACTIVE, false);
-        this.entityData.define(FLIGHT_ANIMATION_SEQUENCE, 0);
-        this.entityData.define(HELD_FOOD, ItemStack.EMPTY);
-        this.entityData.define(HELD_FOOD_POSE_SEED, 0);
-        this.entityData.define(COMMAND_MODE, BirdCommandMode.FREE.ordinal());
-        this.entityData.define(MUTATION, BirdMutation.NONE.ordinal());
+    protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(BEHAVIOR_STATE, CrowBehaviorState.IDLE.ordinal());
+        builder.define(MODEL_SCALE, BirdModelScale.DEFAULT_INDIVIDUAL_SCALE);
+        builder.define(FLYING_ANIMATION_ACTIVE, false);
+        builder.define(FLIGHT_ANIMATION_SEQUENCE, 0);
+        builder.define(HELD_FOOD, ItemStack.EMPTY);
+        builder.define(HELD_FOOD_POSE_SEED, 0);
+        builder.define(COMMAND_MODE, BirdCommandMode.FREE.ordinal());
+        builder.define(MUTATION, BirdMutation.NONE.ordinal());
     }
 
     @Override
@@ -296,14 +295,10 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
     }
 
     @Override
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType spawnType, SpawnGroupData spawnGroupData, CompoundTag compoundTag) {
-        SpawnGroupData data = super.finalizeSpawn(level, difficulty, spawnType, spawnGroupData, compoundTag);
-        if (compoundTag == null || !compoundTag.contains(BirdModelScale.NBT_KEY, 5)) {
-            this.randomizeModelScale();
-        }
-        if (compoundTag == null || !compoundTag.contains(MUTATION_NBT_KEY, 3)) {
-            this.setBirdMutation(BirdMutation.randomMutation(this.getRandom()));
-        }
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType spawnType, SpawnGroupData spawnGroupData) {
+        SpawnGroupData data = super.finalizeSpawn(level, difficulty, spawnType, spawnGroupData);
+        this.randomizeModelScale();
+        this.setBirdMutation(BirdMutation.randomMutation(this.getRandom()));
         return data;
     }
 
@@ -318,7 +313,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         }
         ItemStack heldItem = this.getHeldFoodForRendering();
         if (!heldItem.isEmpty()) {
-            compoundTag.put(NBT_HELD_ITEM, heldItem.save(new CompoundTag()));
+            compoundTag.put(NBT_HELD_ITEM, heldItem.save(this.registryAccess()));
             compoundTag.putInt(NBT_HELD_ITEM_POSE_SEED, this.getHeldFoodPoseSeed());
             compoundTag.putBoolean(NBT_CARRYING_HELD_ITEM, this.carryingHeldItem);
         }
@@ -344,7 +339,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         }
         if (compoundTag.contains(NBT_HELD_ITEM, 10)) {
             this.setHeldFoodForRendering(
-                    ItemStack.of(compoundTag.getCompound(NBT_HELD_ITEM)),
+                    EdDYON.guaniao.util.ItemData.load(this.registryAccess(), compoundTag.getCompound(NBT_HELD_ITEM)),
                     compoundTag.getBoolean(NBT_CARRYING_HELD_ITEM),
                     compoundTag.getInt(NBT_HELD_ITEM_POSE_SEED));
         } else {
@@ -885,7 +880,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
     }
 
     static boolean isCrowDroppedFoodCandidate(ItemStack stack) {
-        return (stack.isEdible() || stack.is(BirdTags.CROW_FOODS))
+        return (stack.has(net.minecraft.core.component.DataComponents.FOOD) || stack.is(BirdTags.CROW_FOODS))
                 && BirdItemSafety.isCrowTreasure(stack);
     }
 

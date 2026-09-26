@@ -5,7 +5,7 @@ import EdDYON.guaniao.content.bird.cockatiel.CockatielDefinition;
 import EdDYON.guaniao.content.bird.cockatiel.CockatielEntity;
 import EdDYON.guaniao.content.bird.cockatiel.CockatielCrestState;
 import net.minecraft.resources.ResourceLocation;
-import software.bernie.geckolib.core.animation.AnimationState;
+import software.bernie.geckolib.animation.AnimationState;
 import software.bernie.geckolib.model.GeoModel;
 
 public class CockatielModel extends GeoModel<CockatielEntity> {

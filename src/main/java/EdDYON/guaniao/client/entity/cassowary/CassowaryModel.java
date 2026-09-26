@@ -5,7 +5,7 @@ import EdDYON.guaniao.content.bird.cassowary.CassowaryDefinition;
 import EdDYON.guaniao.content.bird.cassowary.CassowaryEntity;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
-import software.bernie.geckolib.core.animation.AnimationState;
+import software.bernie.geckolib.animation.AnimationState;
 import software.bernie.geckolib.model.GeoModel;
 
 public final class CassowaryModel extends GeoModel<CassowaryEntity> {

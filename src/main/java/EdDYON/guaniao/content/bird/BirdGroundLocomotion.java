@@ -2,7 +2,6 @@ package EdDYON.guaniao.content.bird;
 
 import EdDYON.guaniao.config.BirdSpecies;
 import java.util.Map;
-import java.util.UUID;
 import java.util.WeakHashMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Mth;
@@ -19,8 +18,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
  */
 public final class BirdGroundLocomotion {
     private static final String TAG_INDIVIDUAL_FACTOR = "GuaniaoIndividualWalkFactor";
-    private static final UUID GROUND_SPEED_MODIFIER_ID =
-            UUID.fromString("5d7e8914-9a44-4af0-b6fc-1de640e178a1");
+    private static final net.minecraft.resources.ResourceLocation GROUND_SPEED_MODIFIER_ID = net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("guaniao", "ground_locomotion");
     private static final String GROUND_SPEED_MODIFIER_NAME = "Guaniao ground locomotion";
     private static final float PACE_LERP = 0.08F;
     private static final Map<Mob, State> STATES = new WeakHashMap<>();
@@ -87,9 +85,8 @@ public final class BirdGroundLocomotion {
         removeModifier(attribute);
         attribute.addTransientModifier(new AttributeModifier(
                 GROUND_SPEED_MODIFIER_ID,
-                GROUND_SPEED_MODIFIER_NAME,
                 multiplier - 1.0D,
-                AttributeModifier.Operation.MULTIPLY_TOTAL));
+                AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
         state.appliedMultiplier = multiplier;
     }
 

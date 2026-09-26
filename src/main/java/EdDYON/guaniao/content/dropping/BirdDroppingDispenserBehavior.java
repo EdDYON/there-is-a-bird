@@ -3,13 +3,13 @@ package EdDYON.guaniao.content.dropping;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
 import EdDYON.guaniao.registry.GuaniaoItems;
 import net.minecraft.core.Position;
-import net.minecraft.core.dispenser.AbstractProjectileDispenseBehavior;
+import net.minecraft.core.dispenser.DefaultDispenseItemBehavior;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.DispenserBlock;
 
-public final class BirdDroppingDispenserBehavior extends AbstractProjectileDispenseBehavior {
+public final class BirdDroppingDispenserBehavior extends DefaultDispenseItemBehavior {
     private final BirdDroppingVariant variant;
 
     private BirdDroppingDispenserBehavior(BirdDroppingVariant variant) {
@@ -24,6 +24,21 @@ public final class BirdDroppingDispenserBehavior extends AbstractProjectileDispe
     }
 
     @Override
+    public ItemStack execute(net.minecraft.core.dispenser.BlockSource source, ItemStack stack) {
+        var direction = source.state().getValue(DispenserBlock.FACING);
+        var position = DispenserBlock.getDispensePosition(source);
+        Projectile projectile = getProjectile(source.level(), position, stack);
+        projectile.shoot(direction.getStepX(), direction.getStepY() + 0.1F, direction.getStepZ(), getPower(), 6.0F);
+        source.level().addFreshEntity(projectile);
+        stack.shrink(1);
+        return stack;
+    }
+
+    @Override
+    protected void playSound(net.minecraft.core.dispenser.BlockSource source) {
+        source.level().levelEvent(1002, source.pos(), 0);
+    }
+
     protected Projectile getProjectile(Level level, Position position, ItemStack stack) {
         BirdDroppingProjectileEntity projectile = new BirdDroppingProjectileEntity(GuaniaoEntityTypes.BIRD_DROPPING_PROJECTILE.get(), level);
         projectile.setPos(position.x(), position.y(), position.z());
@@ -34,7 +49,6 @@ public final class BirdDroppingDispenserBehavior extends AbstractProjectileDispe
         return projectile;
     }
 
-    @Override
     protected float getPower() {
         return 1.25F;
     }

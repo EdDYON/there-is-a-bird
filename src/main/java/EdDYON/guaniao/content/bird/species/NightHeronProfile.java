@@ -13,7 +13,6 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PathfinderMob;
-import net.minecraft.world.entity.animal.AbstractFish;
 import net.minecraft.world.entity.player.Player;
 import EdDYON.guaniao.content.bird.nightheron.NightHeronEntity;
 import net.minecraft.world.level.Level;
@@ -207,7 +206,7 @@ public final class NightHeronProfile extends BirdSpeciesProfile {
                 || state.is(BlockTags.LOGS)
                 || state.is(Blocks.MANGROVE_ROOTS)
                 || state.is(Blocks.MOSS_CARPET)
-                || state.is(Blocks.GRASS)
+                || state.is(Blocks.SHORT_GRASS)
                 || state.is(Blocks.TALL_GRASS)
                 || state.is(Blocks.FERN)
                 || state.is(Blocks.LARGE_FERN)

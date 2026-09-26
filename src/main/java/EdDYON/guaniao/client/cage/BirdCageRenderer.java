@@ -10,6 +10,11 @@ public class BirdCageRenderer extends GeoBlockRenderer<BirdCageBlockEntity> {
     }
 
     @Override
+    public net.minecraft.world.phys.AABB getRenderBoundingBox(BirdCageBlockEntity blockEntity) {
+        return blockEntity.getRenderBoundingBox();
+    }
+
+    @Override
     public boolean shouldRenderOffScreen(BirdCageBlockEntity blockEntity) {
         return true;
     }

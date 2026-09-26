@@ -19,6 +19,7 @@ import EdDYON.guaniao.content.bird.macaw.MacawEntity;
 import EdDYON.guaniao.content.bird.scale.BirdModelScale;
 import EdDYON.guaniao.content.bird.scale.BirdModelScaleProfile;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
+import EdDYON.guaniao.registry.GuaniaoSoundEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundSetPassengersPacket;
@@ -55,17 +56,18 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import software.bernie.geckolib.core.animation.AnimatableManager;
-import software.bernie.geckolib.core.animation.AnimationController;
-import software.bernie.geckolib.core.animation.AnimationState;
-import software.bernie.geckolib.core.animation.RawAnimation;
-import software.bernie.geckolib.core.object.PlayState;
+import software.bernie.geckolib.animation.AnimatableManager;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.AnimationState;
+import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.animation.PlayState;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 /**
  * A large, loud, intensely social cockatoo.
@@ -110,6 +112,21 @@ public class UmbrellaCockatooEntity extends BudgerigarEntity implements BirdLoud
     private static final int PERCH_SLOT_RIGHT_SHOULDER = 2;
     private static final int PERCH_SLOT_HEAD = 3;
 
+    // Same order as CockatooCallSequence.Clip: short calls and phrases share one voice.
+    private static final List<Supplier<SoundEvent>> NATIVE_CALLS = List.of(
+            GuaniaoSoundEvents.UMBRELLA_COCKATOO_CALL_01,
+            GuaniaoSoundEvents.UMBRELLA_COCKATOO_CALL_02,
+            GuaniaoSoundEvents.UMBRELLA_COCKATOO_CALL_03,
+            GuaniaoSoundEvents.UMBRELLA_COCKATOO_CALL_04,
+            GuaniaoSoundEvents.UMBRELLA_COCKATOO_CALL_05,
+            GuaniaoSoundEvents.UMBRELLA_COCKATOO_CALL_07,
+            GuaniaoSoundEvents.UMBRELLA_COCKATOO_CALL_08,
+            GuaniaoSoundEvents.UMBRELLA_COCKATOO_PHRASE_01,
+            GuaniaoSoundEvents.UMBRELLA_COCKATOO_PHRASE_02,
+            GuaniaoSoundEvents.UMBRELLA_COCKATOO_PHRASE_03,
+            GuaniaoSoundEvents.UMBRELLA_COCKATOO_PHRASE_04
+    );
+
     private final Map<UUID, Integer> trustByPlayer = new HashMap<>();
     private int curiousTicks;
     private int alertTicks;
@@ -123,6 +140,8 @@ public class UmbrellaCockatooEntity extends BudgerigarEntity implements BirdLoud
     private int inspectCooldown;
     private int socialCooldown;
     private int mimicCooldown;
+    private final CockatooCallSequence callSequence = new CockatooCallSequence();
+    private float callSequenceVolume;
     private int groundTicks;
     private int ownerPerchCooldown;
     private int ownerPerchSwapCooldown;
@@ -179,11 +198,11 @@ public class UmbrellaCockatooEntity extends BudgerigarEntity implements BirdLoud
     }
 
     @Override
-    protected void defineSynchedData() {
-        super.defineSynchedData();
-        this.entityData.define(EMOTION, UmbrellaCockatooEmotion.RELAXED.ordinal());
-        this.entityData.define(HEAD_ROLL, 0.0F);
-        this.entityData.define(PERCH_SLOT, PERCH_SLOT_NONE);
+    protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(EMOTION, UmbrellaCockatooEmotion.RELAXED.ordinal());
+        builder.define(HEAD_ROLL, 0.0F);
+        builder.define(PERCH_SLOT, PERCH_SLOT_NONE);
     }
 
     @Override
@@ -233,6 +252,7 @@ public class UmbrellaCockatooEntity extends BudgerigarEntity implements BirdLoud
         this.tickOwnerPerch();
         this.tickOwnerProximity();
         this.tickHighPerchPreference();
+        this.tickNativeCalls();
         this.tickMimicry();
     }
 
@@ -281,7 +301,7 @@ public class UmbrellaCockatooEntity extends BudgerigarEntity implements BirdLoud
 
     private void completeTaming(Player player) {
         boolean wasTame = this.isTame();
-        this.setTame(true);
+        this.setTame(true, true);
         this.setOwnerUUID(player.getUUID());
         this.setBirdCommandMode(BirdCommandMode.FOLLOW);
         this.trustByPlayer.put(player.getUUID(), UmbrellaCockatooDefinition.TAMING_TRUST_MAX);
@@ -833,8 +853,9 @@ public class UmbrellaCockatooEntity extends BudgerigarEntity implements BirdLoud
         if (--this.mimicCooldown > 0) {
             return;
         }
-        if (this.isBirdSleeping() || BudgerigarControl.isSleepingOrRoosting(this)
-                || BudgerigarControl.isEating(this) || this.isFlying() || this.startledTicks > 0) {
+        if (!this.canVocalize()
+                || BudgerigarControl.isEating(this) || this.isFlying() || this.startledTicks > 0
+                || this.callSequence.isBusy(this.tickCount)) {
             return;
         }
         // A tame bird chatters at its owner more readily than a wild one does.
@@ -891,32 +912,62 @@ public class UmbrellaCockatooEntity extends BudgerigarEntity implements BirdLoud
     }
 
     // ------------------------------------------------------------------
-    // Sounds. There is no cockatoo audio asset yet, so ambient calls stay silent
-    // rather than borrowing another species' voice. Mimicry above uses real
-    // registered events, which is explicitly what this bird is supposed to do.
+    // Native bouts mix short calls and phrases. Neighbour mimicry stays separate.
     // ------------------------------------------------------------------
 
     @Override
     protected SoundEvent getAmbientSound() {
-        return null;
+        if (!this.canVocalize() || this.callSequence.isBusy(this.tickCount)) {
+            return null;
+        }
+        return NATIVE_CALLS.get(this.getRandom().nextInt(NATIVE_CALLS.size())).get();
     }
 
     @Override
     protected SoundEvent getInteractionSound() {
-        return null;
+        return NATIVE_CALLS.get(this.getRandom().nextInt(NATIVE_CALLS.size())).get();
+    }
+
+    @Override
+    public void playAmbientSound() {
+        if (this.canVocalize() && !this.callSequence.isBusy(this.tickCount)
+                && BirdFlockSoundLimiter.allowAmbient(this)) {
+            this.startNativeCalls(false, this.getSoundVolume());
+        }
     }
 
     @Override
     protected void playInteractionSound() {
-        SoundEvent sound = this.getInteractionSound();
-        if (sound != null) {
-            this.playSound(sound, 0.7F, 0.94F + this.getRandom().nextFloat() * 0.16F);
+        this.startNativeCalls(true, 0.7F);
+    }
+
+    private boolean canVocalize() {
+        return !this.level().isClientSide && this.isAlive() && !this.isRemoved() && !this.isSilent()
+                && !this.isBirdSleeping() && !BudgerigarControl.isSleepingOrRoosting(this);
+    }
+
+    private void startNativeCalls(boolean interaction, float volume) {
+        if (this.canVocalize() && this.callSequence.start(this.tickCount, interaction, this.getRandom())) {
+            this.callSequenceVolume = volume;
+            this.tickNativeCalls();
+        }
+    }
+
+    private void tickNativeCalls() {
+        if (!this.canVocalize()) {
+            this.callSequence.cancel();
+            return;
+        }
+        CockatooCallSequence.Playback playback = this.callSequence.poll(this.tickCount, this.getRandom());
+        if (playback != null) {
+            this.playSound(NATIVE_CALLS.get(playback.clip().ordinal()).get(),
+                    this.callSequenceVolume, playback.pitch());
         }
     }
 
     @Override
     protected SoundEvent getHurtSound(DamageSource source) {
-        // Vanilla parrot voice as an interim: the mod has no cockatoo hurt asset.
+        // The supplied pack contains calls, not dedicated hurt recordings.
         return SoundEvents.PARROT_HURT;
     }
 

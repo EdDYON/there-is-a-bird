@@ -33,7 +33,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.projectile.ThrowableItemProjectile;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -41,7 +40,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashSet;
@@ -55,6 +53,10 @@ import java.util.Set;
 import java.util.UUID;
 
 public class FeatherFanProjectileEntity extends ThrowableItemProjectile {
+    private net.minecraft.resources.ResourceLocation slowModifierId() {
+        return net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("guaniao", "fan_pin/" + this.getUUID());
+    }
+
     private static final EntityDataAccessor<Integer> DATA_STATE = SynchedEntityData.defineId(FeatherFanProjectileEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Float> DATA_CHARGE = SynchedEntityData.defineId(FeatherFanProjectileEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Integer> DATA_RIVEN_TICKS = SynchedEntityData.defineId(FeatherFanProjectileEntity.class, EntityDataSerializers.INT);
@@ -156,11 +158,11 @@ public class FeatherFanProjectileEntity extends ThrowableItemProjectile {
     }
 
     @Override
-    protected void defineSynchedData() {
-        super.defineSynchedData();
-        this.entityData.define(DATA_STATE, FanState.OUTBOUND_SPIN.ordinal());
-        this.entityData.define(DATA_CHARGE, 0.0F);
-        this.entityData.define(DATA_RIVEN_TICKS, 0);
+    protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(DATA_STATE, FanState.OUTBOUND_SPIN.ordinal());
+        builder.define(DATA_CHARGE, 0.0F);
+        builder.define(DATA_RIVEN_TICKS, 0);
     }
 
     public void configureThrow(ItemStack fanStack, InteractionHand hand, float charge) {
@@ -213,7 +215,7 @@ public class FeatherFanProjectileEntity extends ThrowableItemProjectile {
     }
 
     @Override
-    protected float getGravity() {
+    protected double getDefaultGravity() {
         return 0.0F;
     }
 
@@ -943,12 +945,10 @@ public class FeatherFanProjectileEntity extends ThrowableItemProjectile {
 
     private PiercingArt getPiercingArt() {
         ItemStack fan = this.getItem();
-        if (EnchantmentHelper.getItemEnchantmentLevel(
-                GuaniaoEnchantments.RIVEN_PLUME.get(), fan) > 0) {
+        if (GuaniaoEnchantments.level(fan, GuaniaoEnchantments.RIVEN_PLUME) > 0) {
             return PiercingArt.RIVEN;
         }
-        if (EnchantmentHelper.getItemEnchantmentLevel(
-                GuaniaoEnchantments.BURIAL_PLUME.get(), fan) > 0) {
+        if (GuaniaoEnchantments.level(fan, GuaniaoEnchantments.BURIAL_PLUME) > 0) {
             return PiercingArt.BURIAL;
         }
         return PiercingArt.NORMAL;
@@ -1110,10 +1110,10 @@ public class FeatherFanProjectileEntity extends ThrowableItemProjectile {
 
     private void applyStuckSlowdown(LivingEntity target) {
         AttributeInstance movementSpeed = target.getAttribute(Attributes.MOVEMENT_SPEED);
-        if (movementSpeed != null && movementSpeed.getModifier(this.getUUID()) == null) {
+        if (movementSpeed != null && movementSpeed.getModifier(this.slowModifierId()) == null) {
             movementSpeed.addTransientModifier(new AttributeModifier(
-                    this.getUUID(), "Feather fan pin slowdown", STUCK_SLOW_AMOUNT,
-                    AttributeModifier.Operation.MULTIPLY_TOTAL));
+                    this.slowModifierId(), STUCK_SLOW_AMOUNT,
+                    AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
         }
     }
 
@@ -1124,7 +1124,7 @@ public class FeatherFanProjectileEntity extends ThrowableItemProjectile {
         }
         AttributeInstance movementSpeed = target.getAttribute(Attributes.MOVEMENT_SPEED);
         if (movementSpeed != null) {
-            movementSpeed.removeModifier(this.getUUID());
+            movementSpeed.removeModifier(this.slowModifierId());
         }
     }
 
@@ -2053,8 +2053,8 @@ public class FeatherFanProjectileEntity extends ThrowableItemProjectile {
     }
 
     @Override
-    public @NotNull Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
+    public @NotNull Packet<ClientGamePacketListener> getAddEntityPacket(net.minecraft.server.level.ServerEntity pairing) {
+        return super.getAddEntityPacket(pairing);
     }
 
     private static ListTag saveHitSet(Set<UUID> hits) {

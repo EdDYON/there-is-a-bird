@@ -10,12 +10,12 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
-import net.minecraftforge.event.entity.player.ItemTooltipEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
+import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 import java.util.List;
 
@@ -23,7 +23,7 @@ public final class PrankFoodEvents {
     private PrankFoodEvents() {
     }
 
-    @Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
+    @EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
     public static final class Common {
         private Common() {
         }
@@ -32,7 +32,7 @@ public final class PrankFoodEvents {
         public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
             ItemStack stack = event.getItemStack();
             Player player = event.getEntity();
-            if (!PrankFoodUtil.isPrankFood(stack) || !stack.isEdible() || player.isUsingItem()) {
+            if (!PrankFoodUtil.isPrankFood(stack) || !stack.has(net.minecraft.core.component.DataComponents.FOOD) || player.isUsingItem()) {
                 return;
             }
 
@@ -52,7 +52,7 @@ public final class PrankFoodEvents {
         }
     }
 
-    @Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID, value = Dist.CLIENT)
+    @EventBusSubscriber(modid = GuaniaoMod.MOD_ID, value = Dist.CLIENT)
     public static final class Client {
         private Client() {
         }

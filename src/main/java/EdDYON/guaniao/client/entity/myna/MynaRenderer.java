@@ -18,9 +18,9 @@ public class MynaRenderer extends GeoEntityRenderer<MynaEntity> {
     public void preRender(PoseStack poseStack, MynaEntity animatable, BakedGeoModel model,
                           MultiBufferSource bufferSource, VertexConsumer buffer, boolean isReRender,
                           float partialTick, int packedLight, int packedOverlay,
-                          float red, float green, float blue, float alpha) {
+                          int renderColor) {
         this.withScale(animatable.getModelRenderScale());
         super.preRender(poseStack, animatable, model, bufferSource, buffer, isReRender,
-                partialTick, packedLight, packedOverlay, red, green, blue, alpha);
+                partialTick, packedLight, packedOverlay, renderColor);
     }
 }

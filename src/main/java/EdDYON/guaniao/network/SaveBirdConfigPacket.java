@@ -9,13 +9,19 @@ import EdDYON.guaniao.event.BirdPopulationTracker;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Supplier;
 
-public final class SaveBirdConfigPacket {
+public final class SaveBirdConfigPacket implements CustomPacketPayload {
+    public static final CustomPacketPayload.Type<SaveBirdConfigPacket> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath("guaniao", "save_bird_config"));
+
+    @Override
+    public CustomPacketPayload.Type<SaveBirdConfigPacket> type() { return TYPE; }
+
     private final BirdConfigData data;
 
     public SaveBirdConfigPacket(BirdConfigData data) {
@@ -30,10 +36,9 @@ public final class SaveBirdConfigPacket {
         return new SaveBirdConfigPacket(BirdConfigPacketCodec.decode(buffer));
     }
 
-    public static void handle(SaveBirdConfigPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
-        NetworkEvent.Context context = contextSupplier.get();
+    public static void handle(SaveBirdConfigPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
-            ServerPlayer player = context.getSender();
+            ServerPlayer player = (context.player() instanceof ServerPlayer serverPlayer ? serverPlayer : null);
             if (player == null || (!player.hasPermissions(2)
                     && (player.server == null || !player.server.isSingleplayerOwner(player.getGameProfile())))) {
                 return;
@@ -61,7 +66,6 @@ public final class SaveBirdConfigPacket {
                 player.displayClientMessage(Component.translatable("message.guaniao.bird_config.save_failed"), false);
             }
         });
-        context.setPacketHandled(true);
     }
 
     private static boolean droppingsChanged(BirdConfigData before, BirdConfigData after) {

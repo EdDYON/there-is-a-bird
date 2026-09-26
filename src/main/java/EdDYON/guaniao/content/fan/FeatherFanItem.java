@@ -1,8 +1,6 @@
 package EdDYON.guaniao.content.fan;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Multimap;
 import com.mojang.math.Axis;
 import EdDYON.guaniao.content.bird.BirdTags;
 import net.minecraft.ChatFormatting;
@@ -22,7 +20,6 @@ import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
@@ -33,12 +30,11 @@ import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.client.extensions.common.IClientItemExtensions;
+import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
 
 import java.util.List;
 import java.util.Comparator;
 import java.util.function.Consumer;
-import org.jetbrains.annotations.Nullable;
 
 public class FeatherFanItem extends Item {
     private static final int USE_DURATION_TICKS = 72000;
@@ -54,14 +50,11 @@ public class FeatherFanItem extends Item {
     private static final double HUNT_LOCK_RANGE = 18.0D;
     private static final double HUNT_LOCK_MIN_DOT = Math.cos(Math.toRadians(52.0D));
 
-    private final Multimap<Attribute, AttributeModifier> defaultModifiers;
-
     public FeatherFanItem(Properties properties) {
-        super(properties);
-        this.defaultModifiers = ImmutableMultimap.<Attribute, AttributeModifier>builder()
-                .put(Attributes.ATTACK_DAMAGE, new AttributeModifier(BASE_ATTACK_DAMAGE_UUID, "Fan damage modifier", 4.0D, AttributeModifier.Operation.ADDITION))
-                .put(Attributes.ATTACK_SPEED, new AttributeModifier(BASE_ATTACK_SPEED_UUID, "Fan speed modifier", -2.1D, AttributeModifier.Operation.ADDITION))
-                .build();
+        super(properties.attributes(net.minecraft.world.item.component.ItemAttributeModifiers.builder()
+                .add(Attributes.ATTACK_DAMAGE, new AttributeModifier(Item.BASE_ATTACK_DAMAGE_ID, 4.0D, AttributeModifier.Operation.ADD_VALUE), net.minecraft.world.entity.EquipmentSlotGroup.MAINHAND)
+                .add(Attributes.ATTACK_SPEED, new AttributeModifier(Item.BASE_ATTACK_SPEED_ID, -2.1D, AttributeModifier.Operation.ADD_VALUE), net.minecraft.world.entity.EquipmentSlotGroup.MAINHAND)
+                .build()));
     }
 
     @Override
@@ -79,7 +72,7 @@ public class FeatherFanItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         if (FeatherFanEnchantments.hasHuntingReturn(stack)) {
             addSpecialFanTooltip(tooltip, "hunting", ChatFormatting.GOLD);
         } else if (FeatherFanEnchantments.hasRivenPlume(stack)) {
@@ -105,11 +98,11 @@ public class FeatherFanItem extends Item {
                 InteractionHand renderedHand = arm == player.getMainArm() ? InteractionHand.MAIN_HAND : InteractionHand.OFF_HAND;
                 if (!player.isUsingItem()
                         || player.getUsedItemHand() != renderedHand
-                        || !ItemStack.isSameItemSameTags(player.getUseItem(), itemInHand)) {
+                        || !ItemStack.isSameItemSameComponents(player.getUseItem(), itemInHand)) {
                     return false;
                 }
 
-                int usedTicks = FeatherFanItem.this.getUseDuration(itemInHand) - player.getUseItemRemainingTicks();
+                int usedTicks = FeatherFanItem.this.getUseDuration(itemInHand, player) - player.getUseItemRemainingTicks();
                 float elapsedTicks = usedTicks + partialTick;
                 float chargeProgress = Mth.clamp(elapsedTicks / MAX_CHARGE_TICKS, 0.0F, 1.0F);
                 float chargeEase = smootherStep(chargeProgress);
@@ -149,10 +142,6 @@ public class FeatherFanItem extends Item {
         });
     }
 
-    @Override
-    public Multimap<Attribute, AttributeModifier> getDefaultAttributeModifiers(EquipmentSlot slot) {
-        return slot == EquipmentSlot.MAINHAND ? this.defaultModifiers : super.getDefaultAttributeModifiers(slot);
-    }
 
     @Override
     public boolean hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
@@ -162,7 +151,7 @@ public class FeatherFanItem extends Item {
         if (!attacker.level().isClientSide) {
             target.knockback(MELEE_KNOCKBACK, attacker.getX() - target.getX(), attacker.getZ() - target.getZ());
         }
-        stack.hurtAndBreak(1, attacker, broken -> broken.broadcastBreakEvent(EquipmentSlot.MAINHAND));
+        stack.hurtAndBreak(1, attacker, EquipmentSlot.MAINHAND);
         return true;
     }
 
@@ -182,7 +171,7 @@ public class FeatherFanItem extends Item {
             return;
         }
 
-        int chargeTicks = this.getUseDuration(stack) - remainingUseDuration;
+        int chargeTicks = this.getUseDuration(stack, living) - remainingUseDuration;
         if (living instanceof Player player && FeatherFanEnchantments.hasHuntingReturn(stack)) {
             int lockCapacity = getHuntingLockCapacity(chargeTicks);
             if (lockCapacity > 0 && chargeTicks % 2 == 0) {
@@ -229,7 +218,7 @@ public class FeatherFanItem extends Item {
             return;
         }
 
-        int chargeTicks = this.getUseDuration(stack) - timeLeft;
+        int chargeTicks = this.getUseDuration(stack, living) - timeLeft;
         if (chargeTicks < MIN_CHARGE_TICKS) {
             return;
         }
@@ -253,7 +242,7 @@ public class FeatherFanItem extends Item {
         if (!living.isUsingItem() || !(living.getUseItem().getItem() instanceof FeatherFanItem fan)) {
             return false;
         }
-        int chargeTicks = fan.getUseDuration(living.getUseItem()) - living.getUseItemRemainingTicks();
+        int chargeTicks = fan.getUseDuration(living.getUseItem(), living) - living.getUseItemRemainingTicks();
         return chargeTicks >= MAX_CHARGE_TICKS;
     }
 
@@ -277,7 +266,7 @@ public class FeatherFanItem extends Item {
                 : Mth.lerp(charge, MIN_THROW_SPEED, MAX_THROW_SPEED);
         ItemStack thrownStack = stack.copy();
         thrownStack.setCount(1);
-        thrownStack.hurtAndBreak(1, player, broken -> broken.broadcastBreakEvent(hand));
+        thrownStack.hurtAndBreak(1, player, LivingEntity.getSlotForHand(hand));
         if (thrownStack.isEmpty()) {
             stack.shrink(1);
             player.awardStat(Stats.ITEM_USED.get(this));
@@ -395,7 +384,7 @@ public class FeatherFanItem extends Item {
     }
 
     @Override
-    public int getUseDuration(ItemStack stack) {
+    public int getUseDuration(ItemStack stack, net.minecraft.world.entity.LivingEntity entity) {
         return USE_DURATION_TICKS;
     }
 

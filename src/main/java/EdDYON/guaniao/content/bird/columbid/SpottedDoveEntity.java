@@ -45,9 +45,9 @@ public class SpottedDoveEntity extends AbstractColumbidEntity {
     }
 
     @Override
-    protected void defineSynchedData() {
-        super.defineSynchedData();
-        this.entityData.define(WEATHER_SENSE_STATE, WeatherSenseState.NORMAL.ordinal());
+    protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(WEATHER_SENSE_STATE, WeatherSenseState.NORMAL.ordinal());
     }
 
     @Override

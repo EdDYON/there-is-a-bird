@@ -4,7 +4,7 @@ import EdDYON.guaniao.GuaniaoMod;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 import java.util.Arrays;
 import java.util.Locale;
@@ -90,7 +90,7 @@ public enum BirdSpecies {
         if (type == null) {
             // Resolved lazily so callers before registry init simply get null
             // (uncached) instead of caching it forever.
-            type = ForgeRegistries.ENTITY_TYPES.getValue(new ResourceLocation(GuaniaoMod.MOD_ID, this.id));
+            type = BuiltInRegistries.ENTITY_TYPE.getOptional(ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, this.id)).orElse(null);
             if (type != null) {
                 this.entityTypeCache = type;
             }
@@ -103,7 +103,7 @@ public enum BirdSpecies {
     }
 
     public static BirdSpecies from(EntityType<?> entityType) {
-        ResourceLocation key = ForgeRegistries.ENTITY_TYPES.getKey(entityType);
+        ResourceLocation key = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
         if (key == null || !GuaniaoMod.MOD_ID.equals(key.getNamespace())) {
             return null;
         }

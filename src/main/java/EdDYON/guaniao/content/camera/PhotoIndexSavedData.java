@@ -31,9 +31,7 @@ public final class PhotoIndexSavedData extends SavedData {
     private int missingCount;
 
     public static PhotoIndexSavedData get(MinecraftServer server) {
-        return server.overworld().getDataStorage().computeIfAbsent(
-                PhotoIndexSavedData::load,
-                PhotoIndexSavedData::new,
+        return server.overworld().getDataStorage().computeIfAbsent(new SavedData.Factory<>(PhotoIndexSavedData::new, (tag, registries) -> PhotoIndexSavedData.load(tag)),
                 DATA_NAME
         );
     }
@@ -68,7 +66,7 @@ public final class PhotoIndexSavedData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
         ListTag list = new ListTag();
         for (PhotoRecord record : this.records.values()) {
             CompoundTag entry = new CompoundTag();

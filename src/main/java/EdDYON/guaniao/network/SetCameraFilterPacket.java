@@ -3,14 +3,20 @@ package EdDYON.guaniao.network;
 import EdDYON.guaniao.content.camera.CameraFilter;
 import EdDYON.guaniao.content.camera.CameraSettingsData;
 import EdDYON.guaniao.registry.GuaniaoItems;
-import java.util.function.Supplier;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.network.NetworkEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 
-public record SetCameraFilterPacket(InteractionHand hand, CameraFilter filter) {
+public record SetCameraFilterPacket(InteractionHand hand, CameraFilter filter) implements CustomPacketPayload {
+    public static final CustomPacketPayload.Type<SetCameraFilterPacket> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath("guaniao", "set_camera_filter"));
+
+    @Override
+    public CustomPacketPayload.Type<SetCameraFilterPacket> type() { return TYPE; }
+
     public static void encode(SetCameraFilterPacket packet, FriendlyByteBuf buffer) {
         buffer.writeEnum(packet.hand);
         buffer.writeVarInt(packet.filter.id());
@@ -20,10 +26,9 @@ public record SetCameraFilterPacket(InteractionHand hand, CameraFilter filter) {
         return new SetCameraFilterPacket(buffer.readEnum(InteractionHand.class), CameraFilter.byId(buffer.readVarInt()));
     }
 
-    public static void handle(SetCameraFilterPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
-        NetworkEvent.Context context = contextSupplier.get();
+    public static void handle(SetCameraFilterPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
-            ServerPlayer player = context.getSender();
+            ServerPlayer player = (context.player() instanceof ServerPlayer serverPlayer ? serverPlayer : null);
             if (player == null) {
                 return;
             }
@@ -32,6 +37,5 @@ public record SetCameraFilterPacket(InteractionHand hand, CameraFilter filter) {
                 CameraSettingsData.setFilter(camera, packet.filter);
             }
         });
-        context.setPacketHandled(true);
     }
 }

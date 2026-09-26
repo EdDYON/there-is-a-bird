@@ -2,11 +2,12 @@ package EdDYON.guaniao.network;
 
 import EdDYON.guaniao.content.camera.PhotoTransferLimits;
 import java.util.UUID;
-import java.util.function.Supplier;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
-import net.minecraftforge.network.NetworkEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 
 public record BeginPhotoUploadPacket(
         UUID uploadId,
@@ -15,7 +16,12 @@ public record BeginPhotoUploadPacket(
         int width,
         int height,
         String contentHash
-) {
+) implements CustomPacketPayload {
+    public static final CustomPacketPayload.Type<BeginPhotoUploadPacket> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath("guaniao", "begin_photo_upload"));
+
+    @Override
+    public CustomPacketPayload.Type<BeginPhotoUploadPacket> type() { return TYPE; }
+
     public static void encode(BeginPhotoUploadPacket packet, FriendlyByteBuf buffer) {
         buffer.writeUUID(packet.uploadId);
         buffer.writeEnum(packet.hand);
@@ -36,12 +42,10 @@ public record BeginPhotoUploadPacket(
         );
     }
 
-    public static void handle(BeginPhotoUploadPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
-        NetworkEvent.Context context = contextSupplier.get();
-        ServerPlayer player = context.getSender();
+    public static void handle(BeginPhotoUploadPacket packet, IPayloadContext context) {
+        ServerPlayer player = (context.player() instanceof ServerPlayer serverPlayer ? serverPlayer : null);
         if (player != null) {
             PhotoUploadManager.begin(player, packet.uploadId, packet.hand, packet.totalBytes, packet.width, packet.height, packet.contentHash);
         }
-        context.setPacketHandled(true);
     }
 }

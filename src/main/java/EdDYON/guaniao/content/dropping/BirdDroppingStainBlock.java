@@ -29,7 +29,7 @@ import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.minecraftforge.client.extensions.common.IClientBlockExtensions;
+import net.neoforged.neoforge.client.extensions.common.IClientBlockExtensions;
 
 import java.util.function.Consumer;
 
@@ -68,7 +68,21 @@ public class BirdDroppingStainBlock extends Block implements LiquidBlockContaine
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+    protected net.minecraft.world.ItemInteractionResult useItemOn(net.minecraft.world.item.ItemStack stack,
+            BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        // The item hook also runs for empty hands. Skip the default hook after PASS
+        // so an interaction is never applied twice before the held item is used.
+        return switch (this.interactWithBlock(state, level, pos, player, hand, hit)) {
+            case SUCCESS, SUCCESS_NO_ITEM_USED -> net.minecraft.world.ItemInteractionResult.SUCCESS;
+            case CONSUME -> net.minecraft.world.ItemInteractionResult.CONSUME;
+            case CONSUME_PARTIAL -> net.minecraft.world.ItemInteractionResult.CONSUME_PARTIAL;
+            case FAIL -> net.minecraft.world.ItemInteractionResult.FAIL;
+            case PASS -> net.minecraft.world.ItemInteractionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
+        };
+    }
+
+    private InteractionResult interactWithBlock(BlockState state, Level level, BlockPos pos, Player player,
+            InteractionHand hand, BlockHitResult hit) {
         ItemStack stack = player.getItemInHand(hand);
         if (!stack.is(Items.BRUSH)) {
             return InteractionResult.PASS;
@@ -87,7 +101,7 @@ public class BirdDroppingStainBlock extends Block implements LiquidBlockContaine
     }
 
     @Override
-    public boolean canPlaceLiquid(BlockGetter level, BlockPos pos, BlockState state, Fluid fluid) {
+    public boolean canPlaceLiquid(@org.jetbrains.annotations.Nullable Player player, BlockGetter level, BlockPos pos, BlockState state, Fluid fluid) {
         return fluid == Fluids.WATER;
     }
 
@@ -110,7 +124,7 @@ public class BirdDroppingStainBlock extends Block implements LiquidBlockContaine
         spawnParticles(level, pos, ParticleTypes.POOF, 8);
         level.playSound(null, pos, SoundEvents.SLIME_BLOCK_BREAK, SoundSource.BLOCKS, 0.65F, 0.85F + level.random.nextFloat() * 0.25F);
         if (!player.getAbilities().instabuild) {
-            brush.hurtAndBreak(1, player, brokenPlayer -> brokenPlayer.broadcastBreakEvent(hand));
+            brush.hurtAndBreak(1, player, net.minecraft.world.entity.LivingEntity.getSlotForHand(hand));
         }
     }
 

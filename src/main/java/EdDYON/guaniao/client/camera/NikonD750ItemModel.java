@@ -6,9 +6,9 @@ import net.minecraft.resources.ResourceLocation;
 import software.bernie.geckolib.model.GeoModel;
 
 public class NikonD750ItemModel extends GeoModel<NikonD750Item> {
-    private static final ResourceLocation MODEL = new ResourceLocation(GuaniaoMod.MOD_ID, "geo/nikon_d750.geo.json");
-    private static final ResourceLocation TEXTURE = new ResourceLocation(GuaniaoMod.MOD_ID, "textures/item/nikon_d750.png");
-    private static final ResourceLocation ANIMATION = new ResourceLocation(GuaniaoMod.MOD_ID, "animations/nikon_d750.animation.json");
+    private static final ResourceLocation MODEL = ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, "geo/nikon_d750.geo.json");
+    private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, "textures/item/nikon_d750.png");
+    private static final ResourceLocation ANIMATION = ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, "animations/nikon_d750.animation.json");
 
     @Override
     public ResourceLocation getModelResource(NikonD750Item animatable) {

@@ -36,7 +36,7 @@ public final class BirdTags {
     public static final TagKey<Item> CROW_PROTECTED_ITEMS = item("crow_protected_items");
     public static final TagKey<Item> BIRD_TOXIC_FOODS = item("bird_toxic_foods");
     public static final TagKey<Item> FEATHERS = item("wind_feather_fan_feathers");
-    public static final TagKey<Item> FORGE_ORES = TagKey.create(Registries.ITEM, new ResourceLocation("forge", "ores"));
+    public static final TagKey<Item> FORGE_ORES = TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("c", "ores"));
 
     public static final TagKey<Block> BIRD_PERCHES = block("bird_perches");
     public static final TagKey<Block> KIWI_FORAGE_GROUND = block("kiwi_forage_ground");
@@ -50,14 +50,14 @@ public final class BirdTags {
     }
 
     private static TagKey<Item> item(String path) {
-        return TagKey.create(Registries.ITEM, new ResourceLocation(GuaniaoMod.MOD_ID, path));
+        return TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, path));
     }
 
     private static TagKey<Block> block(String path) {
-        return TagKey.create(Registries.BLOCK, new ResourceLocation(GuaniaoMod.MOD_ID, path));
+        return TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, path));
     }
 
     private static TagKey<EntityType<?>> entityType(String path) {
-        return TagKey.create(Registries.ENTITY_TYPE, new ResourceLocation(GuaniaoMod.MOD_ID, path));
+        return TagKey.create(Registries.ENTITY_TYPE, ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, path));
     }
 }

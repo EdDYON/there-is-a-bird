@@ -15,59 +15,59 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
-import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.client.event.RenderGuiEvent;
-import net.minecraftforge.client.event.RenderGuiOverlayEvent;
-import net.minecraftforge.client.event.RenderHandEvent;
-import net.minecraftforge.client.event.RenderLevelStageEvent;
-import net.minecraftforge.client.event.ViewportEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.neoforge.client.event.RenderGuiEvent;
+import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
+import net.neoforged.neoforge.client.event.RenderHandEvent;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.neoforge.client.event.ViewportEvent;
+import net.neoforged.neoforge.event.tick.*;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.RenderFrameEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import org.lwjgl.glfw.GLFW;
 
-@Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = GuaniaoMod.MOD_ID, value = Dist.CLIENT)
 public final class CameraClientEvents {
     private CameraClientEvents() {
     }
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase == TickEvent.Phase.END) {
-            CameraClientCapture.tickViewfinder();
-            while (CameraKeyMappings.OPEN_FILTER_LIBRARY.consumeClick()) {
-                Minecraft minecraft = Minecraft.getInstance();
-                if (minecraft.screen == null
-                        && CameraClientCapture.isViewfinderOpen()
-                        && !CameraClientCapture.isCleanCapturePending()) {
-                    CameraFilterPickerScreen.open();
-                }
+    public static void onClientTick(ClientTickEvent.Post event) {
+        CameraClientCapture.tickViewfinder();
+        while (CameraKeyMappings.OPEN_FILTER_LIBRARY.consumeClick()) {
+            Minecraft minecraft = Minecraft.getInstance();
+            if (minecraft.screen == null
+                    && CameraClientCapture.isViewfinderOpen()
+                    && !CameraClientCapture.isCleanCapturePending()) {
+                CameraFilterPickerScreen.open();
             }
-            while (CameraKeyMappings.OPEN_CREATIVE_CONTROLS.consumeClick()) {
-                Minecraft minecraft = Minecraft.getInstance();
-                if (minecraft.screen == null
-                        && CameraClientCapture.isViewfinderOpen()
-                        && !CameraClientCapture.isCleanCapturePending()) {
-                    CameraCreativeControlsScreen.open();
-                }
+        }
+        while (CameraKeyMappings.OPEN_CREATIVE_CONTROLS.consumeClick()) {
+            Minecraft minecraft = Minecraft.getInstance();
+            if (minecraft.screen == null
+                    && CameraClientCapture.isViewfinderOpen()
+                    && !CameraClientCapture.isCleanCapturePending()) {
+                CameraCreativeControlsScreen.open();
             }
-            while (CameraKeyMappings.FOCUS.consumeClick()) {
-                if (Minecraft.getInstance().screen == null) {
-                    CameraClientCapture.focusAtCrosshair();
-                }
+        }
+        while (CameraKeyMappings.FOCUS.consumeClick()) {
+            if (Minecraft.getInstance().screen == null) {
+                CameraClientCapture.focusAtCrosshair();
             }
         }
     }
 
     @SubscribeEvent
-    public static void onRenderTick(TickEvent.RenderTickEvent event) {
-        if (event.phase == TickEvent.Phase.START) {
-            CameraClientCapture.onRenderTickStart();
-            return;
-        }
+    public static void onRenderTickStart(RenderFrameEvent.Pre event) {
+        CameraClientCapture.onRenderTickStart();
+    }
 
+    @SubscribeEvent
+    public static void onRenderTickEnd(RenderFrameEvent.Post event) {
         PhotographTextureCache.pumpUploads();
         CameraClientCapture.onRenderTickEnd();
     }
@@ -94,7 +94,7 @@ public final class CameraClientEvents {
     }
 
     @SubscribeEvent
-    public static void onRenderGuiOverlay(RenderGuiOverlayEvent.Pre event) {
+    public static void onRenderGuiOverlay(RenderGuiLayerEvent.Pre event) {
         if (CameraClientCapture.isViewfinderOpen() || CameraClientCapture.isCleanCapturePending()) {
             event.setCanceled(true);
         }
@@ -102,13 +102,13 @@ public final class CameraClientEvents {
 
     @SubscribeEvent
     public static void onRenderGui(RenderGuiEvent.Post event) {
-        CameraClientCapture.renderViewfinder(event.getGuiGraphics(), event.getPartialTick());
+        CameraClientCapture.renderViewfinder(event.getGuiGraphics(), event.getPartialTick().getGameTimeDeltaPartialTick(false));
     }
 
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
         if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_LEVEL) {
-            CameraPreviewPostEffect.prepare(event.getPartialTick());
+            CameraPreviewPostEffect.prepare(event.getPartialTick().getGameTimeDeltaPartialTick(false));
         }
     }
 
@@ -117,7 +117,7 @@ public final class CameraClientEvents {
         if (isCameraControlScreenOpen()) {
             return;
         }
-        if (CameraClientCapture.handleMouseScroll(event.getScrollDelta())) {
+        if (CameraClientCapture.handleMouseScroll(event.getScrollDeltaY())) {
             event.setCanceled(true);
         }
     }

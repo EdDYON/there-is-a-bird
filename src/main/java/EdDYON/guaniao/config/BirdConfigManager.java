@@ -6,7 +6,7 @@ import EdDYON.guaniao.GuaniaoMod;
 import EdDYON.guaniao.content.bird.BirdAmbientDropControl;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.storage.LevelResource;
-import net.minecraftforge.fml.loading.FMLPaths;
+import net.neoforged.fml.loading.FMLPaths;
 
 import java.io.Reader;
 import java.nio.ByteBuffer;

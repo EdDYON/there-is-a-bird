@@ -12,12 +12,12 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /** Operator-only visual test commands for the woodcock's authored locomotion. */
-@Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
+@EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
 public final class WoodcockTestCommands {
     private WoodcockTestCommands() {
     }
@@ -56,7 +56,7 @@ public final class WoodcockTestCommands {
         float yaw = (float)(Math.atan2(travel.z, travel.x) * 180.0D / Math.PI) - 90.0F;
         woodcock.moveTo(spawn.x, spawn.y, spawn.z, yaw, 0.0F);
         woodcock.finalizeSpawn(level, level.getCurrentDifficultyAt(spawnPos),
-                MobSpawnType.COMMAND, null, null);
+                MobSpawnType.COMMAND, null);
         woodcock.setPersistenceRequired();
         if (!level.addFreshEntity(woodcock)) {
             return 0;

@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "#guaniao:foods/budgerigar",
+    "minecraft:apple",
+    "minecraft:melon_slice",
+    "minecraft:sweet_berries",
+    "minecraft:glow_berries",
+    { "id": "#c:crops", "required": false },
+    { "id": "#c:nuts", "required": false }
+  ]
+}

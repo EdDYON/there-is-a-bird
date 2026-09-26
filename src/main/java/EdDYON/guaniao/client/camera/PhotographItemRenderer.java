@@ -15,7 +15,7 @@ import net.minecraft.world.item.ItemStack;
 import org.joml.Matrix4f;
 
 public class PhotographItemRenderer extends BlockEntityWithoutLevelRenderer {
-    private static final ResourceLocation CARD_TEXTURE = new ResourceLocation(GuaniaoMod.MOD_ID, "textures/item/photograph_card.png");
+    private static final ResourceLocation CARD_TEXTURE = ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, "textures/item/photograph_card.png");
     private static final float CARD_WIDTH = 0.82F;
     private static final float CARD_HEIGHT = 0.62F;
 
@@ -57,9 +57,9 @@ public class PhotographItemRenderer extends BlockEntityWithoutLevelRenderer {
     }
 
     private static void renderQuad(VertexConsumer consumer, Matrix4f matrix, float x, float y, float width, float height, float z, int packedLight) {
-        consumer.vertex(matrix, x, y + height, z).color(255, 255, 255, 255).uv(0.0F, 1.0F).uv2(packedLight).endVertex();
-        consumer.vertex(matrix, x + width, y + height, z).color(255, 255, 255, 255).uv(1.0F, 1.0F).uv2(packedLight).endVertex();
-        consumer.vertex(matrix, x + width, y, z).color(255, 255, 255, 255).uv(1.0F, 0.0F).uv2(packedLight).endVertex();
-        consumer.vertex(matrix, x, y, z).color(255, 255, 255, 255).uv(0.0F, 0.0F).uv2(packedLight).endVertex();
+        consumer.addVertex(matrix, x, y + height, z).setColor(255, 255, 255, 255).setUv(0.0F, 1.0F).setLight(packedLight);
+        consumer.addVertex(matrix, x + width, y + height, z).setColor(255, 255, 255, 255).setUv(1.0F, 1.0F).setLight(packedLight);
+        consumer.addVertex(matrix, x + width, y, z).setColor(255, 255, 255, 255).setUv(1.0F, 0.0F).setLight(packedLight);
+        consumer.addVertex(matrix, x, y, z).setColor(255, 255, 255, 255).setUv(0.0F, 0.0F).setLight(packedLight);
     }
 }

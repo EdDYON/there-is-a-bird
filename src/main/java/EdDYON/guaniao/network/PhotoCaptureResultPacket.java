@@ -2,13 +2,18 @@ package EdDYON.guaniao.network;
 
 import EdDYON.guaniao.client.camera.PhotoClientRepository;
 import java.util.UUID;
-import java.util.function.Supplier;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import EdDYON.guaniao.util.ClientActions;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 
-public record PhotoCaptureResultPacket(UUID uploadId, boolean success) {
+public record PhotoCaptureResultPacket(UUID uploadId, boolean success) implements CustomPacketPayload {
+    public static final CustomPacketPayload.Type<PhotoCaptureResultPacket> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath("guaniao", "photo_capture_result"));
+
+    @Override
+    public CustomPacketPayload.Type<PhotoCaptureResultPacket> type() { return TYPE; }
+
     public static void encode(PhotoCaptureResultPacket packet, FriendlyByteBuf buffer) {
         buffer.writeUUID(packet.uploadId);
         buffer.writeBoolean(packet.success);
@@ -18,12 +23,8 @@ public record PhotoCaptureResultPacket(UUID uploadId, boolean success) {
         return new PhotoCaptureResultPacket(buffer.readUUID(), buffer.readBoolean());
     }
 
-    public static void handle(PhotoCaptureResultPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
-        NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
-                Dist.CLIENT,
-                () -> () -> PhotoClientRepository.captureResult(packet.uploadId, packet.success)
+    public static void handle(PhotoCaptureResultPacket packet, IPayloadContext context) {
+        context.enqueueWork(() -> ClientActions.run(() -> () -> PhotoClientRepository.captureResult(packet.uploadId, packet.success)
         ));
-        context.setPacketHandled(true);
     }
 }

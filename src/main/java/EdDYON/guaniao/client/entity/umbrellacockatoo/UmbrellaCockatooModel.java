@@ -6,7 +6,7 @@ import EdDYON.guaniao.content.bird.umbrellacockatoo.UmbrellaCockatooEntity;
 import com.google.gson.JsonParser;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
-import software.bernie.geckolib.core.animation.Animation;
+import software.bernie.geckolib.animation.Animation;
 import software.bernie.geckolib.model.GeoModel;
 
 import java.io.IOException;

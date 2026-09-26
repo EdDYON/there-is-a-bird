@@ -23,23 +23,23 @@ public class UmbrellaCockatooRenderer extends GeoEntityRenderer<UmbrellaCockatoo
     public void preRender(PoseStack poseStack, UmbrellaCockatooEntity animatable, BakedGeoModel model,
                           MultiBufferSource bufferSource, VertexConsumer buffer, boolean isReRender,
                           float partialTick, int packedLight, int packedOverlay,
-                          float red, float green, float blue, float alpha) {
+                          int renderColor) {
         this.withScale(animatable.getModelRenderScale());
         super.preRender(poseStack, animatable, model, bufferSource, buffer, isReRender,
-                partialTick, packedLight, packedOverlay, red, green, blue, alpha);
+                partialTick, packedLight, packedOverlay, renderColor);
     }
 
     @Override
     public void actuallyRender(PoseStack poseStack, UmbrellaCockatooEntity animatable, BakedGeoModel model,
                                RenderType renderType, MultiBufferSource bufferSource, VertexConsumer buffer,
                                boolean isReRender, float partialTick, int packedLight, int packedOverlay,
-                               float red, float green, float blue, float alpha) {
+                               int renderColor) {
         var previousPose = framePose;
         framePose = null;
         try {
             // super evaluates the base controller before calling renderRecursively.
             super.actuallyRender(poseStack, animatable, model, renderType, bufferSource, buffer, isReRender,
-                    partialTick, packedLight, packedOverlay, red, green, blue, alpha);
+                    partialTick, packedLight, packedOverlay, renderColor);
         } finally {
             framePose = previousPose;
         }
@@ -49,12 +49,12 @@ public class UmbrellaCockatooRenderer extends GeoEntityRenderer<UmbrellaCockatoo
     public void renderRecursively(PoseStack poseStack, UmbrellaCockatooEntity animatable, GeoBone bone,
                                   RenderType renderType, MultiBufferSource bufferSource, VertexConsumer buffer,
                                   boolean isReRender, float partialTick, int packedLight, int packedOverlay,
-                                  float red, float green, float blue, float alpha) {
+                                  int renderColor) {
         if (framePose == null) framePose = ((UmbrellaCockatooModel) getGeoModel()).samplePose(animatable);
         try (var scope = composer.apply(bone, framePose.bone(bone.getName()))) {
             // Re-render passes also need the delta; only active recursion is suppressed.
             super.renderRecursively(poseStack, animatable, bone, renderType, bufferSource, buffer, isReRender,
-                    partialTick, packedLight, packedOverlay, red, green, blue, alpha);
+                    partialTick, packedLight, packedOverlay, renderColor);
         }
     }
 }

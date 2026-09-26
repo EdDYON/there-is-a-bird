@@ -4,12 +4,11 @@ import EdDYON.guaniao.GuaniaoMod;
 import EdDYON.guaniao.content.enchantment.GuaniaoEnchantments;
 import EdDYON.guaniao.registry.GuaniaoItems;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraftforge.event.AnvilUpdateEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.AnvilUpdateEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
-@Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
+@EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
 public final class BurialPlumeAnvilEvents {
     private static final int ANVIL_LEVEL_COST = 8;
 
@@ -31,23 +30,20 @@ public final class BurialPlumeAnvilEvents {
             return;
         }
 
-        boolean hasBurial = EnchantmentHelper.getItemEnchantmentLevel(
-                GuaniaoEnchantments.BURIAL_PLUME.get(), fan) > 0;
-        boolean hasRiven = EnchantmentHelper.getItemEnchantmentLevel(
-                GuaniaoEnchantments.RIVEN_PLUME.get(), fan) > 0;
-        boolean hasHunting = EnchantmentHelper.getItemEnchantmentLevel(
-                GuaniaoEnchantments.HUNTING_RETURN.get(), fan) > 0;
+        boolean hasBurial = GuaniaoEnchantments.level(fan, GuaniaoEnchantments.BURIAL_PLUME) > 0;
+        boolean hasRiven = GuaniaoEnchantments.level(fan, GuaniaoEnchantments.RIVEN_PLUME) > 0;
+        boolean hasHunting = GuaniaoEnchantments.level(fan, GuaniaoEnchantments.HUNTING_RETURN) > 0;
         if (hasBurial || hasRiven || hasHunting) {
             return;
         }
 
         ItemStack output = fan.copy();
         if (burialBook) {
-            output.enchant(GuaniaoEnchantments.BURIAL_PLUME.get(), 1);
+            output.enchant(GuaniaoEnchantments.holder(event.getPlayer().registryAccess(), GuaniaoEnchantments.BURIAL_PLUME), 1);
         } else if (rivenBook) {
-            output.enchant(GuaniaoEnchantments.RIVEN_PLUME.get(), 1);
+            output.enchant(GuaniaoEnchantments.holder(event.getPlayer().registryAccess(), GuaniaoEnchantments.RIVEN_PLUME), 1);
         } else {
-            output.enchant(GuaniaoEnchantments.HUNTING_RETURN.get(), 1);
+            output.enchant(GuaniaoEnchantments.holder(event.getPlayer().registryAccess(), GuaniaoEnchantments.HUNTING_RETURN), 1);
         }
         event.setOutput(output);
         event.setCost(ANVIL_LEVEL_COST);

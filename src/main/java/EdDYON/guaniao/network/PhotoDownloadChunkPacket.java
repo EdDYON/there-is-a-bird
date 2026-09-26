@@ -2,13 +2,18 @@ package EdDYON.guaniao.network;
 
 import EdDYON.guaniao.client.camera.PhotoClientRepository;
 import EdDYON.guaniao.content.camera.PhotoTransferLimits;
-import java.util.function.Supplier;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import EdDYON.guaniao.util.ClientActions;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 
-public record PhotoDownloadChunkPacket(String photoId, int chunkIndex, byte[] data) {
+public record PhotoDownloadChunkPacket(String photoId, int chunkIndex, byte[] data) implements CustomPacketPayload {
+    public static final CustomPacketPayload.Type<PhotoDownloadChunkPacket> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath("guaniao", "photo_download_chunk"));
+
+    @Override
+    public CustomPacketPayload.Type<PhotoDownloadChunkPacket> type() { return TYPE; }
+
     public static void encode(PhotoDownloadChunkPacket packet, FriendlyByteBuf buffer) {
         if (packet.data.length <= 0 || packet.data.length > PhotoTransferLimits.MAX_CHUNK_BYTES) {
             throw new IllegalArgumentException("Invalid photograph chunk size");
@@ -26,12 +31,8 @@ public record PhotoDownloadChunkPacket(String photoId, int chunkIndex, byte[] da
         );
     }
 
-    public static void handle(PhotoDownloadChunkPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
-        NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
-                Dist.CLIENT,
-                () -> () -> PhotoClientRepository.acceptDownloadChunk(packet.photoId, packet.chunkIndex, packet.data)
+    public static void handle(PhotoDownloadChunkPacket packet, IPayloadContext context) {
+        context.enqueueWork(() -> ClientActions.run(() -> () -> PhotoClientRepository.acceptDownloadChunk(packet.photoId, packet.chunkIndex, packet.data)
         ));
-        context.setPacketHandled(true);
     }
 }

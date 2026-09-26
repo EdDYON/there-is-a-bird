@@ -1,8 +1,6 @@
 package EdDYON.guaniao.client.guide;
 
-import EdDYON.guaniao.GuaniaoMod;
 import EdDYON.guaniao.client.config.BirdConfigClient;
-import EdDYON.guaniao.client.gui.layout.GuiLayoutConfig;
 import EdDYON.guaniao.client.gui.layout.GuiLayoutLoader;
 import EdDYON.guaniao.client.gui.layout.GuiLayoutRect;
 import EdDYON.guaniao.content.bird.budgerigar.BudgerigarEntity;
@@ -17,12 +15,19 @@ import EdDYON.guaniao.content.bird.cassowary.CassowaryEntity;
 import EdDYON.guaniao.content.bird.scale.BirdModelScale;
 import EdDYON.guaniao.content.bird.sparrow.SparrowEntity;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraft.world.item.Items;
+import EdDYON.guaniao.content.bird.scale.ScalableBirdModel;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.network.chat.MutableComponent;
@@ -33,35 +38,12 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.level.Level;
 import org.lwjgl.glfw.GLFW;
 
 public class BirdGuideScreen extends Screen {
-    private static final ResourceLocation UI_ATLAS = new ResourceLocation(GuaniaoMod.MOD_ID, "textures/gui/bird_guide_ui.png");
-    private static final int UI_ATLAS_W = 1448;
-    private static final int UI_ATLAS_H = 1086;
-    private static final int TEXT_COLOR = 0xFF3E2B1E;
-    private static final int LIGHT_TEXT_COLOR = 0xFFFFF2D0;
-    private static final int MUTED_TEXT_COLOR = 0xFF7C6748;
-    private static final int ACCENT_TEXT_COLOR = 0xFF8A5C1F;
-    private static final int NOTE_TITLE_COLOR = 0xFF2D1D14;
-    private static final int PAPER = 0xF0D8BE84;
-    private static final int PAPER_LIGHT = 0xFFE9D2A0;
-    private static final int PAPER_DARK = 0xFFC59A5D;
-    private static final int PAPER_SOFT = 0xD8CFA96D;
-    private static final int INK_SHADOW = 0x660F0B08;
-    private static final int PANEL_DARK = 0xEA151B22;
-    private static final int PANEL_FAINT = 0x88B89055;
-    private static final int BLUE_HIGHLIGHT = 0xF0E4BD62;
-    private static final int BLUE_HOVER = 0xC8D1AD66;
-    private static final int BORDER = 0xFF2B2119;
-    private static final int BORDER_SOFT = 0xFF6C5637;
-    private static final int DIVIDER = 0xFF806443;
-    private static final int EDIT_BORDER = 0xFFB7F0FF;
-    private static final int EDIT_ACTIVE = 0xFFFFFFFF;
-    private static final int EDIT_HANDLE = 0xFFB7F0FF;
-    private static final int EDIT_MIN_SIZE = 24;
-    private static final boolean LAYOUT_EDITING_ENABLED = false;
+    private static final ResourceLocation RECIPE_BOOK = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/gui/recipe_book.png");
+    private static final int TEXT_COLOR = 0xFF404040;
+    private static final int LINE_HEIGHT = 11;
     private static final List<BirdGuideEntry> ENTRIES = List.of(
             new BirdGuideEntry("night_heron", List.of("intro")),
             new BirdGuideEntry("sparrow", List.of("intro")),
@@ -81,27 +63,31 @@ public class BirdGuideScreen extends Screen {
             new BirdGuideEntry("umbrella_cockatoo", List.of("intro"))
     );
     private static final PoseKind[] POSES = PoseKind.values();
-    private static final List<String> LAYOUT_RECT_IDS = List.of(
-            "header",
-            "main_panel",
-            "species_header",
-            "species_list",
-            "detail_header",
-            "tag_area",
-            "info_card",
-            "preview_box",
-            "pose_buttons",
-            "config_button",
-            "close_button");
 
     private int selectedIndex;
     private int selectedPoseIndex;
-    private int listScrollIndex;
     private int textScroll;
+    private final BirdGuideIndex catalogue = new BirdGuideIndex();
+    private final Map<Integer, LivingEntity> thumbnails = new HashMap<>();
+    private final List<AbstractWidget> mainWidgets = new ArrayList<>();
+    private final List<AbstractWidget> catalogueWidgets = new ArrayList<>();
+    private final List<SpeciesButton> speciesButtons = new ArrayList<>();
+    private final List<PoseButton> poseButtons = new ArrayList<>();
+    private final List<NoteLine> noteLines = new ArrayList<>();
+    private BirdGuideLayout layout;
+    private EditBox searchBox;
+    private Button previousPage;
+    private Button nextPage;
+    private Button catalogueBack;
+    private String searchText = "";
+    private boolean catalogueOpen;
+    private boolean draggingNotes;
+    private int noteHeight;
     private LivingEntity previewEntity;
     private final RandomSource previewRandom = RandomSource.create();
     private float previewDragX = 16.0F;
     private float previewDragY = -8.0F;
+    private float previewZoom = 1.0F;
     private boolean draggingPreview;
     private boolean manualPoseLocked;
     private int manualLookTicks;
@@ -111,18 +97,6 @@ public class BirdGuideScreen extends Screen {
     private GuidePreviewAnimation previewAnimation = GuidePreviewAnimation.IDLE;
     private float birdX;
     private float birdY;
-    private float birdScale = 1.0F;
-    private GuiLayoutConfig externalLayout;
-    private boolean debugLayout;
-    private boolean layoutEditMode;
-    private final Map<String, GuiLayoutRect> editedRects = new LinkedHashMap<>();
-    private String activeLayoutRectId;
-    private EditDragMode editDragMode = EditDragMode.NONE;
-    private GuiLayoutRect editDragStartRect;
-    private int editDragStartMouseX;
-    private int editDragStartMouseY;
-    private Component editMessage = Component.empty();
-    private int editMessageTicks;
 
     public BirdGuideScreen() {
         super(Component.translatable("gui.guaniao.bird_guide.title"));
@@ -136,15 +110,165 @@ public class BirdGuideScreen extends Screen {
     @Override
     protected void init() {
         this.clearWidgets();
-        this.externalLayout = GuiLayoutLoader.loadBirdGuideLayout();
+        this.mainWidgets.clear();
+        this.catalogueWidgets.clear();
+        this.speciesButtons.clear();
+        this.poseButtons.clear();
+        this.draggingPreview = false;
+        this.draggingNotes = false;
+        this.layout = new BirdGuideLayout(this.width, this.height, GuiLayoutLoader.loadBirdGuideLayout());
+        this.catalogue.setPageSize(this.layout.pageSize());
+        GuiLayoutRect search = this.layout.rect("search");
+        this.searchBox = new EditBox(this.font, search.x(), search.y(), search.w(), search.h(),
+                Component.translatable("gui.guaniao.bird_guide.search"));
+        this.searchBox.setMaxLength(64);
+        this.searchBox.setHint(Component.translatable("gui.guaniao.bird_guide.search"));
+        this.searchBox.setValue(this.searchText);
+        this.searchBox.setResponder(value -> {
+            this.searchText = value;
+            this.filterCatalogue();
+        });
+        this.addRenderableWidget(this.searchBox);
+        this.catalogueWidgets.add(this.searchBox);
+        this.previousPage = this.addButton("previous_page", Component.literal("<"),
+                button -> this.moveCataloguePage(-1), true);
+        this.previousPage.setTooltip(Tooltip.create(Component.translatable("gui.guaniao.bird_guide.previous_page")));
+        this.nextPage = this.addButton("next_page", Component.literal(">"),
+                button -> this.moveCataloguePage(1), true);
+        this.nextPage.setTooltip(Tooltip.create(Component.translatable("gui.guaniao.bird_guide.next_page")));
+        this.catalogueBack = this.addButton("catalogue_back", Component.literal("<"),
+                button -> this.closeCatalogue(), true);
+        this.catalogueBack.setTooltip(Tooltip.create(Component.translatable("gui.guaniao.bird_guide.back")));
+        this.addButton("config_button", Component.translatable("gui.guaniao.bird_guide.config"),
+                button -> BirdConfigClient.requestOpen(), false);
+        this.addButton("close_button", Component.translatable("gui.guaniao.bird_guide.close"),
+                button -> this.onClose(), false);
+        Button index = new Button(this.layout.rect("catalogue_toggle").x(), this.layout.rect("catalogue_toggle").y(),
+                20, 20, Component.translatable("gui.guaniao.bird_guide.species"), button -> {
+                    this.catalogueOpen = true;
+                    this.updateVisibility();
+                    this.setFocused(this.searchBox);
+                    this.searchBox.setFocused(true);
+                }, message -> message.get()) {
+            @Override
+            public void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+                Component label = this.getMessage();
+                this.setMessage(Component.empty());
+                super.renderWidget(graphics, mouseX, mouseY, partialTick);
+                this.setMessage(label);
+                graphics.renderItem(Items.BOOK.getDefaultInstance(), this.getX() + 2, this.getY() + 2);
+            }
+        };
+        index.setTooltip(Tooltip.create(Component.translatable("gui.guaniao.bird_guide.species")));
+        this.addRenderableWidget(index);
+        this.mainWidgets.add(index);
+        for (int i = 0; i < POSES.length; i++) {
+            PoseButton button = new PoseButton(i, this.layout.pose(i));
+            this.addRenderableWidget(button);
+            this.poseButtons.add(button);
+            this.mainWidgets.add(button);
+        }
+        this.filterCatalogue();
+        this.rebuildNotes();
+        this.updatePoseButtons();
+        this.lockPreviewModelPosition();
+    }
+
+    private Button addButton(String rectId, Component label, Button.OnPress action, boolean inCatalogue) {
+        GuiLayoutRect rect = this.layout.rect(rectId);
+        Button button = Button.builder(label, action).bounds(rect.x(), rect.y(), rect.w(), rect.h()).build();
+        this.addRenderableWidget(button);
+        (inCatalogue ? this.catalogueWidgets : this.mainWidgets).add(button);
+        return button;
+    }
+
+    private boolean showCatalogue() {
+        return this.layout.wide || this.catalogueOpen;
+    }
+
+    private boolean showDetails() {
+        return this.layout.wide || !this.catalogueOpen;
+    }
+
+    private void closeCatalogue() {
+        this.catalogueOpen = false;
+        this.searchBox.setFocused(false);
+        this.setFocused(null);
+        this.updateVisibility();
+    }
+
+    private void updateVisibility() {
+        for (AbstractWidget widget : this.mainWidgets) widget.visible = this.showDetails();
+        for (AbstractWidget widget : this.catalogueWidgets) widget.visible = this.showCatalogue();
+        for (SpeciesButton button : this.speciesButtons) button.visible = this.showCatalogue();
+        this.catalogueBack.visible = this.showCatalogue() && !this.layout.wide;
+        this.previousPage.active = this.catalogue.page() > 0;
+        this.nextPage.active = this.catalogue.page() + 1 < this.catalogue.pageCount();
+        if (!this.showCatalogue()) this.searchBox.setFocused(false);
+    }
+
+    private void filterCatalogue() {
+        this.catalogue.search(ENTRIES.size(), this.searchText, index -> {
+            BirdGuideEntry entry = ENTRIES.get(index);
+            StringBuilder text = new StringBuilder(entry.id().replace('_', ' '))
+                    .append(' ').append(entry.title().getString()).append(' ').append(entry.subtitle().getString());
+            for (String tag : this.tagsFor(entry)) {
+                text.append(' ').append(Component.translatable("gui.guaniao.bird_guide.tag." + tag).getString());
+            }
+            return text.toString();
+        });
+        this.rebuildSpeciesButtons();
+    }
+
+    private void moveCataloguePage(int direction) {
+        this.catalogue.movePage(direction);
+        this.rebuildSpeciesButtons();
+    }
+
+    private void rebuildSpeciesButtons() {
+        for (SpeciesButton button : this.speciesButtons) this.removeWidget(button);
+        this.speciesButtons.clear();
+        List<Integer> visible = this.catalogue.visible();
+        for (int slot = 0; slot < visible.size(); slot++) {
+            SpeciesButton button = new SpeciesButton(visible.get(slot), this.layout.slot(slot));
+            this.addRenderableWidget(button);
+            this.speciesButtons.add(button);
+        }
+        this.updateVisibility();
+    }
+
+    private void selectEntry(int index) {
+        if (this.selectedIndex != index) {
+            this.previewEntity = null;
+            this.previewZoom = 1.0F;
+        }
+        this.selectedIndex = index;
+        this.textScroll = 0;
+        this.selectedPoseIndex = 0;
+        this.manualPoseLocked = false;
+        this.draggingPreview = false;
+        this.draggingNotes = false;
+        this.resetPreviewMotion();
+        this.rebuildNotes();
+        this.updatePoseButtons();
+        this.closeCatalogue();
+    }
+
+    private void updatePoseButtons() {
+        for (int i = 0; i < this.poseButtons.size(); i++) {
+            PoseButton button = this.poseButtons.get(i);
+            boolean flightless = POSES[i] == PoseKind.FLY && this.isKiwiSelected();
+            button.active = !flightless;
+            button.setMessage(Component.translatable(flightless
+                    ? "gui.guaniao.bird_guide.pose.flightless" : POSES[i].translationKey()));
+        }
     }
 
     @Override
     public void tick() {
         super.tick();
-        if (this.editMessageTicks > 0) {
-            --this.editMessageTicks;
-        }
+        // Catalogue birds still need an animation clock to finish folding their wings.
+        for (LivingEntity thumbnail : this.thumbnails.values()) ++thumbnail.tickCount;
         this.tickPreviewMotion();
         if (this.previewEntity != null) {
             ++this.previewEntity.tickCount;
@@ -154,90 +278,162 @@ public class BirdGuideScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        this.renderBackground(graphics);
-        this.renderShell(graphics);
-        this.renderEntryList(graphics, mouseX, mouseY);
-        BirdGuideEntry entry = this.selectedEntry(this.selectedIndex);
-        this.renderCenterDetails(graphics, entry);
-        this.renderPreviewPanel(graphics, mouseX, mouseY);
-        this.renderConfigButton(graphics, mouseX, mouseY);
-        this.renderCloseButton(graphics, mouseX, mouseY);
-        if (LAYOUT_EDITING_ENABLED && (this.debugLayout || this.layoutEditMode)) {
-            this.renderLayoutDebug(graphics);
+        this.renderTransparentBackground(graphics);
+        if (this.showCatalogue()) this.renderCatalogue(graphics);
+        if (this.showDetails()) {
+            this.renderDetails(graphics);
+            this.renderPreview(graphics);
         }
-        if (LAYOUT_EDITING_ENABLED && this.layoutEditMode) {
-            this.renderLayoutEditHelp(graphics);
-        }
-        super.render(graphics, mouseX, mouseY, partialTicks);
+        for (var renderable : this.renderables) renderable.render(graphics, mouseX, mouseY, partialTicks);
     }
 
-    @Override
-    public void renderBackground(GuiGraphics graphics) {
-        if (this.minecraft != null && this.minecraft.level != null) {
-            graphics.fill(0, 0, this.width, this.height, 0xC9080E12);
-            graphics.fill(0, 0, this.width, this.height, 0x40000000);
-            this.drawBackgroundDither(graphics);
-        } else {
-            this.renderDirtBackground(graphics);
-            graphics.fill(0, 0, this.width, this.height, 0xD00A0E12);
-            this.drawBackgroundDither(graphics);
+    private void renderCatalogue(GuiGraphics graphics) {
+        GuiLayoutRect panel = this.layout.rect("catalogue_panel");
+        // The real vanilla recipe-book surface, stretched only through its empty centre.
+        EdDYON.guaniao.client.gui.BirdGuiRendering.blitNineSliced(graphics, RECIPE_BOOK, panel.x(), panel.y(), panel.w(), panel.h(), 5, 147, 166, 1, 1);
+        GuiLayoutRect header = this.layout.rect("species_header");
+        graphics.drawString(this.font, Component.translatable("gui.guaniao.bird_guide.species"),
+                header.x(), header.y(), 0xFFFFFFFF, false);
+        GuiLayoutRect grid = this.layout.rect("species_list");
+        if (this.catalogue.count() == 0) {
+            graphics.drawWordWrap(this.font, Component.translatable("gui.guaniao.bird_guide.no_results"),
+                    grid.x() + 4, grid.y() + 8, grid.w() - 8, 0xFFAAAAAA);
         }
+        GuiLayoutRect previous = this.layout.rect("previous_page");
+        Component count = this.catalogue.pageCount() > 1
+                ? Component.literal((this.catalogue.page() + 1) + " / " + this.catalogue.pageCount())
+                : Component.translatable("gui.guaniao.bird_guide.species_count", this.catalogue.count());
+        graphics.drawCenteredString(this.font, count, panel.centerX(), previous.y() + 6, 0xFFFFFFFF);
+    }
+
+    private void renderDetails(GuiGraphics graphics) {
+        GuiLayoutRect panel = this.layout.rect("main_panel");
+        drawContainer(graphics, panel);
+        GuiLayoutRect header = this.layout.rect("header");
+        graphics.drawString(this.font, this.title, header.x(), header.y(), TEXT_COLOR, false);
+        GuiLayoutRect title = this.layout.rect("detail_header");
+        graphics.drawString(this.font, this.selectedEntry(this.selectedIndex).title(), title.x(), title.y(), TEXT_COLOR, false);
+        GuiLayoutRect notes = this.layout.rect("info_card");
+        this.textScroll = Mth.clamp(this.textScroll, 0, this.maxTextScroll());
+        graphics.enableScissor(notes.x(), notes.y(), notes.right() - 7, notes.bottom());
+        for (NoteLine line : this.noteLines) {
+            int y = notes.y() + line.y() - this.textScroll;
+            if (y + LINE_HEIGHT > notes.y() && y < notes.bottom()) {
+                graphics.drawString(this.font, line.text(), notes.x(), y, line.color(), false);
+            }
+        }
+        graphics.disableScissor();
+        if (this.maxTextScroll() > 0) {
+            int barX = notes.right() - 5;
+            graphics.fill(barX, notes.y(), barX + 4, notes.bottom(), 0xFF8B8B8B);
+            int thumb = this.scrollThumbHeight();
+            int top = notes.y() + (notes.h() - thumb) * this.textScroll / this.maxTextScroll();
+            graphics.fill(barX, top, barX + 4, top + thumb, 0xFF555555);
+            graphics.fill(barX, top, barX + 3, top + thumb - 1, 0xFFFFFFFF);
+            graphics.fill(barX + 1, top + 1, barX + 3, top + thumb - 1, 0xFFC6C6C6);
+        }
+    }
+
+    private void rebuildNotes() {
+        this.noteLines.clear();
+        this.noteHeight = 0;
+        BirdGuideEntry entry = this.selectedEntry(this.selectedIndex);
+        MutableComponent tags = Component.empty();
+        for (String tag : this.tagsFor(entry)) {
+            if (!tags.getSiblings().isEmpty()) tags.append(" · ");
+            tags.append(Component.translatable("gui.guaniao.bird_guide.tag." + tag));
+        }
+        this.addNote(tags, 0xFF555555, 8);
+        for (String fact : List.of("activity", "diet", "environment", "behavior")) {
+            String key = "gui.guaniao.bird_guide.entry." + entry.id() + ".info." + fact;
+            if (I18n.exists(key)) {
+                this.addNote(Component.translatable("gui.guaniao.bird_guide.fact",
+                        Component.translatable("gui.guaniao.bird_guide.info." + fact), Component.translatable(key)), TEXT_COLOR, 3);
+            }
+        }
+        this.noteHeight += 5;
+        this.addNote(Component.translatable("gui.guaniao.bird_guide.entry." + entry.id() + ".intro.title"), 0xFF202020, 5);
+        for (String section : entry.sections()) {
+            this.addNote(Component.translatable("gui.guaniao.bird_guide.entry." + entry.id() + "." + section + ".body"), TEXT_COLOR, 6);
+        }
+        this.textScroll = Math.min(this.textScroll, this.maxTextScroll());
+    }
+
+    private void addNote(Component component, int color, int gap) {
+        int width = this.layout.rect("info_card").w() - 10;
+        for (FormattedCharSequence line : this.font.split((FormattedText)component, width)) {
+            this.noteLines.add(new NoteLine(line, this.noteHeight, color));
+            this.noteHeight += LINE_HEIGHT;
+        }
+        this.noteHeight += gap;
+    }
+
+    private int maxTextScroll() {
+        return Math.max(0, this.noteHeight - this.layout.rect("info_card").h());
+    }
+
+    private int scrollThumbHeight() {
+        int height = this.layout.rect("info_card").h();
+        return Math.max(12, height * height / Math.max(height, this.noteHeight));
+    }
+
+    private void scrollNotesTo(double mouseY) {
+        GuiLayoutRect notes = this.layout.rect("info_card");
+        int thumb = this.scrollThumbHeight();
+        double progress = (mouseY - notes.y() - thumb / 2.0D) / Math.max(1, notes.h() - thumb);
+        this.textScroll = Mth.clamp((int)Math.round(progress * this.maxTextScroll()), 0, this.maxTextScroll());
+    }
+
+    private void renderPreview(GuiGraphics graphics) {
+        GuiLayoutRect preview = this.layout.rect("preview_box");
+        graphics.fill(preview.x() - 1, preview.y() - 1, preview.right() + 1, preview.bottom() + 1, 0xFF8B8B8B);
+        graphics.fill(preview.x(), preview.y(), preview.right(), preview.bottom(), 0xFFB0B0B0);
+        LivingEntity entity = this.previewEntity();
+        if (entity != null) {
+            graphics.enableScissor(preview.x(), preview.y(), preview.right(), preview.bottom());
+            EdDYON.guaniao.client.gui.BirdGuiRendering.renderEntity(graphics, Math.round(this.birdX), Math.round(this.birdY),
+                    this.previewRenderScale(preview), this.previewDragX, this.previewDragY, entity);
+            graphics.disableScissor();
+        }
+        Component hint = Component.translatable("gui.guaniao.bird_guide.drag_hint");
+        graphics.drawString(this.font, hint, preview.centerX() - this.font.width(hint) / 2,
+                preview.bottom() + 3, TEXT_COLOR, false);
+    }
+
+    private static void drawContainer(GuiGraphics graphics, GuiLayoutRect r) {
+        // Vanilla container's stepped corners and flat 1-pixel bevel, without an HD atlas.
+        graphics.fill(r.x() + 2, r.y(), r.right() - 2, r.bottom(), 0xFF000000);
+        graphics.fill(r.x(), r.y() + 2, r.right(), r.bottom() - 2, 0xFF000000);
+        graphics.fill(r.x() + 1, r.y() + 2, r.right() - 1, r.bottom() - 2, 0xFF555555);
+        graphics.fill(r.x() + 2, r.y() + 1, r.right() - 2, r.bottom() - 1, 0xFF555555);
+        graphics.fill(r.x() + 2, r.y() + 2, r.right() - 3, r.bottom() - 3, 0xFFFFFFFF);
+        graphics.fill(r.x() + 4, r.y() + 4, r.right() - 4, r.bottom() - 4, 0xFFC6C6C6);
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (LAYOUT_EDITING_ENABLED && this.layoutEditMode && button == 0 && this.startLayoutEditDrag(mouseX, mouseY)) {
-            return true;
-        }
         if (super.mouseClicked(mouseX, mouseY, button)) {
+            if (!this.showCatalogue() && this.getFocused() instanceof SpeciesButton) this.setFocused(null);
             return true;
         }
-        if (button != 0) {
-            return false;
-        }
-        if (this.closeButtonRect().contains(mouseX, mouseY)) {
-            this.onClose();
-            return true;
-        }
-        if (this.configButtonRect().contains(mouseX, mouseY)) {
-            return BirdConfigClient.requestOpen();
-        }
-        int pose = this.poseButtonIndexAt(mouseX, mouseY);
-        if (pose >= 0) {
-            this.selectPose(pose);
-            return true;
-        }
-        if (this.isInPreview(mouseX, mouseY)) {
+        if (button != 0 || !this.showDetails()) return false;
+        if (this.layout.rect("preview_box").contains(mouseX, mouseY)) {
             this.draggingPreview = true;
             return true;
         }
-        GuiLayoutRect list = this.layoutRect("species_list");
-        int listX = this.listContentX(list);
-        int listY = this.listRowsY(list);
-        int stride = this.listRowStride(list);
-        if (list.contains(mouseX, mouseY)) {
-            int localY = (int)mouseY - listY;
-            int row = localY / stride;
-            int entryIndex = this.listScrollIndex + row;
-            if (entryIndex >= 0 && entryIndex < ENTRIES.size() && row >= 0 && row < this.visibleListRows(list) && localY >= 0 && localY % stride < this.listRowH(list)) {
-                if (this.selectedIndex != entryIndex) {
-                    this.previewEntity = null;
-                }
-                this.selectedIndex = entryIndex;
-                this.textScroll = 0;
-                this.selectedPoseIndex = 0;
-                this.manualPoseLocked = false;
-                this.resetPreviewMotion();
-                return true;
-            }
+        GuiLayoutRect notes = this.layout.rect("info_card");
+        if (notes.contains(mouseX, mouseY) && mouseX >= notes.right() - 7 && this.maxTextScroll() > 0) {
+            this.draggingNotes = true;
+            this.scrollNotesTo(mouseY);
+            return true;
         }
         return false;
     }
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        if (button == 0 && LAYOUT_EDITING_ENABLED && this.layoutEditMode && this.editDragMode != EditDragMode.NONE) {
-            this.updateLayoutEditDrag(mouseX, mouseY);
+        if (button == 0 && this.draggingNotes) {
+            this.scrollNotesTo(mouseY);
             return true;
         }
         if (button == 0 && this.draggingPreview) {
@@ -251,13 +447,9 @@ public class BirdGuideScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0 && LAYOUT_EDITING_ENABLED && this.layoutEditMode && this.editDragMode != EditDragMode.NONE) {
-            this.editDragMode = EditDragMode.NONE;
-            this.editDragStartRect = null;
-            return true;
-        }
-        if (button == 0 && this.draggingPreview) {
+        if (button == 0 && (this.draggingPreview || this.draggingNotes)) {
             this.draggingPreview = false;
+            this.draggingNotes = false;
             this.manualLookTicks = 50;
             return true;
         }
@@ -265,296 +457,130 @@ public class BirdGuideScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        GuiLayoutRect list = this.layoutRect("species_list");
-        if (list.contains(mouseX, mouseY)) {
-            int maxScroll = this.maxListScroll(list);
-            if (maxScroll > 0) {
-                this.listScrollIndex = Mth.clamp(this.listScrollIndex - (int)Math.signum(delta), 0, maxScroll);
-                return true;
-            }
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalDelta, double delta) {
+        if (this.showDetails() && this.layout.rect("preview_box").contains(mouseX, mouseY)) {
+            // Framing is controlled by the player, not reset whenever a pose changes.
+            this.previewZoom = Mth.clamp(this.previewZoom + (float)Math.signum(delta) * 0.1F, 0.3F, 1.5F);
+            return true;
         }
-        if (this.isInNotes(mouseX, mouseY)) {
-            int maxScroll = this.maxTextScroll(this.selectedEntry(this.selectedIndex));
-            if (maxScroll > 0) {
-                this.textScroll = Mth.clamp(this.textScroll - (int)Math.signum(delta) * 18, 0, maxScroll);
-                return true;
-            }
+        if (this.showCatalogue() && this.layout.rect("catalogue_panel").contains(mouseX, mouseY)) {
+            this.moveCataloguePage(delta > 0 ? -1 : 1);
+            return true;
         }
-        return super.mouseScrolled(mouseX, mouseY, delta);
+        if (this.showDetails() && this.layout.rect("info_card").contains(mouseX, mouseY)) {
+            this.textScroll = Mth.clamp(this.textScroll - (int)Math.signum(delta) * 22, 0, this.maxTextScroll());
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, horizontalDelta, delta);
     }
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (!LAYOUT_EDITING_ENABLED) {
-            return super.keyPressed(keyCode, scanCode, modifiers);
-        }
-        if (keyCode == GLFW.GLFW_KEY_E && Screen.hasControlDown()) {
-            this.toggleLayoutEditMode();
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE && !this.layout.wide && this.catalogueOpen) {
+            this.closeCatalogue();
             return true;
         }
-        if (keyCode == GLFW.GLFW_KEY_S && Screen.hasControlDown() && this.layoutEditMode) {
-            this.saveEditedLayout();
+        if ((keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER)
+                && this.searchBox.isFocused() && !this.catalogue.visible().isEmpty()) {
+            this.selectEntry(this.catalogue.visible().get(0));
             return true;
         }
-        if (keyCode == GLFW.GLFW_KEY_ESCAPE && this.layoutEditMode) {
-            this.layoutEditMode = false;
-            this.editDragMode = EditDragMode.NONE;
-            this.showEditMessage(Component.literal("Layout edit mode off"));
-            return true;
-        }
-        if (keyCode == GLFW.GLFW_KEY_L) {
-            this.debugLayout = !this.debugLayout;
-            return true;
-        }
-        if (keyCode == GLFW.GLFW_KEY_R && Screen.hasControlDown()) {
-            this.editedRects.clear();
-            this.layoutEditMode = false;
-            this.editDragMode = EditDragMode.NONE;
-            this.clearWidgets();
-            this.init();
-            this.resetPreviewMotion();
+        if (this.showCatalogue() && !this.searchBox.isFocused()
+                && (keyCode == GLFW.GLFW_KEY_PAGE_UP || keyCode == GLFW.GLFW_KEY_PAGE_DOWN)) {
+            this.moveCataloguePage(keyCode == GLFW.GLFW_KEY_PAGE_UP ? -1 : 1);
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
-    private void renderShell(GuiGraphics graphics) {
-        GuiLayoutRect header = this.layoutRect("header");
-        GuiLayoutRect main = this.layoutRect("main_panel");
-        GuiLayoutRect speciesList = this.layoutRect("species_list");
-        GuiLayoutRect detailHeader = this.layoutRect("detail_header");
-        GuiLayoutRect preview = this.layoutRect("preview_box");
+    private final class PoseButton extends Button {
+        private final int poseIndex;
 
-        this.drawPixelBookPanel(graphics, main.x(), main.y(), main.w(), main.h());
-        int titleH = Mth.clamp(header.h(), 28, 62);
-        int titleW = Math.min(header.w(), Math.round(titleH * 270.0F / 76.0F));
-        this.drawAtlas(graphics, header.x(), header.y() - 2, titleW, titleH, 226, 82, 270, 76);
-
-        int firstDivider = speciesList.right() + Math.max(8, (detailHeader.x() - speciesList.right()) / 2);
-        int secondDivider = preview.x() - Math.max(8, (preview.x() - detailHeader.right()) / 2);
-        int dividerTop = main.y() + 18;
-        int dividerBottom = main.bottom() - 22;
-        if (firstDivider > main.x() && firstDivider < main.right()) {
-            graphics.vLine(firstDivider, dividerTop, dividerBottom, 0x362B2119);
+        private PoseButton(int index, GuiLayoutRect rect) {
+            super(rect.x(), rect.y(), rect.w(), rect.h(), Component.translatable(POSES[index].translationKey()),
+                    button -> BirdGuideScreen.this.selectPose(index), DEFAULT_NARRATION);
+            this.poseIndex = index;
         }
-        if (secondDivider > main.x() && secondDivider < main.right()) {
-            graphics.vLine(secondDivider, dividerTop, dividerBottom, 0x362B2119);
-        }
-        this.drawGuideStickers(graphics, main);
-    }
 
-    private void renderEntryList(GuiGraphics graphics, int mouseX, int mouseY) {
-        GuiLayoutRect header = this.layoutRect("species_header");
-        GuiLayoutRect list = this.layoutRect("species_list");
-        int panelX = Math.max(0, header.x() - 5);
-        int panelY = Math.max(0, header.y() - 6);
-        int panelW = list.right() - panelX + 5;
-        int panelH = list.bottom() - panelY + 6;
-        this.drawDarkGuidePanel(graphics, panelX, panelY, panelW, panelH);
-        int x = header.x() + 8;
-        int y = header.y() + Math.max(2, (header.h() - 8) / 2);
-        graphics.drawString(this.font, Component.translatable("gui.guaniao.bird_guide.species"), x, y, LIGHT_TEXT_COLOR, false);
-        String count = String.format("%02d/%02d", this.selectedIndex + 1, ENTRIES.size());
-        graphics.fill(header.right() - 47, y - 1, header.right() - 3, y + 10, 0xAA1E2529);
-        graphics.drawString(this.font, count, header.right() - 7 - this.font.width(count), y, 0xFFAEE8F4, false);
-
-        graphics.enableScissor(list.x() + 3, list.y() + 3, list.right() - 3, list.bottom() - 3);
-        int listX = this.listContentX(list);
-        int listW = this.listContentW(list);
-        int rowH = this.listRowH(list);
-        int stride = this.listRowStride(list);
-        int visibleRows = this.visibleListRows(list);
-        this.listScrollIndex = Mth.clamp(this.listScrollIndex, 0, this.maxListScroll(list));
-        for (int row = 0; row < visibleRows; ++row) {
-            int entryIndex = this.listScrollIndex + row;
-            if (entryIndex >= ENTRIES.size()) {
-                break;
+        @Override
+        public void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+            super.renderWidget(graphics, mouseX, mouseY, partialTick);
+            if (BirdGuideScreen.this.manualPoseLocked && BirdGuideScreen.this.selectedPoseIndex == this.poseIndex) {
+                graphics.renderOutline(this.getX(), this.getY(), this.getWidth(), this.getHeight(), 0xFFFFFFFF);
             }
-            BirdGuideEntry entry = this.selectedEntry(entryIndex);
-            int rowY = this.listRowsY(list) + row * stride;
-            boolean selected = this.selectedIndex == entryIndex;
-            boolean hovered = mouseX >= listX && mouseX <= listX + listW && mouseY >= rowY && mouseY < rowY + rowH;
-            if (selected || hovered) {
-                this.drawAtlas(graphics, listX, rowY, listW, rowH, 302, 664, 193, 42);
-            } else {
-                this.drawAtlas(graphics, listX, rowY, listW, rowH, 86, 618, 194, 42);
+        }
+    }
+
+    private final class SpeciesButton extends Button {
+        private final int entryIndex;
+
+        private SpeciesButton(int index, GuiLayoutRect rect) {
+            super(rect.x(), rect.y(), rect.w(), rect.h(), ENTRIES.get(index).title(),
+                    button -> BirdGuideScreen.this.selectEntry(index), DEFAULT_NARRATION);
+            this.entryIndex = index;
+            this.setTooltip(Tooltip.create(ENTRIES.get(index).title().copy().append("\n").append(ENTRIES.get(index).subtitle())));
+        }
+
+        @Override
+        public void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+            GuiLayoutRect slot = new GuiLayoutRect(this.getX(), this.getY(), this.getWidth(), this.getHeight());
+            EdDYON.guaniao.client.gui.BirdGuiRendering.blitNineSliced(graphics, ResourceLocation.withDefaultNamespace("textures/gui/sprites/recipe_book/slot_craftable.png"), slot.x(), slot.y(), slot.w(), slot.h(), 2, 25, 25, 0, 0, 25, 25);
+            LivingEntity entity = BirdGuideScreen.this.thumbnail(this.entryIndex);
+            if (entity != null) {
+                GuiLayoutRect inside = slot.inset(3);
+                graphics.enableScissor(inside.x(), inside.y(), inside.right(), inside.bottom());
+                EdDYON.guaniao.client.gui.BirdGuiRendering.renderEntity(graphics, inside.centerX(), inside.bottom() - 2,
+                        modelScale(entity, inside), -22.0F, -5.0F, entity);
+                graphics.disableScissor();
             }
-            if (selected) {
-                this.drawFootprints(graphics, listX + 5, rowY + Math.max(5, rowH / 2 - 5), 0xAA5F4327);
+            if (this.isHoveredOrFocused() || this.entryIndex == BirdGuideScreen.this.selectedIndex) {
+                graphics.renderOutline(slot.x(), slot.y(), slot.w(), slot.h(), 0xFFFFFFFF);
             }
-            this.drawColorDot(graphics, listX + 18, rowY + rowH / 2 - 2, this.speciesColor(entry));
-            graphics.drawString(this.font, entry.title(), listX + 32, rowY + rowH / 2 - 4, selected ? NOTE_TITLE_COLOR : 0xFFE1D8C5, false);
         }
-        graphics.disableScissor();
-        this.renderSpeciesScrollBar(graphics, list);
     }
 
-    private void renderCenterDetails(GuiGraphics graphics, BirdGuideEntry entry) {
-        GuiLayoutRect detailHeader = this.layoutRect("detail_header");
-        GuiLayoutRect tagArea = this.layoutRect("tag_area");
-        GuiLayoutRect infoCard = this.infoCardRect();
-
-        this.drawAtlas(graphics, detailHeader.x() - 3, detailHeader.y() - 3, detailHeader.w() + 6, detailHeader.h() + 8, 529, 158, 350, 173);
-        graphics.enableScissor(detailHeader.x(), detailHeader.y(), detailHeader.right(), detailHeader.bottom());
-        int x = detailHeader.x() + 10;
-        int w = detailHeader.w() - 20;
-        int titleY = detailHeader.y() + Math.max(5, (detailHeader.h() - 28) / 2);
-        this.drawScaledString(graphics, entry.title(), x, titleY, 1.0F, TEXT_COLOR);
-        graphics.drawString(this.font, entry.subtitle(), x, titleY + 16, ACCENT_TEXT_COLOR, false);
-        this.drawPixelRule(graphics, x, x + w, detailHeader.bottom() - 5);
-        graphics.disableScissor();
-
-        graphics.enableScissor(tagArea.x(), tagArea.y(), tagArea.right(), tagArea.bottom());
-        this.renderTagChips(graphics, entry, tagArea.x() + 6, tagArea.y() + 5, tagArea.w() - 12);
-        graphics.disableScissor();
-
-        this.renderNotes(graphics, entry, infoCard);
-    }
-
-    private void renderTagChips(GuiGraphics graphics, BirdGuideEntry entry, int x, int y, int w) {
-        int chipX = x;
-        int chipY = y;
-        int row = 0;
-        for (String key : this.tagsFor(entry)) {
-            Component text = Component.translatable("gui.guaniao.bird_guide.tag." + key);
-            int chipW = this.font.width(text) + 14;
-            if (chipX + chipW > x + w) {
-                chipX = x;
-                chipY += 21;
-                row++;
+    private LivingEntity thumbnail(int index) {
+        if (this.minecraft == null || this.minecraft.level == null) return null;
+        return this.thumbnails.computeIfAbsent(index, key -> {
+            EntityType<? extends LivingEntity> type = ENTRIES.get(key).entityType();
+            LivingEntity entity = type == null ? null : type.create(this.minecraft.level);
+            if (entity != null) {
+                if (entity instanceof Mob mob) mob.setNoAi(true);
+                if (entity instanceof ScalableBirdModel bird) bird.setIndividualModelScale(1.0F);
+                entity.setNoGravity(true);
+                entity.setSilent(true);
+                entity.setOnGround(true);
+                this.applyPreviewAnimation(entity, GuidePreviewAnimation.IDLE);
             }
-            if (row >= 2) {
-                break;
-            }
-            this.drawPixelButton(graphics, chipX, chipY - 1, chipW, 18, false, false);
-            graphics.drawString(this.font, text, chipX + 7, chipY + 4, TEXT_COLOR, false);
-            chipX += chipW + 5;
-        }
+            return entity;
+        });
     }
 
-    private void renderNotes(GuiGraphics graphics, BirdGuideEntry entry, GuiLayoutRect rect) {
-        int x = rect.x();
-        int y = rect.y();
-        int w = rect.w();
-        int h = rect.h();
-        this.drawAtlas(graphics, x - 3, y - 5, w + 6, h + 9, 529, 158, 350, 173);
-        MutableComponent title = Component.translatable("gui.guaniao.bird_guide.entry." + entry.id() + ".intro.title");
-        int titleX = x + 12;
-        int titleY = y + 11;
-        graphics.drawString(this.font, title, titleX, titleY, NOTE_TITLE_COLOR, false);
-        this.drawPixelRule(graphics, titleX, x + w - 12, titleY + 15);
-
-        int textX = x + 12;
-        int textY = titleY + 24;
-        int textW = w - 24;
-        int textBottom = y + h - 12;
-        int maxScroll = this.maxTextScroll(entry);
-        this.textScroll = Mth.clamp(this.textScroll, 0, maxScroll);
-        graphics.enableScissor(textX, textY, textX + textW, textBottom);
-        int lineY = textY - this.textScroll;
-        for (String section : entry.sections()) {
-            MutableComponent body = Component.translatable("gui.guaniao.bird_guide.entry." + entry.id() + "." + section + ".body");
-            for (FormattedCharSequence line : this.font.split((FormattedText)body, textW)) {
-                if (lineY >= textY - 10 && lineY < textBottom) {
-                    graphics.drawString(this.font, line, textX, lineY, TEXT_COLOR, false);
-                }
-                lineY += 12;
-            }
-            lineY += 7;
-        }
-        graphics.disableScissor();
-
-        if (maxScroll > 0) {
-            int barX = x + w - 9;
-            int barTop = textY;
-            int barBottom = textBottom;
-            int totalHeight = this.detailTextHeight(entry, textW);
-            int thumbH = Math.max(16, (barBottom - barTop) * (barBottom - barTop) / Math.max(barBottom - barTop, totalHeight));
-            int thumbY = barTop + (barBottom - barTop - thumbH) * this.textScroll / maxScroll;
-            graphics.fill(barX, barTop, barX + 1, barBottom, 0x665F4327);
-            graphics.fill(barX - 1, thumbY, barX + 2, thumbY + thumbH, 0xFFE0B65C);
-        }
+    private static int modelScale(LivingEntity entity, GuiLayoutRect box) {
+        float height = entity instanceof ScalableBirdModel bird
+                ? bird.modelScaleProfile().targetHeightBlocks() * bird.getIndividualModelScale()
+                : Math.max(0.2F, entity.getBbHeight());
+        float pixels = Math.min(box.h() * 0.72F, box.w() * 0.78F);
+        return BirdModelScale.fitPreviewScale(Math.max(1, Math.round(pixels / height)));
     }
 
-    private void renderPreviewPanel(GuiGraphics graphics, int mouseX, int mouseY) {
-        GuiLayoutRect main = this.layoutRect("main_panel");
-        GuiLayoutRect preview = this.layoutRect("preview_box");
-        int titleY = Math.max(main.y() + 8, preview.y() - 28);
-        int titleW = Math.min(92, Math.max(64, preview.w() - 42));
-        int titleH = 20;
-        int titleX = preview.centerX() - titleW / 2;
-        this.drawPixelButton(graphics, titleX, titleY - 4, titleW, titleH, false, false);
-        this.drawCenteredFittingString(graphics, Component.translatable("gui.guaniao.bird_guide.observation_pose"), titleX, titleY - 4, titleW, titleH, TEXT_COLOR);
-
-        this.drawAtlas(graphics, preview.x(), preview.y(), preview.w(), preview.h(), 925, 92, 421, 387);
-        graphics.enableScissor(preview.x() + 4, preview.y() + 4, preview.right() - 4, preview.bottom() - 4);
-        LivingEntity entity = this.previewEntity();
-        if (entity != null) {
-            InventoryScreen.renderEntityInInventoryFollowsMouse(graphics, Math.round(this.birdX), Math.round(this.birdY), this.previewRenderScale(preview), this.previewDragX, this.previewDragY, entity);
-        }
-        graphics.disableScissor();
-        this.renderPoseButtons(graphics, mouseX, mouseY);
+    private int previewRenderScale(GuiLayoutRect preview) {
+        int scale = this.previewEntity == null ? 34 : modelScale(this.previewEntity, preview);
+        return Math.max(1, Math.round(scale * this.previewZoom));
     }
 
-    private void renderHabitatStage(GuiGraphics graphics, int x, int y, int w, int h) {
-        graphics.fill(x + 4, y + 4, x + w - 4, y + h - 4, 0xFF26343A);
-        graphics.fill(x + 5, y + 5, x + w - 5, y + h / 2, 0xFF2E4850);
-        graphics.fill(x + 5, y + h / 2, x + w - 5, y + h - 5, 0xFF1D2B24);
-        for (int px = x + 9; px < x + w - 9; px += 13) {
-            int py = y + h - 17 + ((px / 13) % 2);
-            graphics.fill(px, py, px + 7, py + 2, 0xFF547747);
-        }
-        graphics.fill(x + w / 2 - 24, y + h - 20, x + w / 2 + 24, y + h - 17, 0xFF7B5532);
-        graphics.fill(x + w / 2 - 18, y + h - 16, x + w / 2 + 18, y + h - 15, 0x77311D12);
-        this.drawLeafStamp(graphics, x + w - 25, y + 11, 0x773D6641);
-    }
-
-    private void renderPoseButtons(GuiGraphics graphics, int mouseX, int mouseY) {
-        GuiLayoutRect poseButtons = this.layoutRect("pose_buttons");
-        int y = poseButtons.y();
-        int h = this.poseButtonH(poseButtons);
-        for (int i = 0; i < POSES.length; i++) {
-            int x = this.poseButtonX(poseButtons, i);
-            int w = this.poseButtonW(poseButtons);
-            boolean selected = this.selectedPoseIndex == i && this.manualPoseLocked;
-            if (POSES[i] == PoseKind.FLY && this.isKiwiSelected()) {
-                this.drawPixelButton(graphics, x, y, w, h, false, false);
-                this.drawCenteredFittingString(graphics, Component.translatable("gui.guaniao.bird_guide.pose.flightless"),
-                        x, y, w, h, 0xFF888888);
-                continue;
-            }
-            boolean hovered = mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + h;
-            this.drawPixelButton(graphics, x, y, w, h, selected, hovered);
-            this.drawCenteredFittingString(graphics, Component.translatable(POSES[i].translationKey()), x, y, w, h, selected ? NOTE_TITLE_COLOR : TEXT_COLOR);
-        }
-    }
-
-    private void renderCloseButton(GuiGraphics graphics, int mouseX, int mouseY) {
-        GuiLayoutRect rect = this.closeButtonRect();
-        boolean hovered = rect.contains(mouseX, mouseY);
-        if (hovered) {
-            this.drawAtlas(graphics, rect.x(), rect.y(), rect.w(), rect.h(), 1119, 819, 158, 56);
-        } else {
-            this.drawAtlas(graphics, rect.x(), rect.y(), rect.w(), rect.h(), 936, 819, 158, 56);
-        }
-    }
-
-    private void renderConfigButton(GuiGraphics graphics, int mouseX, int mouseY) {
-        GuiLayoutRect rect = this.configButtonRect();
-        boolean hovered = rect.contains(mouseX, mouseY);
-        this.drawPixelButton(graphics, rect.x(), rect.y(), rect.w(), rect.h(), false, hovered);
-        this.drawCenteredFittingString(
-                graphics,
-                Component.translatable("gui.guaniao.bird_guide.config"),
-                rect.x(), rect.y(), rect.w(), rect.h(), TEXT_COLOR
-        );
-    }
+    private float defaultStageX(GuiLayoutRect preview, int scale) { return preview.centerX(); }
+    private float defaultStageY(GuiLayoutRect preview, int scale) { return preview.bottom() - 9; }
+    private GuiLayoutRect layoutRect(String id) { return this.layout.rect(id); }
+    private boolean isKiwiSelected() { return "kiwi".equals(this.selectedEntry(this.selectedIndex).id()); }
+    private boolean isNightHeronSelected() { return "night_heron".equals(this.selectedEntry(this.selectedIndex).id()); }
+    private BirdGuideEntry selectedEntry(int index) { return ENTRIES.get(Mth.clamp(index, 0, ENTRIES.size() - 1)); }
+    private record NoteLine(FormattedCharSequence text, int y, int color) {}
 
     private LivingEntity previewEntity() {
         if (this.previewEntity == null && this.minecraft != null && this.minecraft.level != null) {
             EntityType<? extends LivingEntity> type = this.selectedEntry(this.selectedIndex).entityType();
-            this.previewEntity = type == null ? null : type.create((Level)this.minecraft.level);
+            this.previewEntity = type == null ? null : type.create(this.minecraft.level);
             if (this.previewEntity != null) {
                 if (this.previewEntity instanceof Mob mob) {
                     mob.setNoAi(true);
@@ -575,7 +601,6 @@ public class BirdGuideScreen extends Screen {
         this.previewMotion = PreviewMotion.PERCH;
         this.previewAnimation = GuidePreviewAnimation.IDLE;
         GuiLayoutRect preview = this.layoutRect("preview_box");
-        this.birdScale = this.basePreviewScale();
         int scale = this.previewRenderScale(preview);
         this.birdX = this.defaultStageX(preview, scale);
         this.birdY = this.defaultStageY(preview, scale);
@@ -720,17 +745,20 @@ public class BirdGuideScreen extends Screen {
 
     private void lockPreviewModelPosition() {
         GuiLayoutRect preview = this.layoutRect("preview_box");
-        this.birdScale = this.basePreviewScale();
         int scale = this.previewRenderScale(preview);
         this.birdX = this.defaultStageX(preview, scale);
         this.birdY = this.defaultStageY(preview, scale);
     }
 
     private void applyPreviewAnimation(LivingEntity entity) {
+        this.applyPreviewAnimation(entity, this.previewAnimation);
+    }
+
+    private void applyPreviewAnimation(LivingEntity entity, GuidePreviewAnimation animation) {
         if (entity instanceof NightHeronEntity nightHeron) {
-            nightHeron.setGuidePreviewAnimation(this.toNightHeronPreviewAnimation(this.previewAnimation));
+            nightHeron.setGuidePreviewAnimation(this.toNightHeronPreviewAnimation(animation));
         } else if (entity instanceof MynaEntity myna) {
-            myna.setGuidePreviewAnimation(switch (this.previewAnimation) {
+            myna.setGuidePreviewAnimation(switch (animation) {
                 case WALK, RUN -> MynaEntity.GuidePreviewAnimation.WALK;
                 case FLY_FLAP, GLIDE -> MynaEntity.GuidePreviewAnimation.FLY;
                 case LOOK_2, SCRATCH -> MynaEntity.GuidePreviewAnimation.IDLE_2;
@@ -738,33 +766,33 @@ public class BirdGuideScreen extends Screen {
                 default -> MynaEntity.GuidePreviewAnimation.IDLE;
             });
         } else if (entity instanceof KiwiEntity kiwi) {
-            kiwi.setGuidePreviewAnimation(switch (this.previewAnimation) {
+            kiwi.setGuidePreviewAnimation(switch (animation) {
                 case WALK, RUN -> KiwiEntity.GuidePreviewAnimation.WALK;
                 case LOOK_2, SCRATCH -> KiwiEntity.GuidePreviewAnimation.FORAGE;
                 case LOOK_1, LOOK_3, LOOK_5 -> KiwiEntity.GuidePreviewAnimation.ALERT;
                 default -> KiwiEntity.GuidePreviewAnimation.IDLE;
             });
         } else if (entity instanceof SparrowEntity sparrow) {
-            sparrow.setGuidePreviewAnimation(this.toSparrowPreviewAnimation(this.previewAnimation));
+            sparrow.setGuidePreviewAnimation(this.toSparrowPreviewAnimation(animation));
         } else if (entity instanceof BudgerigarEntity budgerigar) {
             // Subclasses with a richer crest (the umbrella cockatoo) override this method
             // and re-map the budgerigar poses onto their own overlay animations.
-            budgerigar.setGuidePreviewAnimation(this.toBudgerigarPreviewAnimation(this.previewAnimation));
+            budgerigar.setGuidePreviewAnimation(this.toBudgerigarPreviewAnimation(animation));
         } else if (entity instanceof AbstractColumbidEntity columbid) {
-            columbid.setGuidePreviewAnimation(this.toColumbidPreviewAnimation(this.previewAnimation));
+            columbid.setGuidePreviewAnimation(this.toColumbidPreviewAnimation(animation));
         } else if (entity instanceof CrowEntity crow) {
-            crow.setGuidePreviewAnimation(this.toCrowPreviewAnimation(this.previewAnimation));
+            crow.setGuidePreviewAnimation(this.toCrowPreviewAnimation(animation));
         } else if (entity instanceof SeagullEntity seagull) {
-            seagull.setGuidePreviewAnimation(this.toSeagullPreviewAnimation(this.previewAnimation));
+            seagull.setGuidePreviewAnimation(this.toSeagullPreviewAnimation(animation));
         } else if (entity instanceof KestrelEntity kestrel) {
-            kestrel.setGuidePreviewAnimation(switch (this.previewAnimation) {
+            kestrel.setGuidePreviewAnimation(switch (animation) {
                 case WALK, RUN -> KestrelEntity.GuidePreviewAnimation.WALK;
                 case FLY_FLAP -> KestrelEntity.GuidePreviewAnimation.HOVER;
                 case GLIDE -> KestrelEntity.GuidePreviewAnimation.FLY;
                 default -> KestrelEntity.GuidePreviewAnimation.IDLE;
             });
         } else if (entity instanceof CassowaryEntity cassowary) {
-            cassowary.setGuidePreviewAnimation(switch (this.previewAnimation) {
+            cassowary.setGuidePreviewAnimation(switch (animation) {
                 case WALK -> CassowaryEntity.GuidePreviewAnimation.WALK;
                 case RUN -> CassowaryEntity.GuidePreviewAnimation.SPRINT;
                 case LOOK_1, LOOK_3, LOOK_5 -> CassowaryEntity.GuidePreviewAnimation.LOOK;
@@ -885,730 +913,6 @@ public class BirdGuideScreen extends Screen {
         };
     }
 
-    private int speciesColor(BirdGuideEntry entry) {
-        return switch (entry.id()) {
-            case "night_heron" -> 0xFF8FCBE6;
-            case "sparrow" -> 0xFFD1A065;
-            case "long_tailed_tit" -> 0xFFE7D9DC;
-            case "cockatiel" -> 0xFFF1D467;
-            case "macaw" -> 0xFFE64C45;
-            case "budgerigar" -> 0xFFD6DA62;
-            case "spotted_dove" -> 0xFF9B8AAE;
-            case "pigeon" -> 0xFF9AB3C4;
-            case "crow" -> 0xFF7E8798;
-            case "seagull" -> 0xFFE7E2D7;
-            case "kiwi" -> 0xFFA88B65;
-            case "myna" -> 0xFFE5A62A;
-            case "woodcock" -> 0xFF9A6A45;
-            case "kestrel" -> 0xFFC36F3D;
-            case "cassowary" -> 0xFF2E8392;
-            case "umbrella_cockatoo" -> 0xFFF2CE55;
-            default -> ACCENT_TEXT_COLOR;
-        };
-    }
-
-    private int previewRenderScale(GuiLayoutRect preview) {
-        float baseScale = Math.min((float)preview.w() * 0.072F, (float)preview.h() * 0.18F);
-        return BirdModelScale.fitPreviewScale(Math.max(34, Math.round(baseScale * this.birdScale)));
-    }
-
-    private float basePreviewScale() {
-        if (this.isNightHeronSelected()) {
-            return 0.86F;
-        }
-        return this.isCassowarySelected() ? 0.62F : 0.96F;
-    }
-
-    private boolean isKiwiSelected() {
-        return "kiwi".equals(this.selectedEntry(this.selectedIndex).id());
-    }
-
-    private boolean isCassowarySelected() {
-        return "cassowary".equals(this.selectedEntry(this.selectedIndex).id());
-    }
-
-    private float defaultStageX(GuiLayoutRect preview, int scale) {
-        return this.clampStageX(preview, (float)preview.centerX(), scale);
-    }
-
-    private float defaultStageY(GuiLayoutRect preview, int scale) {
-        float top = this.stageSafeTop(preview, scale);
-        float bottom = this.stageSafeBottom(preview, scale);
-        if (top > bottom) {
-            return preview.y() + preview.h() * 0.58F;
-        }
-        return Mth.lerp(0.52F, top, bottom);
-    }
-
-    private float stageSafeLeft(GuiLayoutRect preview, int scale) {
-        return preview.x() + 22.0F + (float)scale * 0.7F;
-    }
-
-    private float stageSafeRight(GuiLayoutRect preview, int scale) {
-        return preview.right() - 22.0F - (float)scale * 0.7F;
-    }
-
-    private float stageSafeTop(GuiLayoutRect preview, int scale) {
-        return preview.y() + 20.0F + (float)scale * 0.94F;
-    }
-
-    private float stageSafeBottom(GuiLayoutRect preview, int scale) {
-        return preview.bottom() - 24.0F - (float)scale * 0.08F;
-    }
-
-    private float clampStageX(GuiLayoutRect preview, float x, int scale) {
-        float left = this.stageSafeLeft(preview, scale);
-        float right = this.stageSafeRight(preview, scale);
-        if (left > right) {
-            return preview.centerX();
-        }
-        return Mth.clamp(x, left, right);
-    }
-
-    private boolean isInPreview(double mouseX, double mouseY) {
-        return this.layoutRect("preview_box").contains(mouseX, mouseY);
-    }
-
-    private boolean isInNotes(double mouseX, double mouseY) {
-        return this.infoCardRect().contains(mouseX, mouseY);
-    }
-
-    private BirdGuideEntry selectedEntry(int index) {
-        return ENTRIES.get(Mth.clamp(index, 0, ENTRIES.size() - 1));
-    }
-
-    private void toggleLayoutEditMode() {
-        if (!this.layoutEditMode) {
-            this.captureEditableLayout();
-            this.layoutEditMode = true;
-            this.debugLayout = false;
-            this.showEditMessage(Component.literal("Layout edit mode on"));
-        } else {
-            this.layoutEditMode = false;
-            this.editDragMode = EditDragMode.NONE;
-            this.showEditMessage(Component.literal("Layout edit mode off"));
-        }
-    }
-
-    private void captureEditableLayout() {
-        this.editedRects.clear();
-        for (String id : LAYOUT_RECT_IDS) {
-            GuiLayoutRect rect = "info_card".equals(id) ? this.infoCardRect() : this.layoutRect(id);
-            this.editedRects.put(id, rect);
-        }
-    }
-
-    private boolean startLayoutEditDrag(double mouseX, double mouseY) {
-        for (int i = LAYOUT_RECT_IDS.size() - 1; i >= 0; --i) {
-            String id = LAYOUT_RECT_IDS.get(i);
-            GuiLayoutRect rect = this.editorRect(id);
-            EditDragMode mode = this.editModeAt(rect, mouseX, mouseY);
-            if (mode != EditDragMode.NONE) {
-                this.activeLayoutRectId = id;
-                this.editDragMode = mode;
-                this.editDragStartRect = rect;
-                this.editDragStartMouseX = (int)Math.round(mouseX);
-                this.editDragStartMouseY = (int)Math.round(mouseY);
-                return true;
-            }
-        }
-        this.activeLayoutRectId = null;
-        return false;
-    }
-
-    private void updateLayoutEditDrag(double mouseX, double mouseY) {
-        if (this.activeLayoutRectId == null || this.editDragStartRect == null || this.editDragMode == EditDragMode.NONE) {
-            return;
-        }
-
-        int dx = (int)Math.round(mouseX) - this.editDragStartMouseX;
-        int dy = (int)Math.round(mouseY) - this.editDragStartMouseY;
-        GuiLayoutRect next = this.editDragMode == EditDragMode.MOVE
-                ? this.moveEditedRect(this.editDragStartRect, dx, dy)
-                : this.resizeEditedRect(this.editDragStartRect, dx, dy, this.editDragMode);
-        this.editedRects.put(this.activeLayoutRectId, next);
-        if ("preview_box".equals(this.activeLayoutRectId)) {
-            this.lockPreviewModelPosition();
-        }
-    }
-
-    private GuiLayoutRect moveEditedRect(GuiLayoutRect rect, int dx, int dy) {
-        int x = Mth.clamp(rect.x() + dx, 0, Math.max(0, this.width - rect.w()));
-        int y = Mth.clamp(rect.y() + dy, 0, Math.max(0, this.height - rect.h()));
-        return new GuiLayoutRect(x, y, rect.w(), rect.h());
-    }
-
-    private GuiLayoutRect resizeEditedRect(GuiLayoutRect rect, int dx, int dy, EditDragMode mode) {
-        int left = rect.x();
-        int right = rect.right();
-        int top = rect.y();
-        int bottom = rect.bottom();
-
-        if (mode.left) {
-            left += dx;
-        }
-        if (mode.right) {
-            right += dx;
-        }
-        if (mode.top) {
-            top += dy;
-        }
-        if (mode.bottom) {
-            bottom += dy;
-        }
-
-        left = Mth.clamp(left, 0, Math.max(0, this.width - EDIT_MIN_SIZE));
-        right = Mth.clamp(right, EDIT_MIN_SIZE, this.width);
-        top = Mth.clamp(top, 0, Math.max(0, this.height - EDIT_MIN_SIZE));
-        bottom = Mth.clamp(bottom, EDIT_MIN_SIZE, this.height);
-
-        if (right - left < EDIT_MIN_SIZE) {
-            if (mode.left) {
-                left = Math.max(0, right - EDIT_MIN_SIZE);
-            } else {
-                right = Math.min(this.width, left + EDIT_MIN_SIZE);
-            }
-        }
-        if (bottom - top < EDIT_MIN_SIZE) {
-            if (mode.top) {
-                top = Math.max(0, bottom - EDIT_MIN_SIZE);
-            } else {
-                bottom = Math.min(this.height, top + EDIT_MIN_SIZE);
-            }
-        }
-
-        return new GuiLayoutRect(left, top, right - left, bottom - top);
-    }
-
-    private EditDragMode editModeAt(GuiLayoutRect rect, double mouseX, double mouseY) {
-        int handle = 5;
-        boolean inExpanded = mouseX >= rect.x() - handle && mouseX <= rect.right() + handle
-                && mouseY >= rect.y() - handle && mouseY <= rect.bottom() + handle;
-        if (!inExpanded) {
-            return EditDragMode.NONE;
-        }
-
-        boolean left = Math.abs(mouseX - rect.x()) <= handle;
-        boolean right = Math.abs(mouseX - rect.right()) <= handle;
-        boolean top = Math.abs(mouseY - rect.y()) <= handle;
-        boolean bottom = Math.abs(mouseY - rect.bottom()) <= handle;
-        if (left && top) {
-            return EditDragMode.RESIZE_TOP_LEFT;
-        }
-        if (right && top) {
-            return EditDragMode.RESIZE_TOP_RIGHT;
-        }
-        if (left && bottom) {
-            return EditDragMode.RESIZE_BOTTOM_LEFT;
-        }
-        if (right && bottom) {
-            return EditDragMode.RESIZE_BOTTOM_RIGHT;
-        }
-        if (left) {
-            return EditDragMode.RESIZE_LEFT;
-        }
-        if (right) {
-            return EditDragMode.RESIZE_RIGHT;
-        }
-        if (top) {
-            return EditDragMode.RESIZE_TOP;
-        }
-        if (bottom) {
-            return EditDragMode.RESIZE_BOTTOM;
-        }
-        return rect.contains(mouseX, mouseY) ? EditDragMode.MOVE : EditDragMode.NONE;
-    }
-
-    private void saveEditedLayout() {
-        if (this.editedRects.isEmpty()) {
-            this.captureEditableLayout();
-        }
-
-        Map<String, GuiLayoutRect> rects = new LinkedHashMap<>();
-        for (String id : LAYOUT_RECT_IDS) {
-            rects.put(id, this.editorRect(id));
-        }
-
-        boolean saved = GuiLayoutLoader.saveBirdGuideLayout(this.width, this.height, rects);
-        this.externalLayout = GuiLayoutLoader.loadBirdGuideLayout();
-        this.editedRects.clear();
-        this.editedRects.putAll(rects);
-        this.showEditMessage(Component.literal(saved ? "Layout saved" : "Layout save failed"));
-    }
-
-    private GuiLayoutRect editorRect(String id) {
-        GuiLayoutRect edited = this.editedRects.get(id);
-        if (edited != null) {
-            return "info_card".equals(id) ? this.infoCardRectFrom(edited) : edited;
-        }
-        return "info_card".equals(id) ? this.infoCardRect() : this.layoutRect(id);
-    }
-
-    private void showEditMessage(Component message) {
-        this.editMessage = message;
-        this.editMessageTicks = 80;
-    }
-
-    private GuiLayoutRect layoutRect(String id) {
-        return this.layoutRect(id, this.fallbackRect(id));
-    }
-
-    private GuiLayoutRect layoutRect(String id, GuiLayoutRect fallback) {
-        GuiLayoutRect edited = this.editedRects.get(id);
-        if (edited != null) {
-            return edited;
-        }
-        if (this.externalLayout == null) {
-            return fallback;
-        }
-        return this.externalLayout.rect(id, fallback, this.width, this.height);
-    }
-
-    private GuiLayoutRect infoCardRect() {
-        return this.infoCardRectFrom(this.layoutRect("info_card"));
-    }
-
-    private GuiLayoutRect infoCardRectFrom(GuiLayoutRect raw) {
-        GuiLayoutRect tagArea = this.layoutRect("tag_area");
-        GuiLayoutRect main = this.layoutRect("main_panel");
-        int targetY = Math.max(raw.y(), tagArea.bottom() + 20);
-        int maxBottom = main.bottom() - 24;
-        int shifted = Math.max(0, targetY - raw.y());
-        int h = Math.max(72, raw.h() - shifted);
-        if (targetY + h > maxBottom) {
-            h = Math.max(72, maxBottom - targetY);
-        }
-        return new GuiLayoutRect(raw.x(), targetY, raw.w(), h);
-    }
-
-    private GuiLayoutRect closeButtonRect() {
-        GuiLayoutRect raw = this.layoutRect("close_button");
-        int minW = Math.max(48, this.font.width(Component.translatable("gui.guaniao.bird_guide.close")) + 16);
-        int minH = 20;
-        int w = Mth.clamp(raw.w(), minW, minW + 18);
-        int h = Mth.clamp(raw.h(), minH, minH + 6);
-        int x = Mth.clamp(raw.centerX() - w / 2, 0, Math.max(0, this.width - w));
-        int y = Mth.clamp(raw.centerY() - h / 2, 0, Math.max(0, this.height - h));
-        return new GuiLayoutRect(x, y, w, h);
-    }
-
-    private GuiLayoutRect configButtonRect() {
-        GuiLayoutRect raw = this.layoutRect("config_button");
-        int minW = 48;
-        int minH = 20;
-        int w = Mth.clamp(raw.w(), minW, minW + 24);
-        int h = Mth.clamp(raw.h(), minH, minH + 6);
-        int x = Mth.clamp(raw.centerX() - w / 2, 0, Math.max(0, this.width - w));
-        int y = Mth.clamp(raw.centerY() - h / 2, 0, Math.max(0, this.height - h));
-        return new GuiLayoutRect(x, y, w, h);
-    }
-
-    private GuiLayoutRect fallbackRect(String id) {
-        return switch (id) {
-            case "header" -> this.scaleBaseRect(64, 25, 480, 65);
-            case "main_panel" -> this.scaleBaseRect(38, 87, 1525, 740);
-            case "species_header" -> this.scaleBaseRect(82, 126, 338, 54);
-            case "species_list" -> this.scaleBaseRect(72, 195, 352, 592);
-            case "detail_header" -> this.scaleBaseRect(468, 126, 461, 130);
-            case "tag_area" -> this.scaleBaseRect(464, 278, 472, 144);
-            case "info_card" -> this.scaleBaseRect(456, 448, 480, 295);
-            case "preview_box" -> this.scaleBaseRect(993, 159, 525, 434);
-            case "pose_buttons" -> this.scaleBaseRect(985, 622, 528, 83);
-            case "config_button" -> this.scaleBaseRect(1155, 750, 180, 51);
-            case "close_button" -> this.scaleBaseRect(1360, 750, 158, 51);
-            default -> new GuiLayoutRect(0, 0, Math.max(1, this.width), Math.max(1, this.height));
-        };
-    }
-
-    private GuiLayoutRect scaleBaseRect(int x, int y, int w, int h) {
-        return new GuiLayoutRect(x, y, w, h).scale(this.width / 1600.0F, this.height / 900.0F);
-    }
-
-    private int listContentX(GuiLayoutRect rect) {
-        return rect.x() + 10;
-    }
-
-    private int listContentW(GuiLayoutRect rect) {
-        return Math.max(20, rect.w() - 20);
-    }
-
-    private int listRowsY(GuiLayoutRect rect) {
-        return rect.y() + 4;
-    }
-
-    private int listRowH(GuiLayoutRect rect) {
-        if (ENTRIES.isEmpty()) {
-            return 28;
-        }
-        int gap = 4;
-        return Mth.clamp((rect.h() - gap * Math.max(0, ENTRIES.size() - 1)) / ENTRIES.size(), 26, 42);
-    }
-
-    private int listRowStride(GuiLayoutRect rect) {
-        return this.listRowH(rect) + 4;
-    }
-
-    private int visibleListRows(GuiLayoutRect rect) {
-        int stride = this.listRowStride(rect);
-        if (stride <= 0) {
-            return ENTRIES.size();
-        }
-        return Math.max(1, Math.min(ENTRIES.size(), (rect.h() - 6) / stride));
-    }
-
-    private int maxListScroll(GuiLayoutRect rect) {
-        return Math.max(0, ENTRIES.size() - this.visibleListRows(rect));
-    }
-
-    private void renderSpeciesScrollBar(GuiGraphics graphics, GuiLayoutRect list) {
-        int maxScroll = this.maxListScroll(list);
-        if (maxScroll <= 0) {
-            return;
-        }
-        int barX = list.right() - 6;
-        int barTop = this.listRowsY(list);
-        int barBottom = list.bottom() - 6;
-        int barH = Math.max(1, barBottom - barTop);
-        int visibleRows = this.visibleListRows(list);
-        int thumbH = Mth.clamp(barH * visibleRows / ENTRIES.size(), 14, barH);
-        int thumbY = barTop + (barH - thumbH) * this.listScrollIndex / maxScroll;
-        graphics.fill(barX, barTop, barX + 2, barBottom, 0xAA0B1013);
-        graphics.fill(barX - 1, thumbY, barX + 3, thumbY + thumbH, 0xFFB98B4B);
-        graphics.fill(barX, thumbY + 1, barX + 2, thumbY + thumbH - 1, 0xFFE8C36D);
-    }
-
-    private int detailTextHeight(BirdGuideEntry entry, int textW) {
-        int height = 0;
-        int safeWidth = Math.max(1, textW);
-        for (String section : entry.sections()) {
-            MutableComponent body = Component.translatable("gui.guaniao.bird_guide.entry." + entry.id() + "." + section + ".body");
-            height += this.font.split((FormattedText)body, safeWidth).size() * 12 + 7;
-        }
-        return height;
-    }
-
-    private int maxTextScroll(BirdGuideEntry entry) {
-        GuiLayoutRect note = this.infoCardRect();
-        int visibleHeight = Math.max(1, note.h() - 52);
-        return Math.max(0, this.detailTextHeight(entry, Math.max(1, note.w() - 28)) - visibleHeight + 8);
-    }
-
-    private int poseButtonH(GuiLayoutRect rect) {
-        return Math.max(24, Math.min(34, rect.h()));
-    }
-
-    private int poseButtonGap() {
-        return 5;
-    }
-
-    private int poseButtonW(GuiLayoutRect rect) {
-        int natural = (rect.w() - this.poseButtonGap() * (POSES.length - 1)) / POSES.length;
-        return natural < 28 ? Math.max(1, natural) : Mth.clamp(natural, 28, 72);
-    }
-
-    private int poseButtonX(GuiLayoutRect rect, int index) {
-        int buttonW = this.poseButtonW(rect);
-        int totalW = buttonW * POSES.length + this.poseButtonGap() * (POSES.length - 1);
-        int startX = rect.x() + Math.max(0, (rect.w() - totalW) / 2);
-        return startX + index * (buttonW + this.poseButtonGap());
-    }
-
-    private int poseButtonIndexAt(double mouseX, double mouseY) {
-        GuiLayoutRect rect = this.layoutRect("pose_buttons");
-        int buttonH = this.poseButtonH(rect);
-        if (mouseY < rect.y() || mouseY > rect.y() + buttonH) {
-            return -1;
-        }
-        int buttonW = this.poseButtonW(rect);
-        for (int i = 0; i < POSES.length; i++) {
-            int x = this.poseButtonX(rect, i);
-            if (mouseX >= x && mouseX <= x + buttonW) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    private boolean isNightHeronSelected() {
-        return "night_heron".equals(this.selectedEntry(this.selectedIndex).id());
-    }
-
-    private void renderLayoutDebug(GuiGraphics graphics) {
-        for (String id : LAYOUT_RECT_IDS) {
-            GuiLayoutRect rect = switch (id) {
-                case "close_button" -> this.closeButtonRect();
-                case "config_button" -> this.configButtonRect();
-                default -> this.editorRect(id);
-            };
-            boolean active = id.equals(this.activeLayoutRectId);
-            int color = active ? EDIT_ACTIVE : "main_panel".equals(id) ? 0xAAB7F0FF : 0xAA9DD6E8;
-            this.drawThinBorder(graphics, rect.x(), rect.y(), rect.w(), rect.h(), color);
-            this.drawFittingString(graphics, Component.literal(id), rect.x() + 3, rect.y() + 3, rect.w() - 6, 0.55F, color);
-            if (this.layoutEditMode) {
-                this.drawEditHandles(graphics, rect, active ? EDIT_ACTIVE : EDIT_HANDLE);
-            }
-        }
-    }
-
-    private void renderLayoutEditHelp(GuiGraphics graphics) {
-        Component help = Component.literal("Layout Edit  Ctrl+E exit  Drag move  Drag edge resize  Ctrl+S save  Ctrl+R reload");
-        int x = 8;
-        int y = this.height - 19;
-        int w = Math.min(this.width - 16, this.font.width(help) + 14);
-        graphics.fill(x, y, x + w, y + 14, 0xAA06131B);
-        this.drawThinBorder(graphics, x, y, w, 14, BORDER_SOFT);
-        this.drawFittingString(graphics, help, x + 7, y + 3, w - 14, 1.0F, ACCENT_TEXT_COLOR);
-
-        if (this.editMessageTicks > 0) {
-            int messageW = Math.min(this.width - 16, this.font.width(this.editMessage) + 14);
-            int messageX = this.width - messageW - 8;
-            graphics.fill(messageX, y - 17, messageX + messageW, y - 3, 0xAA06131B);
-            this.drawThinBorder(graphics, messageX, y - 17, messageW, 14, BORDER_SOFT);
-            this.drawFittingString(graphics, this.editMessage, messageX + 7, y - 14, messageW - 14, 1.0F, TEXT_COLOR);
-        }
-    }
-
-    private void drawEditHandles(GuiGraphics graphics, GuiLayoutRect rect, int color) {
-        int size = 4;
-        this.drawHandle(graphics, rect.x(), rect.y(), size, color);
-        this.drawHandle(graphics, rect.centerX(), rect.y(), size, color);
-        this.drawHandle(graphics, rect.right(), rect.y(), size, color);
-        this.drawHandle(graphics, rect.x(), rect.centerY(), size, color);
-        this.drawHandle(graphics, rect.right(), rect.centerY(), size, color);
-        this.drawHandle(graphics, rect.x(), rect.bottom(), size, color);
-        this.drawHandle(graphics, rect.centerX(), rect.bottom(), size, color);
-        this.drawHandle(graphics, rect.right(), rect.bottom(), size, color);
-    }
-
-    private void drawHandle(GuiGraphics graphics, int centerX, int centerY, int size, int color) {
-        graphics.fill(centerX - size / 2, centerY - size / 2, centerX + size / 2 + 1, centerY + size / 2 + 1, color);
-    }
-
-    private void drawAtlas(GuiGraphics graphics, int x, int y, int w, int h, int u, int v, int uw, int vh) {
-        if (w <= 0 || h <= 0 || uw <= 0 || vh <= 0) {
-            return;
-        }
-        graphics.pose().pushPose();
-        graphics.pose().translate((float)x, (float)y, 0.0F);
-        graphics.pose().scale(w / (float)uw, h / (float)vh, 1.0F);
-        graphics.blit(UI_ATLAS, 0, 0, u, v, uw, vh, UI_ATLAS_W, UI_ATLAS_H);
-        graphics.pose().popPose();
-    }
-
-    private void drawPoseButtonFromAtlas(GuiGraphics graphics, int index, int x, int y, int w, int h, boolean highlighted) {
-        int[] normalX = {930, 1030, 1131, 1231};
-        int[] selectedX = {929, 1030, 1131, 1231};
-        int safeIndex = Mth.clamp(index, 0, POSES.length - 1);
-        int u = highlighted ? selectedX[safeIndex] : normalX[safeIndex];
-        int v = highlighted ? 681 : 617;
-        this.drawAtlas(graphics, x, y, w, h, u, v, 96, 50);
-    }
-
-    private void drawDarkGuidePanel(GuiGraphics graphics, int x, int y, int w, int h) {
-        graphics.fill(x + 4, y + 5, x + w + 4, y + h + 5, 0x77000000);
-        graphics.fill(x, y, x + w, y + h, 0xFF6D4D2B);
-        graphics.fill(x + 2, y + 2, x + w - 2, y + h - 2, 0xFF1B252A);
-        graphics.fill(x + 5, y + 5, x + w - 5, y + h - 5, 0xEE121A1E);
-        graphics.fill(x + 5, y + 5, x + w - 5, y + 7, 0xFF45535A);
-        graphics.fill(x + 5, y + h - 7, x + w - 5, y + h - 5, 0xFF0B1013);
-        graphics.fill(x, y, x + 8, y + 8, 0xFFB98B4B);
-        graphics.fill(x + w - 8, y, x + w, y + 8, 0xFFB98B4B);
-        graphics.fill(x, y + h - 8, x + 8, y + h, 0xFFB98B4B);
-        graphics.fill(x + w - 8, y + h - 8, x + w, y + h, 0xFFB98B4B);
-        this.drawPixelRule(graphics, x + 14, x + w - 14, y + 35);
-    }
-
-    private void drawBackgroundDither(GuiGraphics graphics) {
-        for (int y = 0; y < this.height; y += 18) {
-            for (int x = (y / 18) % 2 == 0 ? 0 : 9; x < this.width; x += 36) {
-                graphics.fill(x, y, x + 2, y + 2, 0x18000000);
-            }
-        }
-    }
-
-    private void drawPixelBookPanel(GuiGraphics graphics, int x, int y, int w, int h) {
-        graphics.fill(x + 4, y + 5, x + w + 4, y + h + 5, 0x88000000);
-        graphics.fill(x, y, x + w, y + h, 0xFF4B341F);
-        graphics.fill(x + 4, y + 4, x + w - 4, y + h - 4, 0xFF0A0F12);
-        graphics.fill(x + 8, y + 8, x + w - 8, y + h - 8, 0xD7121B20);
-        graphics.fill(x + 10, y + 10, x + w - 10, y + 12, 0xFF775331);
-        graphics.fill(x + 10, y + h - 12, x + w - 10, y + h - 10, 0xFF775331);
-        graphics.fill(x + 9, y + 9, x + 11, y + h - 9, 0xFF775331);
-        graphics.fill(x + w - 11, y + 9, x + w - 9, y + h - 9, 0xFF775331);
-    }
-
-    private void drawTitleTab(GuiGraphics graphics, int x, int y, int w, int h) {
-        int tabW = Math.min(w, 118);
-        graphics.fill(x + 2, y + 2, x + tabW + 2, y + h + 7, 0x66000000);
-        graphics.fill(x, y, x + tabW, y + h + 5, BORDER);
-        graphics.fill(x + 2, y + 2, x + tabW - 2, y + h + 3, 0xFF26313A);
-        graphics.fill(x + 3, y + 3, x + tabW - 3, y + 5, 0xFF52616B);
-    }
-
-    private void drawGuideStickers(GuiGraphics graphics, GuiLayoutRect main) {
-        this.drawTapeSticker(graphics, main.x() + 28, main.y() + 10, 28, 8, 0xEEDBB476);
-        this.drawTapeSticker(graphics, main.right() - 68, main.y() + 12, 34, 8, 0xE7CDA36E);
-        this.drawLeafStamp(graphics, main.right() - 36, main.bottom() - 38, 0x884D7548);
-        this.drawFootprints(graphics, main.x() + 30, main.bottom() - 38, 0x705F4327);
-        this.drawPixelFeather(graphics, main.x() + 112, main.y() + 13, 0xAFFFF2D0, 0x8A8B6D4E);
-    }
-
-    private void drawPaperPanel(GuiGraphics graphics, int x, int y, int w, int h, boolean shadow) {
-        if (shadow) {
-            graphics.fill(x + 2, y + 3, x + w + 2, y + h + 3, 0x4A000000);
-        }
-        graphics.fill(x, y, x + w, y + h, BORDER);
-        graphics.fill(x + 1, y + 1, x + w - 1, y + h - 1, PAPER_DARK);
-        graphics.fill(x + 3, y + 3, x + w - 3, y + h - 3, PAPER_SOFT);
-        graphics.fill(x + 4, y + 4, x + w - 4, y + 5, PAPER_LIGHT);
-        this.drawPaperNoise(graphics, x + 4, y + 5, w - 8, h - 9);
-    }
-
-    private void drawPaperNoise(GuiGraphics graphics, int x, int y, int w, int h) {
-        if (w <= 6 || h <= 6) {
-            return;
-        }
-        for (int py = y + 4; py < y + h - 4; py += 17) {
-            for (int px = x + 5 + (py % 3); px < x + w - 5; px += 23) {
-                graphics.fill(px, py, px + 1, py + 1, 0x26976F3F);
-            }
-        }
-    }
-
-    private void drawPaperLabel(GuiGraphics graphics, int x, int y, int w, int h) {
-        graphics.fill(x + 1, y + 2, x + w + 1, y + h + 2, 0x55000000);
-        graphics.fill(x, y, x + w, y + h, BORDER);
-        graphics.fill(x + 2, y + 2, x + w - 2, y + h - 2, PAPER_LIGHT);
-    }
-
-    private void drawDisplayCase(GuiGraphics graphics, int x, int y, int w, int h) {
-        graphics.fill(x + 3, y + 4, x + w + 3, y + h + 4, 0x66000000);
-        graphics.fill(x, y, x + w, y + h, BORDER);
-        graphics.fill(x + 2, y + 2, x + w - 2, y + h - 2, 0xFF70543A);
-        graphics.fill(x + 4, y + 4, x + w - 4, y + h - 4, 0xFF172127);
-        graphics.fill(x + 5, y + 5, x + w - 5, y + 7, 0xFF3B5962);
-        graphics.fill(x + 5, y + 5, x + 7, y + h - 5, 0xFF3B5962);
-        this.drawTapeSticker(graphics, x + w - 31, y - 4, 24, 8, 0xEAD7A66C);
-    }
-
-    private void drawPixelButton(GuiGraphics graphics, int x, int y, int w, int h, boolean selected, boolean hovered) {
-        int inner = selected ? BLUE_HIGHLIGHT : hovered ? BLUE_HOVER : PAPER_LIGHT;
-        graphics.fill(x + 2, y + 3, x + w + 2, y + h + 3, 0x4A000000);
-        graphics.fill(x, y, x + w, y + h, BORDER);
-        graphics.fill(x + 1, y + 1, x + w - 1, y + h - 1, PAPER_DARK);
-        graphics.fill(x + 3, y + 3, x + w - 3, y + h - 3, inner);
-        if (selected) {
-            graphics.fill(x + 4, y + 4, x + w - 4, y + 6, 0xFFFFE89B);
-        }
-    }
-
-    private void drawPixelListRow(GuiGraphics graphics, int x, int y, int w, int h, boolean selected, boolean hovered) {
-        if (selected || hovered) {
-            int fill = selected ? BLUE_HIGHLIGHT : BLUE_HOVER;
-            graphics.fill(x + 1, y + 2, x + w + 1, y + h + 2, 0x33000000);
-            graphics.fill(x, y, x + w, y + h, BORDER);
-            graphics.fill(x + 2, y + 2, x + w - 2, y + h - 2, fill);
-        } else {
-            graphics.fill(x, y, x + w, y + h, PANEL_FAINT);
-            graphics.fill(x, y + h - 1, x + w, y + h, 0x336E5636);
-        }
-    }
-
-    private void drawPixelRule(GuiGraphics graphics, int x1, int x2, int y) {
-        graphics.hLine(x1, x2, y, 0x7B6D4F32);
-        for (int x = x1; x < x2; x += 9) {
-            graphics.fill(x, y + 1, Math.min(x + 3, x2), y + 2, 0x44F3D99C);
-        }
-    }
-
-    private void drawTapeSticker(GuiGraphics graphics, int x, int y, int w, int h, int color) {
-        graphics.fill(x, y, x + w, y + h, color);
-        graphics.fill(x + 1, y + 1, x + w - 1, y + 2, 0x44FFFFFF);
-        for (int px = x + 3; px < x + w - 2; px += 7) {
-            graphics.fill(px, y + 2, px + 1, y + h - 1, 0x24805D3A);
-        }
-    }
-
-    private void drawFootprints(GuiGraphics graphics, int x, int y, int color) {
-        for (int i = 0; i < 3; i++) {
-            int ox = x + i * 7;
-            int oy = y + (i % 2) * 4;
-            graphics.fill(ox, oy + 3, ox + 2, oy + 5, color);
-            graphics.fill(ox + 2, oy, ox + 3, oy + 1, color);
-            graphics.fill(ox + 3, oy + 2, ox + 4, oy + 3, color);
-        }
-    }
-
-    private void drawLeafStamp(GuiGraphics graphics, int x, int y, int color) {
-        graphics.fill(x + 5, y, x + 8, y + 2, color);
-        graphics.fill(x + 3, y + 2, x + 10, y + 5, color);
-        graphics.fill(x + 1, y + 5, x + 8, y + 8, color);
-        graphics.fill(x + 8, y + 5, x + 12, y + 7, color);
-        graphics.fill(x + 5, y + 8, x + 7, y + 13, color);
-        graphics.fill(x + 7, y + 10, x + 11, y + 11, color);
-    }
-
-    private void drawPixelFeather(GuiGraphics graphics, int x, int y, int fill, int shade) {
-        graphics.fill(x + 8, y, x + 12, y + 2, fill);
-        graphics.fill(x + 6, y + 2, x + 14, y + 4, fill);
-        graphics.fill(x + 4, y + 4, x + 15, y + 6, fill);
-        graphics.fill(x + 3, y + 6, x + 13, y + 8, fill);
-        graphics.fill(x + 2, y + 8, x + 10, y + 10, fill);
-        graphics.fill(x, y + 10, x + 7, y + 12, fill);
-        graphics.fill(x + 9, y + 2, x + 11, y + 11, shade);
-        graphics.fill(x + 4, y + 12, x + 6, y + 15, shade);
-        graphics.fill(x + 1, y + 7, x + 3, y + 8, shade);
-    }
-
-    private void drawSoftRect(GuiGraphics graphics, int x, int y, int w, int h, int fill, int border) {
-        graphics.fill(x, y, x + w, y + h, fill);
-        this.drawThinBorder(graphics, x, y, w, h, border);
-    }
-
-    private void drawThinBorder(GuiGraphics graphics, int x, int y, int w, int h, int color) {
-        graphics.hLine(x, x + w, y, color);
-        graphics.hLine(x, x + w, y + h, color);
-        graphics.vLine(x, y, y + h, color);
-        graphics.vLine(x + w, y, y + h, color);
-    }
-
-    private void drawColorDot(GuiGraphics graphics, int x, int y, int color) {
-        graphics.fill(x, y + 1, x + 4, y + 3, color);
-        graphics.fill(x + 1, y, x + 3, y + 4, color);
-    }
-
-    private void drawCenteredFittingString(GuiGraphics graphics, Component component, int x, int y, int w, int h, int color) {
-        int textW = this.font.width(component);
-        if (textW <= 0) {
-            return;
-        }
-        float scale = Math.min(1.0F, Math.max(1.0F, w - 10) / (float)textW);
-        int scaledW = Math.round(textW * scale);
-        int scaledH = Math.round(8.0F * scale);
-        int drawX = x + Math.max(0, (w - scaledW) / 2);
-        int drawY = y + Math.max(0, (h - scaledH) / 2);
-        graphics.enableScissor(x + 1, y + 1, x + w - 1, y + h - 1);
-        this.drawScaledString(graphics, component, drawX, drawY, scale, color);
-        graphics.disableScissor();
-    }
-
-    private void drawFittingString(GuiGraphics graphics, Component component, int x, int y, int maxW, float maxScale, int color) {
-        int textW = this.font.width(component);
-        if (textW <= 0 || maxW <= 0) {
-            return;
-        }
-        float scale = Math.min(maxScale, maxW / (float)textW);
-        this.drawScaledString(graphics, component, x, y, scale, color);
-    }
-
-    private void drawScaledString(GuiGraphics graphics, Component component, int x, int y, float scale, int color) {
-        graphics.pose().pushPose();
-        graphics.pose().translate((float)x, (float)y, 0.0F);
-        graphics.pose().scale(scale, scale, 1.0F);
-        graphics.drawString(this.font, component, 0, 0, color, false);
-        graphics.pose().popPose();
-    }
-
     private enum PreviewMotion {
         PERCH,
         WALK,
@@ -1644,31 +948,6 @@ public class BirdGuideScreen extends Screen {
 
         private String translationKey() {
             return "gui.guaniao.bird_guide.pose." + this.key;
-        }
-    }
-
-    private enum EditDragMode {
-        NONE(false, false, false, false),
-        MOVE(false, false, false, false),
-        RESIZE_LEFT(true, false, false, false),
-        RESIZE_RIGHT(false, true, false, false),
-        RESIZE_TOP(false, false, true, false),
-        RESIZE_BOTTOM(false, false, false, true),
-        RESIZE_TOP_LEFT(true, false, true, false),
-        RESIZE_TOP_RIGHT(false, true, true, false),
-        RESIZE_BOTTOM_LEFT(true, false, false, true),
-        RESIZE_BOTTOM_RIGHT(false, true, false, true);
-
-        private final boolean left;
-        private final boolean right;
-        private final boolean top;
-        private final boolean bottom;
-
-        EditDragMode(boolean left, boolean right, boolean top, boolean bottom) {
-            this.left = left;
-            this.right = right;
-            this.top = top;
-            this.bottom = bottom;
         }
     }
 

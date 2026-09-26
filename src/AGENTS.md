@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Scope
-This is a Minecraft Forge 1.20.1 Java mod project.
+This is a Minecraft NeoForge 1.21.1 Java mod project.
 
 ## Read scope
 Prefer reading only:
@@ -29,6 +29,8 @@ When running Gradle, prefer:
 - .\gradlew.bat runClient
 
 ## 版本号规则
+
+本 NeoForge 迁移工程的 `mod_version` 与对应 Forge 1.20.1 内容版本保持一致（当前迁移对应 3.5.0）。迁移修复不单独递增版本号；更新版本时读取原版当前值，并同步本工程 README.md、CHANGELOG.md 和迁移指南。以下计数约定用于理解原版版本号，不覆盖迁移版与原版同步的要求。
 
 使用三段版本号：主版本.鸟类版本.修复版本。遵循作者约定，不套用自动清零次级版本的规则。
 

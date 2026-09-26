@@ -28,6 +28,6 @@ public final class WoodcockDefinition {
     }
 
     private static ResourceLocation resource(String path) {
-        return new ResourceLocation(GuaniaoMod.MOD_ID, path);
+        return ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, path);
     }
 }

@@ -11,10 +11,10 @@
 
 ## 开发环境
 
-- Minecraft 1.20.1
-- Forge 47.2.x
-- Java 17
-- GeckoLib 4.4.x
+- Minecraft 1.21.1
+- NeoForge 21.1.248 / ModDevGradle 2.0.144
+- Java 21
+- GeckoLib NeoForge 4.6.6
 
 构建命令：
 
@@ -52,6 +52,8 @@
 - 修改 `geo`、`animations`、模型配套纹理前必须先获得作者明确同意。
 
 ### 验证
+
+`build` 会通过 `check` 在独立 JVM 中运行 `src/test/java` 下的所有 `*Test.java` 主方法测试，并检查正式 JAR 的版本信息、NeoForge 元数据、Mixin 注册和 JSON 资源。新增这类测试时须提供 `public static void main(String[] args)`；失败时抛出异常或返回非零退出码。仅运行这些回归测试可使用 `gradlew.bat regressionTest`（Linux / macOS 使用 `./gradlew regressionTest`）。真实世界的服务端集成检查使用 `gradlew.bat runGameTestServer`。`src/gameTest` 是隔离测试模组，不会进入发行 JAR。客户端渲染及相机流程检查使用 `runClientSmoke`，需要先将测试世界放入 `run-client-smoke/saves/port-test`。这些自动检查不能替代长时间多人实机验证。
 
 Pull Request 至少应包含：
 

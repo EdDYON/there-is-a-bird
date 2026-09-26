@@ -67,7 +67,7 @@ public final class SkyBirdEcology {
                                                 TagKey<Biome> habitat) {
         for (int[] offset : HABITAT_SAMPLE_OFFSETS) {
             BlockPos sample = origin.offset(offset[0], 0, offset[1]);
-            if (!level.hasChunk(sample.getX() >> 4, sample.getZ() >> 4)) {
+            if (!level.getChunkSource().hasChunk(sample.getX() >> 4, sample.getZ() >> 4)) {
                 continue;
             }
             Holder<Biome> biome = level.getBiome(sample);
@@ -122,7 +122,7 @@ public final class SkyBirdEcology {
                                  int baseWeight, int maxFlocks, Activity activity) {
         TagKey<Biome> habitat = TagKey.create(
                 Registries.BIOME,
-                new ResourceLocation(GuaniaoMod.MOD_ID, habitatPath)
+                ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, habitatPath)
         );
         PROFILES.put(species, new Profile(habitat, baseWeight, maxFlocks, activity));
     }

@@ -4,7 +4,7 @@ import EdDYON.guaniao.GuaniaoMod;
 import EdDYON.guaniao.config.BirdSpecies;
 import java.util.List;
 import java.util.Map;
-import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -91,12 +91,12 @@ public final class BirdAdvancements {
     }
 
     public static boolean grant(ServerPlayer player, ResourceLocation advancementId) {
-        Advancement advancement = player.server.getAdvancements().getAdvancement(advancementId);
+        AdvancementHolder advancement = player.server.getAdvancements().get(advancementId);
         return advancement != null && player.getAdvancements().award(advancement, CRITERION);
     }
 
     public static boolean isDone(ServerPlayer player, ResourceLocation advancementId) {
-        Advancement advancement = player.server.getAdvancements().getAdvancement(advancementId);
+        AdvancementHolder advancement = player.server.getAdvancements().get(advancementId);
         return advancement != null && player.getAdvancements().getOrStartProgress(advancement).isDone();
     }
 
@@ -117,6 +117,6 @@ public final class BirdAdvancements {
     }
 
     private static ResourceLocation id(String path) {
-        return new ResourceLocation(GuaniaoMod.MOD_ID, "husbandry/" + path);
+        return ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, "husbandry/" + path);
     }
 }

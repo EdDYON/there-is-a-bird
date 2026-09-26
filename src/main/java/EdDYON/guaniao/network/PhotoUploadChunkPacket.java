@@ -2,12 +2,18 @@ package EdDYON.guaniao.network;
 
 import EdDYON.guaniao.content.camera.PhotoTransferLimits;
 import java.util.UUID;
-import java.util.function.Supplier;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 
-public record PhotoUploadChunkPacket(UUID uploadId, int chunkIndex, byte[] data) {
+public record PhotoUploadChunkPacket(UUID uploadId, int chunkIndex, byte[] data) implements CustomPacketPayload {
+    public static final CustomPacketPayload.Type<PhotoUploadChunkPacket> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath("guaniao", "photo_upload_chunk"));
+
+    @Override
+    public CustomPacketPayload.Type<PhotoUploadChunkPacket> type() { return TYPE; }
+
     public static void encode(PhotoUploadChunkPacket packet, FriendlyByteBuf buffer) {
         if (packet.data.length <= 0 || packet.data.length > PhotoTransferLimits.MAX_CHUNK_BYTES) {
             throw new IllegalArgumentException("Invalid photograph chunk size");
@@ -25,12 +31,10 @@ public record PhotoUploadChunkPacket(UUID uploadId, int chunkIndex, byte[] data)
         );
     }
 
-    public static void handle(PhotoUploadChunkPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
-        NetworkEvent.Context context = contextSupplier.get();
-        ServerPlayer player = context.getSender();
+    public static void handle(PhotoUploadChunkPacket packet, IPayloadContext context) {
+        ServerPlayer player = (context.player() instanceof ServerPlayer serverPlayer ? serverPlayer : null);
         if (player != null) {
             PhotoUploadManager.acceptChunk(player, packet.uploadId, packet.chunkIndex, packet.data);
         }
-        context.setPacketHandled(true);
     }
 }

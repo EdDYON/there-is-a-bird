@@ -3,13 +3,18 @@ package EdDYON.guaniao.network;
 import EdDYON.guaniao.client.config.BirdConfigClient;
 import EdDYON.guaniao.config.BirdConfigData;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import EdDYON.guaniao.util.ClientActions;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 
-import java.util.function.Supplier;
 
-public final class OpenBirdConfigPacket {
+public final class OpenBirdConfigPacket implements CustomPacketPayload {
+    public static final CustomPacketPayload.Type<OpenBirdConfigPacket> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath("guaniao", "open_bird_config"));
+
+    @Override
+    public CustomPacketPayload.Type<OpenBirdConfigPacket> type() { return TYPE; }
+
     private final BirdConfigData data;
 
     public OpenBirdConfigPacket(BirdConfigData data) {
@@ -24,12 +29,8 @@ public final class OpenBirdConfigPacket {
         return new OpenBirdConfigPacket(BirdConfigPacketCodec.decode(buffer));
     }
 
-    public static void handle(OpenBirdConfigPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
-        NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
-                Dist.CLIENT,
-                () -> () -> BirdConfigClient.open(packet.data)
+    public static void handle(OpenBirdConfigPacket packet, IPayloadContext context) {
+        context.enqueueWork(() -> ClientActions.run(() -> () -> BirdConfigClient.open(packet.data)
         ));
-        context.setPacketHandled(true);
     }
 }

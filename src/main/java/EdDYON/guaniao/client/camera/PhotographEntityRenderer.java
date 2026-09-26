@@ -15,7 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix4f;
 
 public class PhotographEntityRenderer extends EntityRenderer<PhotographEntity> {
-    private static final ResourceLocation FRAME_TEXTURE = new ResourceLocation(GuaniaoMod.MOD_ID, "textures/entity/photograph_frame.png");
+    private static final ResourceLocation FRAME_TEXTURE = ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, "textures/entity/photograph_frame.png");
 
     public PhotographEntityRenderer(EntityRendererProvider.Context context) {
         super(context);
@@ -49,9 +49,9 @@ public class PhotographEntityRenderer extends EntityRenderer<PhotographEntity> {
     }
 
     private static void renderQuad(VertexConsumer consumer, Matrix4f matrix, float x, float y, float size, float z, int packedLight) {
-        consumer.vertex(matrix, x, y + size, z).color(255, 255, 255, 255).uv(0.0F, 1.0F).uv2(packedLight).endVertex();
-        consumer.vertex(matrix, x + size, y + size, z).color(255, 255, 255, 255).uv(1.0F, 1.0F).uv2(packedLight).endVertex();
-        consumer.vertex(matrix, x + size, y, z).color(255, 255, 255, 255).uv(1.0F, 0.0F).uv2(packedLight).endVertex();
-        consumer.vertex(matrix, x, y, z).color(255, 255, 255, 255).uv(0.0F, 0.0F).uv2(packedLight).endVertex();
+        consumer.addVertex(matrix, x, y + size, z).setColor(255, 255, 255, 255).setUv(0.0F, 1.0F).setLight(packedLight);
+        consumer.addVertex(matrix, x + size, y + size, z).setColor(255, 255, 255, 255).setUv(1.0F, 1.0F).setLight(packedLight);
+        consumer.addVertex(matrix, x + size, y, z).setColor(255, 255, 255, 255).setUv(1.0F, 0.0F).setLight(packedLight);
+        consumer.addVertex(matrix, x, y, z).setColor(255, 255, 255, 255).setUv(0.0F, 0.0F).setLight(packedLight);
     }
 }

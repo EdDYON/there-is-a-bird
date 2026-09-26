@@ -35,17 +35,17 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.level.LevelEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.tick.*;
+import net.neoforged.neoforge.event.level.LevelEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /** One controller per level; bounded, loaded-chunk-only waves rather than larger spawn groups. */
-@Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
+@EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
 public final class SparrowTideManager {
     private static final TagKey<Biome> HABITAT = TagKey.create(Registries.BIOME,
-            new ResourceLocation(GuaniaoMod.MOD_ID, "sparrow_tide_habitat"));
+            ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, "sparrow_tide_habitat"));
     private static final int MAX_EVENTS_PER_LEVEL = 128;
     private static final int MAX_ACTIVE_EVENTS = 2;
     private static final Map<ServerLevel, LevelTides> LEVELS = new WeakHashMap<>();
@@ -54,10 +54,7 @@ public final class SparrowTideManager {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) {
-            return;
-        }
+    public static void onServerTick(ServerTickEvent.Post event) {
         for (ServerLevel level : event.getServer().getAllLevels()) {
             if (level.dimension() != Level.OVERWORLD || level.getGameTime() % 5L != 0L) {
                 continue;
@@ -239,7 +236,7 @@ public final class SparrowTideManager {
         bird.moveTo(start.x, start.y, start.z, yaw, 0.0F);
         bird.setYHeadRot(yaw);
         bird.yBodyRot = yaw;
-        bird.finalizeSpawn(level, level.getCurrentDifficultyAt(ground), MobSpawnType.NATURAL, null, null);
+        bird.finalizeSpawn(level, level.getCurrentDifficultyAt(ground), MobSpawnType.NATURAL, null);
         if (!level.noCollision(bird, bird.getBoundingBox()) || (flying && !bird.startFlybyFlight(target))) {
             return;
         }

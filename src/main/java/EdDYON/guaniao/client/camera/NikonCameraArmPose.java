@@ -6,13 +6,13 @@ import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
 
 public final class NikonCameraArmPose {
-    private static final HumanoidModel.ArmPose CAMERA_HOLD = HumanoidModel.ArmPose.create("guaniao_camera_hold", true, NikonCameraArmPose::applyCameraHold);
+    public static final net.neoforged.fml.common.asm.enumextension.EnumProxy<HumanoidModel.ArmPose> CAMERA_HOLD = new net.neoforged.fml.common.asm.enumextension.EnumProxy<>(HumanoidModel.ArmPose.class, true, (net.neoforged.neoforge.client.IArmPoseTransformer) NikonCameraArmPose::applyCameraHold);
 
     private NikonCameraArmPose() {
     }
 
     public static HumanoidModel.ArmPose cameraHold() {
-        return CAMERA_HOLD;
+        return CAMERA_HOLD.getValue();
     }
 
     private static void applyCameraHold(HumanoidModel<?> model, LivingEntity entity, HumanoidArm arm) {

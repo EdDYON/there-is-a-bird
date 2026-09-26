@@ -283,7 +283,7 @@ final class KiwiHabitatUtil {
                 || state.is(BlockTags.LOGS)
                 || state.is(Blocks.FERN)
                 || state.is(Blocks.LARGE_FERN)
-                || state.is(Blocks.GRASS)
+                || state.is(Blocks.SHORT_GRASS)
                 || state.is(Blocks.TALL_GRASS);
     }
 

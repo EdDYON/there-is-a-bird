@@ -7,15 +7,14 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.level.biome.MobSpawnSettings;
-import net.minecraftforge.event.entity.living.MobSpawnEvent;
-import net.minecraftforge.event.level.LevelEvent;
-import net.minecraftforge.eventbus.api.Event;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.living.MobSpawnEvent;
+import net.neoforged.neoforge.event.level.LevelEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 import java.util.ArrayList;
 
-@Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
+@EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
 public final class BirdSpawnConfigEvents {
     private BirdSpawnConfigEvents() {
     }
@@ -67,21 +66,21 @@ public final class BirdSpawnConfigEvents {
         // a ServerLevel, which bypasses the live population tracker. Runtime
         // natural spawning repopulates the same habitats under the configured caps.
         if (event.getSpawnType() == MobSpawnType.CHUNK_GENERATION) {
-            event.setResult(Event.Result.DENY);
+            event.setResult(MobSpawnEvent.SpawnPlacementCheck.Result.FAIL);
             return;
         }
         if (!BirdConfigManager.allowsNaturalSpawning(species)) {
-            event.setResult(Event.Result.DENY);
+            event.setResult(MobSpawnEvent.SpawnPlacementCheck.Result.FAIL);
             return;
         }
         if (species.requiresOpenSkyForNaturalSpawn() && !event.getLevel().canSeeSky(event.getPos())) {
-            event.setResult(Event.Result.DENY);
+            event.setResult(MobSpawnEvent.SpawnPlacementCheck.Result.FAIL);
             return;
         }
         if (event.getLevel() instanceof ServerLevel level) {
             if (!isBelowGlobalCaps(level, event.getPos().getX(), event.getPos().getZ())
                     || !isBelowSpeciesCap(level, event.getPos().getX(), event.getPos().getZ(), species)) {
-                event.setResult(Event.Result.DENY);
+                event.setResult(MobSpawnEvent.SpawnPlacementCheck.Result.FAIL);
             }
         }
     }

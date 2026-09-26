@@ -28,8 +28,8 @@ public class BirdDroppingSplatRenderer extends GeoEntityRenderer<BirdDroppingSpl
     }
 
     @Override
-    public void preRender(PoseStack poseStack, BirdDroppingSplatEntity animatable, BakedGeoModel model, MultiBufferSource bufferSource, VertexConsumer buffer, boolean isReRender, float partialTick, int packedLight, int packedOverlay, float red, float green, float blue, float alpha) {
-        super.preRender(poseStack, animatable, model, bufferSource, buffer, isReRender, partialTick, packedLight, packedOverlay, red, green, blue, alpha * animatable.getFadeAlpha());
+    public void preRender(PoseStack poseStack, BirdDroppingSplatEntity animatable, BakedGeoModel model, MultiBufferSource bufferSource, VertexConsumer buffer, boolean isReRender, float partialTick, int packedLight, int packedOverlay, int renderColor) {
+        super.preRender(poseStack, animatable, model, bufferSource, buffer, isReRender, partialTick, packedLight, packedOverlay, net.minecraft.util.FastColor.ARGB32.color((int)(net.minecraft.util.FastColor.ARGB32.alpha(renderColor) * animatable.getFadeAlpha()), renderColor));
     }
 
     private static void applySurfaceRotation(PoseStack poseStack, Direction direction) {

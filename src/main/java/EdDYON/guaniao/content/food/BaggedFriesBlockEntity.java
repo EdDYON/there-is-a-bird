@@ -14,8 +14,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.joml.Vector3f;
 import software.bernie.geckolib.animatable.GeoBlockEntity;
-import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.animation.AnimatableManager;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animation.AnimatableManager;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 public final class BaggedFriesBlockEntity extends BlockEntity implements GeoBlockEntity {
@@ -146,15 +146,15 @@ public final class BaggedFriesBlockEntity extends BlockEntity implements GeoBloc
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
+    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
         tag.putInt(FRY_MASK_TAG, this.fryMask);
         tag.putBoolean(LAXATIVE_TAG, this.laxative);
     }
 
     @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
+    protected void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
         if (tag.contains(FRY_MASK_TAG)) {
             this.fryMask = tag.getInt(FRY_MASK_TAG) & FULL_MASK;
         } else if (this.getBlockState().hasProperty(BaggedFriesBlock.FRIES)) {
@@ -167,13 +167,13 @@ public final class BaggedFriesBlockEntity extends BlockEntity implements GeoBloc
     }
 
     @Override
-    public CompoundTag getUpdateTag() {
-        return this.saveWithoutMetadata();
+    public CompoundTag getUpdateTag(net.minecraft.core.HolderLookup.Provider registries) {
+        return this.saveWithoutMetadata(registries);
     }
 
     @Override
-    public void handleUpdateTag(CompoundTag tag) {
-        this.load(tag);
+    public void handleUpdateTag(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        this.loadWithComponents(tag, registries);
     }
 
     @Override
@@ -182,10 +182,10 @@ public final class BaggedFriesBlockEntity extends BlockEntity implements GeoBloc
     }
 
     @Override
-    public void onDataPacket(Connection connection, ClientboundBlockEntityDataPacket packet) {
+    public void onDataPacket(Connection connection, ClientboundBlockEntityDataPacket packet, net.minecraft.core.HolderLookup.Provider registries) {
         CompoundTag tag = packet.getTag();
         if (tag != null) {
-            this.load(tag);
+            this.loadWithComponents(tag, registries);
         }
     }
 

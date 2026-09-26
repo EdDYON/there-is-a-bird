@@ -41,13 +41,13 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.level.LevelEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.tick.*;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.level.LevelEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
-@Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
+@EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
 public final class BirdFlybySpawnEvents {
     private static final TagKey<Biome> NIGHT_HERON_HABITAT = biomeTag("night_heron_habitat");
     private static final TagKey<Biome> SPARROW_HABITAT = biomeTag("sparrow_habitat");
@@ -64,8 +64,8 @@ public final class BirdFlybySpawnEvents {
     }
 
     @SubscribeEvent
-    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player) || player.isSpectator()) {
+    public static void onPlayerTick(PlayerTickEvent.Post event) {
+        if (!(event.getEntity() instanceof ServerPlayer player) || player.isSpectator()) {
             return;
         }
         ServerLevel level = player.serverLevel();
@@ -209,7 +209,7 @@ public final class BirdFlybySpawnEvents {
             Vec3 target = Vec3.atBottomCenterOf(landing).add(0.0D, 0.08D, 0.0D);
             Vec3 direction = target.subtract(airPos).multiply(1.0D, 0.0D, 1.0D).normalize();
             placeMobForFlyby(sparrow, airPos, direction);
-            sparrow.finalizeSpawn(level, level.getCurrentDifficultyAt(sparrow.blockPosition()), MobSpawnType.NATURAL, null, null);
+            sparrow.finalizeSpawn(level, level.getCurrentDifficultyAt(sparrow.blockPosition()), MobSpawnType.NATURAL, null);
             BirdPopulationTracker.markTransientFlyby(sparrow);
             if (!level.noCollision((Entity)sparrow, sparrow.getBoundingBox()) || !sparrow.startFlybyFlight(target)) {
                 continue;
@@ -239,7 +239,7 @@ public final class BirdFlybySpawnEvents {
             }
             Vec3 direction = airTarget.subtract(airPos).multiply(1.0D, 0.0D, 1.0D).normalize();
             placeMobForFlyby(budgerigar, airPos, direction);
-            budgerigar.finalizeSpawn(level, level.getCurrentDifficultyAt(budgerigar.blockPosition()), MobSpawnType.NATURAL, null, null);
+            budgerigar.finalizeSpawn(level, level.getCurrentDifficultyAt(budgerigar.blockPosition()), MobSpawnType.NATURAL, null);
             BirdPopulationTracker.markTransientFlyby(budgerigar);
             if (!level.noCollision((Entity)budgerigar, budgerigar.getBoundingBox())) {
                 continue;
@@ -270,7 +270,7 @@ public final class BirdFlybySpawnEvents {
             }
             Vec3 direction = Vec3.atBottomCenterOf(landing).subtract(airPos).multiply(1.0D, 0.0D, 1.0D).normalize();
             placeMobForFlyby(nightHeron, airPos, direction);
-            nightHeron.finalizeSpawn(level, level.getCurrentDifficultyAt(nightHeron.blockPosition()), MobSpawnType.NATURAL, null, null);
+            nightHeron.finalizeSpawn(level, level.getCurrentDifficultyAt(nightHeron.blockPosition()), MobSpawnType.NATURAL, null);
             BirdPopulationTracker.markTransientFlyby(nightHeron);
             if (!level.noCollision((Entity)nightHeron, nightHeron.getBoundingBox())) {
                 continue;
@@ -310,7 +310,7 @@ public final class BirdFlybySpawnEvents {
             }
             direction = direction.normalize();
             placeMobForFlyby(columbid, airPos, direction);
-            columbid.finalizeSpawn(level, level.getCurrentDifficultyAt(columbid.blockPosition()), MobSpawnType.NATURAL, null, null);
+            columbid.finalizeSpawn(level, level.getCurrentDifficultyAt(columbid.blockPosition()), MobSpawnType.NATURAL, null);
             BirdPopulationTracker.markTransientFlyby(columbid);
             if (!level.noCollision((Entity)columbid, columbid.getBoundingBox())) {
                 continue;
@@ -494,7 +494,7 @@ public final class BirdFlybySpawnEvents {
     }
 
     private static TagKey<Biome> biomeTag(String id) {
-        return TagKey.create(Registries.BIOME, new ResourceLocation(GuaniaoMod.MOD_ID, id));
+        return TagKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, id));
     }
 
     private enum BirdKind {

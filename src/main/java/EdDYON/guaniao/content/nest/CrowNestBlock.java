@@ -29,13 +29,20 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.world.SimpleMenuProvider;
-import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.Nullable;
-import net.minecraftforge.client.extensions.common.IClientBlockExtensions;
+import net.neoforged.neoforge.client.extensions.common.IClientBlockExtensions;
 
 import java.util.function.Consumer;
 
 public class CrowNestBlock extends BaseEntityBlock {
+    public static final com.mojang.serialization.MapCodec<CrowNestBlock> CODEC = simpleCodec(CrowNestBlock::new);
+
+    @Override
+    protected com.mojang.serialization.MapCodec<? extends BaseEntityBlock> codec() {
+        return CODEC;
+    }
+
+
     public static final IntegerProperty EGGS = IntegerProperty.create("eggs", 0, 3);
     public static final BooleanProperty NATURAL_NEST = BooleanProperty.create("natural_nest");
     private static final VoxelShape SHAPE = Block.box(1.0D, 0.0D, 1.0D, 15.0D, 5.0D, 15.0D);
@@ -61,7 +68,21 @@ public class CrowNestBlock extends BaseEntityBlock {
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+    protected net.minecraft.world.ItemInteractionResult useItemOn(net.minecraft.world.item.ItemStack stack,
+            BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        // The item hook also runs for empty hands. Skip the default hook after PASS
+        // so an interaction is never applied twice before the held item is used.
+        return switch (this.interactWithBlock(state, level, pos, player, hand, hit)) {
+            case SUCCESS, SUCCESS_NO_ITEM_USED -> net.minecraft.world.ItemInteractionResult.SUCCESS;
+            case CONSUME -> net.minecraft.world.ItemInteractionResult.CONSUME;
+            case CONSUME_PARTIAL -> net.minecraft.world.ItemInteractionResult.CONSUME_PARTIAL;
+            case FAIL -> net.minecraft.world.ItemInteractionResult.FAIL;
+            case PASS -> net.minecraft.world.ItemInteractionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
+        };
+    }
+
+    private InteractionResult interactWithBlock(BlockState state, Level level, BlockPos pos, Player player,
+            InteractionHand hand, BlockHitResult hit) {
         if (hand != InteractionHand.MAIN_HAND) {
             return InteractionResult.PASS;
         }
@@ -134,7 +155,7 @@ public class CrowNestBlock extends BaseEntityBlock {
 
     private InteractionResult openSearchScreen(Level level, BlockPos pos, Player player, CrowNestBlockEntity nest) {
         if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
-            NetworkHooks.openScreen(serverPlayer,
+            serverPlayer.openMenu(
                     new SimpleMenuProvider((containerId, inventory, ignored) -> new CrowNestMenu(containerId, inventory, nest),
                             Component.translatable("gui.guaniao.crow_nest.title")),
                     buffer -> buffer.writeBlockPos(pos));

@@ -323,7 +323,7 @@ public final class PhotoUploadManager {
                     film, result.photoId, ownerName, playerId, gameTime,
                     result.width, result.height, result.contentHash
             );
-            film.setHoverName(Component.translatable("item.guaniao.film.named", filmName, location));
+            film.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.translatable("item.guaniao.film.named", filmName, location));
             if (!player.getInventory().add(film)) {
                 player.drop(film, false);
             }

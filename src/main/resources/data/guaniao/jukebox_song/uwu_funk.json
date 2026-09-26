@@ -1,0 +1,8 @@
+{
+  "sound_event": "guaniao:music_disc.uwu_funk",
+  "description": {
+    "translate": "item.guaniao.music_disc_uwu_funk.desc"
+  },
+  "length_in_seconds": 2411.0,
+  "comparator_output": 7
+}

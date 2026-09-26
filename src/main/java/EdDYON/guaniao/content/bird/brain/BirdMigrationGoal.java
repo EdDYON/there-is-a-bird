@@ -185,7 +185,7 @@ public class BirdMigrationGoal extends Goal {
         }
         TagKey<Biome> habitatTag = TagKey.create(
                 Registries.BIOME,
-                new ResourceLocation("guaniao", species.id() + "_habitat")
+                ResourceLocation.fromNamespaceAndPath("guaniao", species.id() + "_habitat")
         );
         int regionSize = Math.max(32, BirdConfigManager.migrationRadius());
         for (int attempt = 0; attempt < 8; attempt++) {

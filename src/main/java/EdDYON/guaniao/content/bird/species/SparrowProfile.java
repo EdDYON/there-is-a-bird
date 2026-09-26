@@ -158,7 +158,7 @@ public final class SparrowProfile extends BirdSpeciesProfile {
     private boolean isCoverBlock(BlockState state) {
         return state.is(BlockTags.LEAVES)
                 || state.is(BlockTags.LOGS)
-                || state.is(Blocks.GRASS)
+                || state.is(Blocks.SHORT_GRASS)
                 || state.is(Blocks.TALL_GRASS)
                 || state.is(Blocks.FERN)
                 || state.is(Blocks.LARGE_FERN)

@@ -5,9 +5,9 @@ import net.minecraft.resources.ResourceLocation;
 import software.bernie.geckolib.model.GeoModel;
 
 public final class BaggedFriesModel extends GeoModel<BaggedFriesBlockEntity> {
-    private static final ResourceLocation MODEL = new ResourceLocation("guaniao", "geo/bagged_fries.geo.json");
-    private static final ResourceLocation TEXTURE = new ResourceLocation("guaniao", "textures/block/bagged_fries.png");
-    private static final ResourceLocation ANIMATION = new ResourceLocation("guaniao", "animations/bagged_fries.animation.json");
+    private static final ResourceLocation MODEL = ResourceLocation.fromNamespaceAndPath("guaniao", "geo/bagged_fries.geo.json");
+    private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath("guaniao", "textures/block/bagged_fries.png");
+    private static final ResourceLocation ANIMATION = ResourceLocation.fromNamespaceAndPath("guaniao", "animations/bagged_fries.animation.json");
 
     @Override
     public ResourceLocation getModelResource(BaggedFriesBlockEntity animatable) {

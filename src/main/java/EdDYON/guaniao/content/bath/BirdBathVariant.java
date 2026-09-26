@@ -29,9 +29,9 @@ public enum BirdBathVariant {
 
     BirdBathVariant(String id, String modelPath, String texturePath, String animationPath, SoundType soundType, VoxelShape shape) {
         this.id = id;
-        this.model = new ResourceLocation(GuaniaoMod.MOD_ID, modelPath);
-        this.texture = new ResourceLocation(GuaniaoMod.MOD_ID, texturePath);
-        this.animation = new ResourceLocation(GuaniaoMod.MOD_ID, animationPath);
+        this.model = ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, modelPath);
+        this.texture = ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, texturePath);
+        this.animation = ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, animationPath);
         this.soundType = soundType;
         this.shape = shape;
     }

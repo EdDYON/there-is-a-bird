@@ -46,9 +46,9 @@ public class PhotographEntity extends HangingEntity {
     }
 
     @Override
-    protected void defineSynchedData() {
-        this.getEntityData().define(DATA_ITEM, ItemStack.EMPTY);
-        this.getEntityData().define(DATA_ROTATION, 0);
+    protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
+        builder.define(DATA_ITEM, ItemStack.EMPTY);
+        builder.define(DATA_ROTATION, 0);
     }
 
     @Override
@@ -66,7 +66,7 @@ public class PhotographEntity extends HangingEntity {
     }
 
     @Override
-    public @NotNull Packet<ClientGamePacketListener> getAddEntityPacket() {
+    public @NotNull Packet<ClientGamePacketListener> getAddEntityPacket(net.minecraft.server.level.ServerEntity pairing) {
         return new ClientboundAddEntityPacket(this, this.direction.get3DDataValue(), this.getPos());
     }
 
@@ -74,7 +74,7 @@ public class PhotographEntity extends HangingEntity {
     public void addAdditionalSaveData(@NotNull CompoundTag tag) {
         super.addAdditionalSaveData(tag);
         if (!this.getItem().isEmpty()) {
-            tag.put("Item", this.getItem().save(new CompoundTag()));
+            tag.put("Item", this.getItem().save(this.registryAccess()));
         }
         tag.putByte("Facing", (byte)this.direction.get3DDataValue());
         tag.putByte("Rotation", (byte)this.getRotation());
@@ -83,7 +83,7 @@ public class PhotographEntity extends HangingEntity {
     @Override
     public void readAdditionalSaveData(@NotNull CompoundTag tag) {
         super.readAdditionalSaveData(tag);
-        ItemStack item = ItemStack.of(tag.getCompound("Item"));
+        ItemStack item = EdDYON.guaniao.util.ItemData.load(this.registryAccess(), tag.getCompound("Item"));
         if (!item.isEmpty()) {
             LegacyPhotoMigration.migrateNow(this.level(), item);
             this.setItem(item);
@@ -93,16 +93,14 @@ public class PhotographEntity extends HangingEntity {
     }
 
     @Override
-    protected float getEyeHeight(@NotNull Pose pose, @NotNull EntityDimensions dimensions) {
-        return 0.0F;
+    public EntityDimensions getDimensions(Pose pose) {
+        return super.getDimensions(pose).withEyeHeight(0.0F);
     }
 
-    @Override
     public int getWidth() {
         return FRAME_SIZE_PIXELS;
     }
 
-    @Override
     public int getHeight() {
         return FRAME_SIZE_PIXELS;
     }
@@ -125,21 +123,16 @@ public class PhotographEntity extends HangingEntity {
     }
 
     @Override
-    protected void recalculateBoundingBox() {
-        if (this.direction == null) {
-            return;
-        }
-
+    protected AABB calculateBoundingBox(BlockPos pos, Direction direction) {
         double hangOffset = 0.46875D;
-        double x = (double)this.pos.getX() + 0.5D - (double)this.direction.getStepX() * hangOffset;
-        double y = (double)this.pos.getY() + 0.5D - (double)this.direction.getStepY() * hangOffset;
-        double z = (double)this.pos.getZ() + 0.5D - (double)this.direction.getStepZ() * hangOffset;
-        this.setPosRaw(x, y, z);
+        double x = (double)pos.getX() + 0.5D - (double)direction.getStepX() * hangOffset;
+        double y = (double)pos.getY() + 0.5D - (double)direction.getStepY() * hangOffset;
+        double z = (double)pos.getZ() + 0.5D - (double)direction.getStepZ() * hangOffset;
 
         double xSize = this.getWidth();
         double ySize = this.getHeight();
         double zSize = this.getWidth();
-        switch (this.direction.getAxis()) {
+        switch (direction.getAxis()) {
             case X -> xSize = 1.0D;
             case Y -> ySize = 1.0D;
             case Z -> zSize = 1.0D;
@@ -148,7 +141,7 @@ public class PhotographEntity extends HangingEntity {
         xSize /= 32.0D;
         ySize /= 32.0D;
         zSize /= 32.0D;
-        this.setBoundingBox(new AABB(x - xSize, y - ySize, z - zSize, x + xSize, y + ySize, z + zSize));
+        return new AABB(x - xSize, y - ySize, z - zSize, x + xSize, y + ySize, z + zSize);
     }
 
     @Override

@@ -15,7 +15,7 @@ public enum ColumbidVariant {
 
     ColumbidVariant(String id, String texturePath, int baseColor, int spotColor) {
         this.id = id;
-        this.texture = new ResourceLocation(GuaniaoMod.MOD_ID, texturePath);
+        this.texture = ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, texturePath);
         this.baseColor = baseColor;
         this.spotColor = spotColor;
     }

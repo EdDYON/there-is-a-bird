@@ -52,7 +52,24 @@ public final class MusicDiscEventsTest {
         CompoundTag originalMalformed = malformedEntities.copy();
         MusicDiscEvents.clearSavedPlayback(malformedEntities);
         require(malformedEntities.equals(originalMalformed), "Unrelated malformed data must not be rewritten");
-        System.out.println("MusicDiscEventsTest: all 7 checks passed");
+        CompoundTag modern = jukebox("guaniao:music_disc_uwu_funk", true);
+        modern.remove("IsPlaying");
+        modern.putLong("ticks_since_song_started", 600L);
+        CompoundTag other = jukebox("minecraft:music_disc_cat", true);
+        other.remove("IsPlaying");
+        other.putLong("ticks_since_song_started", 400L);
+        ListTag modernEntities = new ListTag();
+        modernEntities.add(modern);
+        modernEntities.add(other);
+        CompoundTag modernChunk = new CompoundTag();
+        modernChunk.put("block_entities", modernEntities);
+        CompoundTag modernExpected = modernChunk.copy();
+        modernExpected.getList("block_entities", 10).getCompound(0).remove("ticks_since_song_started");
+        MusicDiscEvents.clearSavedPlayback(modernChunk);
+        require(modernChunk.equals(modernExpected), "Only the silent custom disc's 1.21 song timer should be removed");
+        MusicDiscEvents.clearSavedPlayback(modernChunk);
+        require(roundTrip(modernChunk).equals(modernExpected), "Native song reset must be idempotent and survive saving");
+        System.out.println("MusicDiscEventsTest: all 9 checks passed (legacy flags and 1.21 song timers)");
     }
 
     private static CompoundTag jukebox(String discId, boolean playing) {
@@ -77,7 +94,7 @@ public final class MusicDiscEventsTest {
     private static CompoundTag roundTrip(CompoundTag tag) throws Exception {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         NbtIo.write(tag, new DataOutputStream(bytes));
-        return NbtIo.read(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+        return NbtIo.read(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())), net.minecraft.nbt.NbtAccounter.unlimitedHeap());
     }
 
     private static void require(boolean condition, String message) {

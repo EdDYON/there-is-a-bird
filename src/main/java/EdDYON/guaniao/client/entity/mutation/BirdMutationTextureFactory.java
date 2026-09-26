@@ -86,7 +86,7 @@ public final class BirdMutationTextureFactory {
             DynamicTexture texture = new DynamicTexture(out);
             texture.upload();
             String safePath = base.getPath().replace('/', '_');
-            ResourceLocation location = new ResourceLocation(
+            ResourceLocation location = ResourceLocation.fromNamespaceAndPath(
                     "guaniao", "dynamic/mutations/" + mutation.name().toLowerCase() + "/" + safePath);
             Minecraft.getInstance().getTextureManager().register(location, texture);
             return location;
@@ -111,7 +111,7 @@ public final class BirdMutationTextureFactory {
             }
             source.close();
             String safePath = base.getPath().replace('/', '_');
-            ResourceLocation location = new ResourceLocation("guaniao", "dynamic/mutations/rainbow/" + safePath);
+            ResourceLocation location = ResourceLocation.fromNamespaceAndPath("guaniao", "dynamic/mutations/rainbow/" + safePath);
             Minecraft.getInstance().getTextureManager().register(location, new RainbowAnimatedTexture(frames, width, height));
             CACHE.put(key, location);
             return location;

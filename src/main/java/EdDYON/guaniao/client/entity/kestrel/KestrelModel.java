@@ -5,7 +5,7 @@ import EdDYON.guaniao.content.bird.kestrel.KestrelDefinition;
 import EdDYON.guaniao.content.bird.kestrel.KestrelEntity;
 import net.minecraft.resources.ResourceLocation;
 import software.bernie.geckolib.model.GeoModel;
-import software.bernie.geckolib.core.animation.AnimationState;
+import software.bernie.geckolib.animation.AnimationState;
 
 public final class KestrelModel extends GeoModel<KestrelEntity> {
     @Override

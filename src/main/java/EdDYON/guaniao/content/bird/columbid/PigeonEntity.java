@@ -41,9 +41,9 @@ public class PigeonEntity extends AbstractColumbidEntity {
     }
 
     @Override
-    protected void defineSynchedData() {
-        super.defineSynchedData();
-        this.entityData.define(VARIANT, ColumbidVariant.GRAY_PIGEON.ordinal());
+    protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(VARIANT, ColumbidVariant.GRAY_PIGEON.ordinal());
     }
 
     @Override
@@ -52,11 +52,9 @@ public class PigeonEntity extends AbstractColumbidEntity {
     }
 
     @Override
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType spawnType, SpawnGroupData spawnGroupData, CompoundTag compoundTag) {
-        SpawnGroupData data = super.finalizeSpawn(level, difficulty, spawnType, spawnGroupData, compoundTag);
-        if (compoundTag == null || !compoundTag.contains("PigeonVariant", 3)) {
-            this.setPigeonVariant(this.getRandom().nextBoolean() ? ColumbidVariant.GRAY_PIGEON : ColumbidVariant.WHITE_PIGEON);
-        }
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType spawnType, SpawnGroupData spawnGroupData) {
+        SpawnGroupData data = super.finalizeSpawn(level, difficulty, spawnType, spawnGroupData);
+        this.setPigeonVariant(this.getRandom().nextBoolean() ? ColumbidVariant.GRAY_PIGEON : ColumbidVariant.WHITE_PIGEON);
         return data;
     }
 

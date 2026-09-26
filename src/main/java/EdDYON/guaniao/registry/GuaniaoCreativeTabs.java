@@ -7,12 +7,12 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import java.util.function.Supplier;
 
 public final class GuaniaoCreativeTabs {
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = DeferredRegister.create((ResourceKey)Registries.CREATIVE_MODE_TAB, (String)"guaniao");
-    public static final RegistryObject<CreativeModeTab> MAIN_TAB = CREATIVE_MODE_TABS.register("main", () -> CreativeModeTab.builder().title((Component)Component.translatable((String)"itemGroup.guaniao.main")).icon(() -> new ItemStack((ItemLike)GuaniaoItems.BIRD_GUIDE.get())).displayItems((parameters, output) -> {
+    public static final Supplier<CreativeModeTab> MAIN_TAB = CREATIVE_MODE_TABS.register("main", () -> CreativeModeTab.builder().title((Component)Component.translatable((String)"itemGroup.guaniao.main")).icon(() -> new ItemStack((ItemLike)GuaniaoItems.BIRD_GUIDE.get())).displayItems((parameters, output) -> {
         output.accept((ItemLike)GuaniaoItems.BIRD_GUIDE.get());
         output.accept((ItemLike)GuaniaoItems.WIND_FEATHER_FAN.get());
         output.accept((ItemLike)GuaniaoItems.BURIAL_PLUME_BOOK.get());

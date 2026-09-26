@@ -163,7 +163,7 @@ public final class KiwiProfile extends BirdSpeciesProfile {
                 return true;
             }
             if (!denseOnly && (state.is(Blocks.FERN) || state.is(Blocks.LARGE_FERN)
-                    || state.is(Blocks.GRASS) || state.is(Blocks.TALL_GRASS))) {
+                    || state.is(Blocks.SHORT_GRASS) || state.is(Blocks.TALL_GRASS))) {
                 return true;
             }
         }

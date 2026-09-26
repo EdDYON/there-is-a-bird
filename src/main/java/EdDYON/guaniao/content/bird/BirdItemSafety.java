@@ -13,7 +13,7 @@ public final class BirdItemSafety {
     }
 
     public static boolean isSafeDisposableItem(ItemStack stack) {
-        if (stack.isEmpty() || stack.hasCustomHoverName() || stack.hasTag()) {
+        if (stack.isEmpty() || stack.has(net.minecraft.core.component.DataComponents.CUSTOM_NAME) || EdDYON.guaniao.util.ItemData.hasMetadata(stack)) {
             return false;
         }
         if (stack.getMaxStackSize() <= 1 || stack.getItem() instanceof MapItem) {
@@ -45,8 +45,8 @@ public final class BirdItemSafety {
      */
     public static boolean isCrowTreasure(ItemStack stack) {
         if (stack.isEmpty()
-                || stack.hasCustomHoverName()
-                || stack.hasTag()
+                || stack.has(net.minecraft.core.component.DataComponents.CUSTOM_NAME)
+                || EdDYON.guaniao.util.ItemData.hasMetadata(stack)
                 || stack.is(BirdTags.CROW_PROTECTED_ITEMS)
                 || stack.is(BirdTags.BIRD_TOXIC_FOODS)
                 || BirdFoodSafety.isPollutedFood(stack)) {
@@ -55,7 +55,7 @@ public final class BirdItemSafety {
         if (isPristineGoldenEquipment(stack)) {
             return true;
         }
-        boolean cleanFood = stack.isEdible() || stack.is(BirdTags.CROW_FOODS);
+        boolean cleanFood = stack.has(net.minecraft.core.component.DataComponents.FOOD) || stack.is(BirdTags.CROW_FOODS);
         if (stack.is(BirdTags.FORGE_ORES)) {
             return isPlainCarryableItem(stack);
         }

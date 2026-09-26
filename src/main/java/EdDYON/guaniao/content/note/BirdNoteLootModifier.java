@@ -1,17 +1,17 @@
 package EdDYON.guaniao.content.note;
 
-import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
-import net.minecraftforge.common.loot.IGlobalLootModifier;
-import net.minecraftforge.common.loot.LootModifier;
+import net.neoforged.neoforge.common.loot.IGlobalLootModifier;
+import net.neoforged.neoforge.common.loot.LootModifier;
 
 /** Adds a bird note to eligible structure-chest loot. */
 public final class BirdNoteLootModifier extends LootModifier {
-    public static final Codec<BirdNoteLootModifier> CODEC = RecordCodecBuilder.create(instance ->
+    public static final MapCodec<BirdNoteLootModifier> CODEC = RecordCodecBuilder.mapCodec(instance ->
             codecStart(instance).apply(instance, BirdNoteLootModifier::new));
 
     protected BirdNoteLootModifier(LootItemCondition[] conditionsIn) {
@@ -19,7 +19,7 @@ public final class BirdNoteLootModifier extends LootModifier {
     }
 
     @Override
-    public Codec<? extends IGlobalLootModifier> codec() {
+    public MapCodec<? extends IGlobalLootModifier> codec() {
         return CODEC;
     }
 

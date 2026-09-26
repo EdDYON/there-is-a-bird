@@ -153,7 +153,7 @@ public final class MynaProfile extends BirdSpeciesProfile {
                     || state.getBlock() instanceof DoorBlock)) {
                 return true;
             }
-            if (!roostOnly && (state.is(Blocks.GRASS) || state.is(Blocks.TALL_GRASS)
+            if (!roostOnly && (state.is(Blocks.SHORT_GRASS) || state.is(Blocks.TALL_GRASS)
                     || state.is(Blocks.FERN) || state.is(Blocks.LARGE_FERN)
                     || state.is(Blocks.FARMLAND) || state.is(Blocks.HAY_BLOCK)
                     || state.is(Blocks.SWEET_BERRY_BUSH)

@@ -649,7 +649,7 @@ public final class CameraCreativeControlsScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalDelta, double delta) {
         if (delta == 0.0D) {
             return true;
         }
@@ -693,10 +693,10 @@ public final class CameraCreativeControlsScreen extends Screen {
             return true;
         }
         if (keyCode == GLFW.GLFW_KEY_LEFT || keyCode == GLFW.GLFW_KEY_UP) {
-            return mouseScrolled(0.0D, 0.0D, 1.0D);
+            return mouseScrolled(0.0D, 0.0D, 0.0D, 1.0D);
         }
         if (keyCode == GLFW.GLFW_KEY_RIGHT || keyCode == GLFW.GLFW_KEY_DOWN) {
-            return mouseScrolled(0.0D, 0.0D, -1.0D);
+            return mouseScrolled(0.0D, 0.0D, 0.0D, -1.0D);
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }

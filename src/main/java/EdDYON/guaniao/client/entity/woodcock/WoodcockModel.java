@@ -5,7 +5,7 @@ import EdDYON.guaniao.content.bird.woodcock.WoodcockDefinition;
 import EdDYON.guaniao.content.bird.woodcock.WoodcockEntity;
 import net.minecraft.resources.ResourceLocation;
 import software.bernie.geckolib.model.GeoModel;
-import software.bernie.geckolib.core.animation.AnimationState;
+import software.bernie.geckolib.animation.AnimationState;
 
 public class WoodcockModel extends GeoModel<WoodcockEntity> {
     @Override

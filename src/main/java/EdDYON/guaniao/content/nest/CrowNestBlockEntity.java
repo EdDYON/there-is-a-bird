@@ -21,8 +21,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import software.bernie.geckolib.animatable.GeoBlockEntity;
-import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.animation.AnimatableManager;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animation.AnimatableManager;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.ArrayList;
@@ -526,10 +526,10 @@ public class CrowNestBlockEntity extends BlockEntity implements GeoBlockEntity {
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
+    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
         CompoundTag treasureTag = new CompoundTag();
-        ContainerHelper.saveAllItems(treasureTag, this.treasures);
+        ContainerHelper.saveAllItems(treasureTag, this.treasures, registries);
         tag.put(TREASURES_TAG, treasureTag);
         tag.putBoolean(NATURAL_NEST_TAG, this.naturalNest);
         ListTag claimTags = new ListTag();
@@ -551,13 +551,13 @@ public class CrowNestBlockEntity extends BlockEntity implements GeoBlockEntity {
     }
 
     @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
+    protected void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
         for (int slot = 0; slot < this.treasures.size(); slot++) {
             this.treasures.set(slot, ItemStack.EMPTY);
         }
         if (tag.contains(TREASURES_TAG, CompoundTag.TAG_COMPOUND)) {
-            ContainerHelper.loadAllItems(tag.getCompound(TREASURES_TAG), this.treasures);
+            ContainerHelper.loadAllItems(EdDYON.guaniao.util.ItemData.upgradeLegacyInventory(tag.getCompound(TREASURES_TAG)), this.treasures, registries);
         }
         this.naturalNest = tag.getBoolean(NATURAL_NEST_TAG)
                 || (this.getBlockState().hasProperty(CrowNestBlock.NATURAL_NEST)
@@ -608,13 +608,13 @@ public class CrowNestBlockEntity extends BlockEntity implements GeoBlockEntity {
     }
 
     @Override
-    public CompoundTag getUpdateTag() {
-        return this.saveWithoutMetadata();
+    public CompoundTag getUpdateTag(net.minecraft.core.HolderLookup.Provider registries) {
+        return this.saveWithoutMetadata(registries);
     }
 
     @Override
-    public void handleUpdateTag(CompoundTag tag) {
-        this.load(tag);
+    public void handleUpdateTag(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        this.loadWithComponents(tag, registries);
     }
 
     @Override
@@ -623,14 +623,13 @@ public class CrowNestBlockEntity extends BlockEntity implements GeoBlockEntity {
     }
 
     @Override
-    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket packet) {
+    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket packet, net.minecraft.core.HolderLookup.Provider registries) {
         CompoundTag tag = packet.getTag();
         if (tag != null) {
-            this.load(tag);
+            this.loadWithComponents(tag, registries);
         }
     }
 
-    @Override
     public AABB getRenderBoundingBox() {
         return new AABB(this.worldPosition).inflate(0.25D, 0.25D, 0.25D);
     }
@@ -876,7 +875,7 @@ public class CrowNestBlockEntity extends BlockEntity implements GeoBlockEntity {
     private static boolean canMerge(ItemStack stored, ItemStack incoming) {
         return !stored.isEmpty()
                 && stored.getCount() < stored.getMaxStackSize()
-                && ItemStack.isSameItemSameTags(stored, incoming);
+                && ItemStack.isSameItemSameComponents(stored, incoming);
     }
 
     private void sync() {

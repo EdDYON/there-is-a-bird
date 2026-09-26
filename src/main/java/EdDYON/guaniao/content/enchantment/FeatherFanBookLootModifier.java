@@ -1,6 +1,6 @@
 package EdDYON.guaniao.content.enchantment;
 
-import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.world.entity.monster.Monster;
@@ -8,12 +8,12 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
-import net.minecraftforge.common.loot.IGlobalLootModifier;
-import net.minecraftforge.common.loot.LootModifier;
+import net.neoforged.neoforge.common.loot.IGlobalLootModifier;
+import net.neoforged.neoforge.common.loot.LootModifier;
 
 /** Rarely adds one of the three feather-fan enchantment books to chests or monster drops. */
 public final class FeatherFanBookLootModifier extends LootModifier {
-    public static final Codec<FeatherFanBookLootModifier> CODEC = RecordCodecBuilder.create(instance ->
+    public static final MapCodec<FeatherFanBookLootModifier> CODEC = RecordCodecBuilder.mapCodec(instance ->
             codecStart(instance).apply(instance, FeatherFanBookLootModifier::new));
 
     private static final float CHEST_CHANCE = 0.04F;
@@ -24,7 +24,7 @@ public final class FeatherFanBookLootModifier extends LootModifier {
     }
 
     @Override
-    public Codec<? extends IGlobalLootModifier> codec() {
+    public MapCodec<? extends IGlobalLootModifier> codec() {
         return CODEC;
     }
 

@@ -13,8 +13,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import software.bernie.geckolib.animatable.GeoBlockEntity;
-import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.animation.AnimatableManager;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animation.AnimatableManager;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.UUID;
@@ -290,8 +290,8 @@ public class BirdBathBlockEntity extends BlockEntity implements GeoBlockEntity {
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
+    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
         tag.putInt(CONTENT_TYPE_TAG, this.contentType.ordinal());
         tag.putInt(CONTENT_LEVEL_TAG, this.contentLevel);
         tag.putInt(CLEANLINESS_TAG, this.cleanliness.ordinal());
@@ -306,8 +306,8 @@ public class BirdBathBlockEntity extends BlockEntity implements GeoBlockEntity {
     }
 
     @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
+    protected void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
         BirdBathContentType loadedType = tag.contains(CONTENT_TYPE_TAG) ? BirdBathContentType.fromOrdinal(tag.getInt(CONTENT_TYPE_TAG)) : BirdBathContentType.EMPTY;
         int loadedLevel = tag.contains(CONTENT_LEVEL_TAG) ? Mth.clamp(tag.getInt(CONTENT_LEVEL_TAG), 0, 3) : 0;
         if (loadedType.isEmpty() || loadedLevel <= 0) {
@@ -333,13 +333,13 @@ public class BirdBathBlockEntity extends BlockEntity implements GeoBlockEntity {
     }
 
     @Override
-    public CompoundTag getUpdateTag() {
-        return this.saveWithoutMetadata();
+    public CompoundTag getUpdateTag(net.minecraft.core.HolderLookup.Provider registries) {
+        return this.saveWithoutMetadata(registries);
     }
 
     @Override
-    public void handleUpdateTag(CompoundTag tag) {
-        this.load(tag);
+    public void handleUpdateTag(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        this.loadWithComponents(tag, registries);
     }
 
     @Override
@@ -348,10 +348,10 @@ public class BirdBathBlockEntity extends BlockEntity implements GeoBlockEntity {
     }
 
     @Override
-    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket packet) {
+    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket packet, net.minecraft.core.HolderLookup.Provider registries) {
         CompoundTag tag = packet.getTag();
         if (tag != null) {
-            this.load(tag);
+            this.loadWithComponents(tag, registries);
         }
     }
 

@@ -20,10 +20,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.extensions.common.IClientItemExtensions;
-import net.minecraftforge.fml.DistExecutor;
-import org.jetbrains.annotations.Nullable;
+import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
+import EdDYON.guaniao.util.ClientActions;
 
 public class PhotographItem extends Item {
     public PhotographItem(Properties properties) {
@@ -41,7 +39,7 @@ public class PhotographItem extends Item {
         ItemStack stack = player.getItemInHand(hand);
         if (level.isClientSide && PhotographData.hasImage(stack)) {
             ItemStack copy = stack.copy();
-            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+            ClientActions.run(() -> () -> {
                 try {
                     Class.forName("EdDYON.guaniao.client.camera.PhotographClientActions")
                             .getMethod("openScreen", ItemStack.class)
@@ -84,7 +82,7 @@ public class PhotographItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         if (!PhotographData.hasImage(stack)) {
             tooltip.add(Component.translatable("item.guaniao.photograph.tooltip.empty").withStyle(ChatFormatting.GRAY));
             return;

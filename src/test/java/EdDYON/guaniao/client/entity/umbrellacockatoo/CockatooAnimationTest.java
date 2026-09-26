@@ -4,16 +4,16 @@ import EdDYON.guaniao.content.bird.umbrellacockatoo.CockatooDisplayState;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import software.bernie.geckolib.cache.object.GeoBone;
-import software.bernie.geckolib.core.animatable.GeoAnimatable;
-import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.animatable.model.CoreBakedGeoModel;
-import software.bernie.geckolib.core.animatable.model.CoreGeoModel;
-import software.bernie.geckolib.core.animation.AnimatableManager;
-import software.bernie.geckolib.core.animation.Animation;
-import software.bernie.geckolib.core.animation.AnimationController;
-import software.bernie.geckolib.core.animation.AnimationProcessor;
-import software.bernie.geckolib.core.animation.AnimationState;
-import software.bernie.geckolib.core.animation.RawAnimation;
+import software.bernie.geckolib.animatable.GeoAnimatable;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.model.GeoModel;
+import net.minecraft.resources.ResourceLocation;
+import software.bernie.geckolib.animation.AnimatableManager;
+import software.bernie.geckolib.animation.Animation;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.AnimationProcessor;
+import software.bernie.geckolib.animation.AnimationState;
+import software.bernie.geckolib.animation.RawAnimation;
 import software.bernie.geckolib.loading.object.BakedAnimations;
 import software.bernie.geckolib.util.JsonUtil;
 
@@ -22,7 +22,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Standalone, real GeckoLib 4.4.9 regressions; no Minecraft client or OpenGL required. */
+/** Standalone, real GeckoLib 4.6.6 regressions; no Minecraft client or OpenGL required. */
 public final class CockatooAnimationTest {
     private static final Path ASSETS = Path.of("src/main/resources/assets/guaniao");
     private static CockatooExpressionSampler curves;
@@ -38,7 +38,7 @@ public final class CockatooAnimationTest {
                 .getAsJsonObject().getAsJsonArray("minecraft:geometry").get(0).getAsJsonObject();
         String original = raw.toString();
         curves = new CockatooExpressionSampler(raw);
-        animations = JsonUtil.GEO_GSON.fromJson(raw, BakedAnimations.class);
+        animations = software.bernie.geckolib.loading.json.typeadapter.KeyFramesAdapter.GEO_GSON.fromJson(raw, BakedAnimations.class);
         residual = CockatooDisplayResidual.create(animations.getAnimation("animation.idle_diff_2"), curves.hold(2));
         check(original.equals(raw.toString()), "source JSON is not changed by sampling or residual generation");
         curvesAndTransitions();
@@ -278,7 +278,7 @@ public final class CockatooAnimationTest {
         public double getBoneResetTime() { return 5; }
     }
 
-    private static final class Fixture implements CoreGeoModel<Bird> {
+    private static final class Fixture extends GeoModel<Bird> {
         final Bird bird;
         final AnimatableManager<Bird> manager;
         final AnimationProcessor<Bird> processor = new AnimationProcessor<>(this);
@@ -310,7 +310,9 @@ public final class CockatooAnimationTest {
             processor.tickAnimation(bird, this, manager, time, state, true);
         }
 
-        public CoreBakedGeoModel getBakedGeoModel(String location) { return null; }
+        public ResourceLocation getModelResource(Bird bird) { return ResourceLocation.fromNamespaceAndPath("guaniao", "test_model"); }
+        public ResourceLocation getTextureResource(Bird bird) { return ResourceLocation.fromNamespaceAndPath("guaniao", "test_texture"); }
+        public ResourceLocation getAnimationResource(Bird bird) { return ResourceLocation.fromNamespaceAndPath("guaniao", "test_animation"); }
         public AnimationProcessor<Bird> getAnimationProcessor() { return processor; }
         public void handleAnimations(Bird bird, long id, AnimationState<Bird> state) {}
         public Animation getAnimation(Bird bird, String name) {

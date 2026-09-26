@@ -5,10 +5,10 @@
 
 一个为 Minecraft制作的鸟类生态模组。
 
-[![Build](https://github.com/EdDYON/there-is-a-bird/actions/workflows/build.yml/badge.svg)](https://github.com/EdDYON/there-is-a-bird/actions/workflows/build.yml)
-![Minecraft](https://img.shields.io/badge/Minecraft-1.20.1-62B47A)
-![Forge](https://img.shields.io/badge/Forge-47.2.x-E04E14)
-![Java](https://img.shields.io/badge/Java-17-ED8B00)
+[![Build](https://github.com/EdDYON/there-is-a-bird/actions/workflows/build.yml/badge.svg?branch=port%2F1.21.1)](https://github.com/EdDYON/there-is-a-bird/actions/workflows/build.yml?query=branch%3Aport%2F1.21.1)
+![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-62B47A)
+![NeoForge](https://img.shields.io/badge/NeoForge-21.1.248-E04E14)
+![Java](https://img.shields.io/badge/Java-21-ED8B00)
 
 </div>
 
@@ -17,13 +17,13 @@
 
 | 项目 | 当前状态 |
 | --- | --- |
-| 模组版本 | 3.4.5 |
-| Minecraft | 1.20.1 |
-| Forge | 47.2.x |
-| Java | 17 |
-| GeckoLib | 4.4.x |
-| `main` | 当前维护的 1.20.1 版本 |
-| `port/1.21.1` | 计划中的迁移工作分支，不代表已经兼容 |
+| 模组版本 | 3.5.0 |
+| Minecraft | 1.21.1 |
+| NeoForge | 21.1.248 |
+| Java | 21 |
+| GeckoLib | 4.6.6（NeoForge 1.21.1） |
+| 本目录 | 已同步 Forge 1.20.1 / 3.5.0 修复的 NeoForge 迁移版本 |
+| Forge 1.20.1 | 在 `main` 分支独立维护 |
 
 ## 下载与安装
 
@@ -31,16 +31,16 @@ mc百科：https://center.mcmod.cn/1346649
 cf：https://www.curseforge.com/minecraft/mc-mods/bird-watching
 ms：https://modrinth.com/mod/bird-watching
 
-1. 安装 Minecraft 1.20.1 对应的 Forge 47.2.x。
-2. 安装与 1.20.1 兼容的 GeckoLib 4.4.x。
-3. 将官方发布的模组 JAR 放入游戏的 `mods` 目录。
+1. 安装 Minecraft 1.21.1 对应的 NeoForge 21.1.248，并使用 Java 21。
+2. 安装 `geckolib-neoforge-1.21.1-4.6.6.jar`。
+3. 构建后将 `build/libs/guaniao-neoforge-1.21.1-3.5.0.jar` 放入游戏的 `mods` 目录；本地迁移构建尚未正式发布。
 4. 启动前备份重要世界；服务端与客户端应使用相同版本。
 
 
 ## 文档与贡献
 
 - [贡献指南](CONTRIBUTING.md)：开发环境、分支目标、验证与素材规则。
-- [版本迁移指南](docs/PORTING.md)：1.21.1 迁移模块、认领方式与完成标准。
+- [版本迁移指南](docs/PORTING.md)：迁移范围、验证命令及尚需人工检查的项目。
 - [服务端管理](docs/SERVER_ADMIN.md)：照片存储、维护命令与问题报告。
 - [更新记录](CHANGELOG.md)：版本功能与修复历史。
 - [安全策略](SECURITY.md)：私密报告漏洞的方式。

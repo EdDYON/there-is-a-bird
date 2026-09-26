@@ -208,13 +208,12 @@ public final class CameraPreviewPostEffect {
         RenderSystem.setShaderTexture(0, target.getColorTextureId());
 
         Matrix4f matrix = graphics.pose().last().pose();
-        BufferBuilder builder = Tesselator.getInstance().getBuilder();
-        builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        builder.vertex(matrix, left, bottom, 0.0F).uv(u0, vBottom).endVertex();
-        builder.vertex(matrix, right, bottom, 0.0F).uv(u1, vBottom).endVertex();
-        builder.vertex(matrix, right, top, 0.0F).uv(u1, vTop).endVertex();
-        builder.vertex(matrix, left, top, 0.0F).uv(u0, vTop).endVertex();
-        BufferUploader.drawWithShader(builder.end());
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+        builder.addVertex(matrix, left, bottom, 0.0F).setUv(u0, vBottom);
+        builder.addVertex(matrix, right, bottom, 0.0F).setUv(u1, vBottom);
+        builder.addVertex(matrix, right, top, 0.0F).setUv(u1, vTop);
+        builder.addVertex(matrix, left, top, 0.0F).setUv(u0, vTop);
+        BufferUploader.drawWithShader(builder.buildOrThrow());
 
         RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();
@@ -383,7 +382,7 @@ public final class CameraPreviewPostEffect {
             return null;
         }
         String path = String.format(Locale.ROOT, "shaders/post/camera_filter_%02d.json", filter.id());
-        return new ResourceLocation(GuaniaoMod.MOD_ID, path);
+        return ResourceLocation.fromNamespaceAndPath(GuaniaoMod.MOD_ID, path);
     }
 
     public static void close() {

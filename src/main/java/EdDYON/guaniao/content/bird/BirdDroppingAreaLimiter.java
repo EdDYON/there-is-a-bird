@@ -12,13 +12,13 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.level.LevelEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.tick.*;
+import net.neoforged.neoforge.event.level.LevelEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /** Server-thread-only rate limit shared by all naturally defecating bird species. */
-@Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
+@EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
 public final class BirdDroppingAreaLimiter {
     private static final int CELL_SIZE = 16;
     private static final int CLEANUP_INTERVAL_TICKS = 600;
@@ -43,10 +43,7 @@ public final class BirdDroppingAreaLimiter {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) {
-            return;
-        }
+    public static void onServerTick(ServerTickEvent.Post event) {
         Iterator<Map.Entry<ServerLevel, AreaWindows>> iterator = WINDOWS.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<ServerLevel, AreaWindows> entry = iterator.next();

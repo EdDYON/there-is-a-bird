@@ -12,16 +12,16 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ShearsItem;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Shearing: right-click a bird with shears to pluck one of its species' color feathers.
  * The feather needs time to regrow before the bird can be sheared again; mutations yield
  * the closest matching special color.
  */
-@Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
+@EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
 public final class BirdShearEvents {
     private static final String TAG_LAST_SHEAR = "GuaniaoLastShearTime";
     private static final int REGROW_TICKS = 6000;
@@ -71,7 +71,7 @@ public final class BirdShearEvents {
         data.putLong(TAG_LAST_SHEAR, now);
         BirdFeatherEvents.spawnFeather(bird, feather, 1);
         BirdFlightLock.disableFlight(bird, REGROW_TICKS);
-        stack.hurtAndBreak(1, player, broken -> broken.broadcastBreakEvent(event.getHand()));
+        stack.hurtAndBreak(1, player, LivingEntity.getSlotForHand(event.getHand()));
         player.displayClientMessage(Component.translatable("message.guaniao.bird_shear.success"), true);
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.SUCCESS);

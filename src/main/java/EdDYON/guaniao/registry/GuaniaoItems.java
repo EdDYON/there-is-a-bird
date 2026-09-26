@@ -43,90 +43,87 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.RecordItem;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.level.block.Block;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.IForgeRegistry;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 public final class GuaniaoItems {
-    public static final DeferredRegister<Item> ITEMS = DeferredRegister.create((IForgeRegistry)ForgeRegistries.ITEMS, (String)"guaniao");
-    public static final RegistryObject<Item> NIGHT_HERON_SPAWN_EGG = GuaniaoItems.registerSpawnEgg("night_heron_spawn_egg", GuaniaoEntityTypes.NIGHT_HERON, 6121331, 14198125);
-    public static final RegistryObject<Item> SPARROW_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(SparrowDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.SPARROW, SparrowDefinition.SPAWN_EGG_BASE_COLOR, SparrowDefinition.SPAWN_EGG_SPOT_COLOR);
-    public static final RegistryObject<Item> LONG_TAILED_TIT_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(LongTailedTitDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.LONG_TAILED_TIT, LongTailedTitDefinition.SPAWN_EGG_BASE_COLOR, LongTailedTitDefinition.SPAWN_EGG_SPOT_COLOR);
-    public static final RegistryObject<Item> COCKATIEL_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(CockatielDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.COCKATIEL, CockatielDefinition.SPAWN_EGG_BASE_COLOR, CockatielDefinition.SPAWN_EGG_SPOT_COLOR);
-    public static final RegistryObject<Item> MACAW_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(MacawDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.MACAW, MacawDefinition.SPAWN_EGG_BASE_COLOR, MacawDefinition.SPAWN_EGG_SPOT_COLOR);
-    public static final RegistryObject<Item> BUDGERIGAR_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(BudgerigarDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.BUDGERIGAR, BudgerigarDefinition.SPAWN_EGG_BASE_COLOR, BudgerigarDefinition.SPAWN_EGG_SPOT_COLOR);
-    public static final RegistryObject<Item> SPOTTED_DOVE_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(SpottedDoveDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.SPOTTED_DOVE, SpottedDoveDefinition.SPAWN_EGG_BASE_COLOR, SpottedDoveDefinition.SPAWN_EGG_SPOT_COLOR);
-    public static final RegistryObject<Item> PIGEON_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(PigeonDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.PIGEON, PigeonDefinition.SPAWN_EGG_BASE_COLOR, PigeonDefinition.SPAWN_EGG_SPOT_COLOR);
-    public static final RegistryObject<Item> CROW_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(CrowDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.CROW, CrowDefinition.SPAWN_EGG_BASE_COLOR, CrowDefinition.SPAWN_EGG_SPOT_COLOR);
-    public static final RegistryObject<Item> SEAGULL_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(SeagullDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.SEAGULL, SeagullDefinition.SPAWN_EGG_BASE_COLOR, SeagullDefinition.SPAWN_EGG_SPOT_COLOR);
-    public static final RegistryObject<Item> KIWI_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(KiwiDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.KIWI, KiwiDefinition.SPAWN_EGG_BASE_COLOR, KiwiDefinition.SPAWN_EGG_SPOT_COLOR);
-    public static final RegistryObject<Item> MYNA_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(MynaDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.MYNA, MynaDefinition.SPAWN_EGG_BASE_COLOR, MynaDefinition.SPAWN_EGG_SPOT_COLOR);
-    public static final RegistryObject<Item> WOODCOCK_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(WoodcockDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.WOODCOCK, WoodcockDefinition.SPAWN_EGG_BASE_COLOR, WoodcockDefinition.SPAWN_EGG_SPOT_COLOR);
-    public static final RegistryObject<Item> KESTREL_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(KestrelDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.KESTREL, KestrelDefinition.SPAWN_EGG_BASE_COLOR, KestrelDefinition.SPAWN_EGG_SPOT_COLOR);
-    public static final RegistryObject<Item> CASSOWARY_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(CassowaryDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.CASSOWARY, CassowaryDefinition.SPAWN_EGG_BASE_COLOR, CassowaryDefinition.SPAWN_EGG_SPOT_COLOR);
-    public static final RegistryObject<Item> UMBRELLA_COCKATOO_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(UmbrellaCockatooDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.UMBRELLA_COCKATOO, UmbrellaCockatooDefinition.SPAWN_EGG_BASE_COLOR, UmbrellaCockatooDefinition.SPAWN_EGG_SPOT_COLOR);
-    public static final RegistryObject<Item> EARTHWORM = ITEMS.register("earthworm", () -> new EarthwormItem(new Item.Properties().stacksTo(64)));
-    public static final RegistryObject<Item> BREADCRUMBS = ITEMS.register("breadcrumbs", () -> new BreadcrumbItem(new Item.Properties()));
-    public static final RegistryObject<Item> RAW_FRIES = ITEMS.register("raw_fries", () ->
+    public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(BuiltInRegistries.ITEM, (String)"guaniao");
+    public static final Supplier<Item> NIGHT_HERON_SPAWN_EGG = GuaniaoItems.registerSpawnEgg("night_heron_spawn_egg", GuaniaoEntityTypes.NIGHT_HERON, 6121331, 14198125);
+    public static final Supplier<Item> SPARROW_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(SparrowDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.SPARROW, SparrowDefinition.SPAWN_EGG_BASE_COLOR, SparrowDefinition.SPAWN_EGG_SPOT_COLOR);
+    public static final Supplier<Item> LONG_TAILED_TIT_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(LongTailedTitDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.LONG_TAILED_TIT, LongTailedTitDefinition.SPAWN_EGG_BASE_COLOR, LongTailedTitDefinition.SPAWN_EGG_SPOT_COLOR);
+    public static final Supplier<Item> COCKATIEL_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(CockatielDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.COCKATIEL, CockatielDefinition.SPAWN_EGG_BASE_COLOR, CockatielDefinition.SPAWN_EGG_SPOT_COLOR);
+    public static final Supplier<Item> MACAW_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(MacawDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.MACAW, MacawDefinition.SPAWN_EGG_BASE_COLOR, MacawDefinition.SPAWN_EGG_SPOT_COLOR);
+    public static final Supplier<Item> BUDGERIGAR_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(BudgerigarDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.BUDGERIGAR, BudgerigarDefinition.SPAWN_EGG_BASE_COLOR, BudgerigarDefinition.SPAWN_EGG_SPOT_COLOR);
+    public static final Supplier<Item> SPOTTED_DOVE_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(SpottedDoveDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.SPOTTED_DOVE, SpottedDoveDefinition.SPAWN_EGG_BASE_COLOR, SpottedDoveDefinition.SPAWN_EGG_SPOT_COLOR);
+    public static final Supplier<Item> PIGEON_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(PigeonDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.PIGEON, PigeonDefinition.SPAWN_EGG_BASE_COLOR, PigeonDefinition.SPAWN_EGG_SPOT_COLOR);
+    public static final Supplier<Item> CROW_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(CrowDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.CROW, CrowDefinition.SPAWN_EGG_BASE_COLOR, CrowDefinition.SPAWN_EGG_SPOT_COLOR);
+    public static final Supplier<Item> SEAGULL_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(SeagullDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.SEAGULL, SeagullDefinition.SPAWN_EGG_BASE_COLOR, SeagullDefinition.SPAWN_EGG_SPOT_COLOR);
+    public static final Supplier<Item> KIWI_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(KiwiDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.KIWI, KiwiDefinition.SPAWN_EGG_BASE_COLOR, KiwiDefinition.SPAWN_EGG_SPOT_COLOR);
+    public static final Supplier<Item> MYNA_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(MynaDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.MYNA, MynaDefinition.SPAWN_EGG_BASE_COLOR, MynaDefinition.SPAWN_EGG_SPOT_COLOR);
+    public static final Supplier<Item> WOODCOCK_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(WoodcockDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.WOODCOCK, WoodcockDefinition.SPAWN_EGG_BASE_COLOR, WoodcockDefinition.SPAWN_EGG_SPOT_COLOR);
+    public static final Supplier<Item> KESTREL_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(KestrelDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.KESTREL, KestrelDefinition.SPAWN_EGG_BASE_COLOR, KestrelDefinition.SPAWN_EGG_SPOT_COLOR);
+    public static final Supplier<Item> CASSOWARY_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(CassowaryDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.CASSOWARY, CassowaryDefinition.SPAWN_EGG_BASE_COLOR, CassowaryDefinition.SPAWN_EGG_SPOT_COLOR);
+    public static final Supplier<Item> UMBRELLA_COCKATOO_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(UmbrellaCockatooDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.UMBRELLA_COCKATOO, UmbrellaCockatooDefinition.SPAWN_EGG_BASE_COLOR, UmbrellaCockatooDefinition.SPAWN_EGG_SPOT_COLOR);
+    public static final Supplier<Item> EARTHWORM = ITEMS.register("earthworm", () -> new EarthwormItem(new Item.Properties().stacksTo(64)));
+    public static final Supplier<Item> BREADCRUMBS = ITEMS.register("breadcrumbs", () -> new BreadcrumbItem(new Item.Properties()));
+    public static final Supplier<Item> RAW_FRIES = ITEMS.register("raw_fries", () ->
             new Item(new Item.Properties().stacksTo(64)));
-    public static final RegistryObject<Item> COOKED_FRIES = ITEMS.register("cooked_fries", () ->
+    public static final Supplier<Item> COOKED_FRIES = ITEMS.register("cooked_fries", () ->
             new Item(new Item.Properties().stacksTo(64).food(new FoodProperties.Builder()
-                    .nutrition(4).saturationMod(0.35F).build())));
-    public static final RegistryObject<Item> BAGGED_FRIES = ITEMS.register("bagged_fries", () ->
+                    .nutrition(4).saturationModifier(0.35F).build())));
+    public static final Supplier<Item> BAGGED_FRIES = ITEMS.register("bagged_fries", () ->
             new BlockItem(GuaniaoBlocks.BAGGED_FRIES.get(), new Item.Properties().stacksTo(16)));
-    public static final RegistryObject<Item> LAXATIVE = ITEMS.register("laxative", () ->
+    public static final Supplier<Item> LAXATIVE = ITEMS.register("laxative", () ->
             new Item(new Item.Properties().stacksTo(16)));
-    public static final RegistryObject<Item> BIRD_GUIDE = ITEMS.register("bird_guide", () -> new BirdGuideItem(new Item.Properties().stacksTo(1)));
-    public static final RegistryObject<Item> NIKON_D750 = ITEMS.register("nikon_d750", () -> new NikonD750Item(new Item.Properties().stacksTo(1)));
-    public static final RegistryObject<Item> FILM = ITEMS.register("film", () -> new FilmItem(new Item.Properties().stacksTo(1)));
-    public static final RegistryObject<Item> PHOTOGRAPH = ITEMS.register("photograph", () -> new PhotographItem(new Item.Properties().stacksTo(16)));
-    public static final RegistryObject<Item> MUSIC_DISC_UWU_FUNK = ITEMS.register("music_disc_uwu_funk", () ->
-            new RecordItem(7, GuaniaoSoundEvents.MUSIC_DISC_UWU_FUNK, new Item.Properties().stacksTo(1), 2411));
-    public static final RegistryObject<Item> BIRD_DROPPING_1 = ITEMS.register("bird_dropping_1", () -> new BirdDroppingItem(BirdDroppingVariant.ONE, new Item.Properties().stacksTo(16)));
-    public static final RegistryObject<Item> BIRD_DROPPING_2 = ITEMS.register("bird_dropping_2", () -> new BirdDroppingItem(BirdDroppingVariant.TWO, new Item.Properties().stacksTo(16)));
-    public static final RegistryObject<Item> BIRD_DROPPING_3 = ITEMS.register("bird_dropping_3", () -> new BirdDroppingItem(BirdDroppingVariant.THREE, new Item.Properties().stacksTo(16)));
-    public static final RegistryObject<Item> BIRD_DROPPING_4 = ITEMS.register("bird_dropping_4", () -> new BirdDroppingItem(BirdDroppingVariant.FOUR, new Item.Properties().stacksTo(16)));
-    public static final RegistryObject<Item> SMALL_BIRD_CAGE = GuaniaoItems.registerBirdCageItem(BirdCageVariant.SMALL, GuaniaoBlocks.SMALL_BIRD_CAGE);
-    public static final RegistryObject<Item> MEDIUM_BIRD_CAGE = GuaniaoItems.registerBirdCageItem(BirdCageVariant.MEDIUM, GuaniaoBlocks.MEDIUM_BIRD_CAGE);
-    public static final RegistryObject<Item> LARGE_BIRD_CAGE = GuaniaoItems.registerBirdCageItem(BirdCageVariant.LARGE, GuaniaoBlocks.LARGE_BIRD_CAGE);
-    public static final RegistryObject<Item> WOODEN_BIRD_BATH = GuaniaoItems.registerBirdBathItem(BirdBathVariant.WOODEN_BIRD_BATH, GuaniaoBlocks.WOODEN_BIRD_BATH);
-    public static final RegistryObject<Item> STONE_BIRD_BATH = GuaniaoItems.registerBirdBathItem(BirdBathVariant.STONE_BIRD_BATH, GuaniaoBlocks.STONE_BIRD_BATH);
-    public static final RegistryObject<Item> BIRD_BATH = GuaniaoItems.registerBirdBathItem(BirdBathVariant.BIRD_BATH, GuaniaoBlocks.BIRD_BATH);
-    public static final RegistryObject<Item> WOODEN_BIRD_BATH_2 = GuaniaoItems.registerBirdBathItem(BirdBathVariant.WOODEN_BIRD_BATH_2, GuaniaoBlocks.WOODEN_BIRD_BATH_2);
-    public static final RegistryObject<Item> STONE_BIRD_BATH_2 = GuaniaoItems.registerBirdBathItem(BirdBathVariant.STONE_BIRD_BATH_2, GuaniaoBlocks.STONE_BIRD_BATH_2);
-    public static final RegistryObject<Item> BIRD_BATH_2 = GuaniaoItems.registerBirdBathItem(BirdBathVariant.BIRD_BATH_2, GuaniaoBlocks.BIRD_BATH_2);
-    public static final RegistryObject<Item> CROW_NEST = ITEMS.register("crow_nest", () ->
+    public static final Supplier<Item> BIRD_GUIDE = ITEMS.register("bird_guide", () -> new BirdGuideItem(new Item.Properties().stacksTo(1)));
+    public static final Supplier<Item> NIKON_D750 = ITEMS.register("nikon_d750", () -> new NikonD750Item(new Item.Properties().stacksTo(1)));
+    public static final Supplier<Item> FILM = ITEMS.register("film", () -> new FilmItem(new Item.Properties().stacksTo(1)));
+    public static final Supplier<Item> PHOTOGRAPH = ITEMS.register("photograph", () -> new PhotographItem(new Item.Properties().stacksTo(16)));
+    public static final Supplier<Item> MUSIC_DISC_UWU_FUNK = ITEMS.register("music_disc_uwu_funk", () ->
+            new Item(new Item.Properties().stacksTo(1).jukeboxPlayable(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.JUKEBOX_SONG, net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("guaniao", "uwu_funk")))));
+    public static final Supplier<Item> BIRD_DROPPING_1 = ITEMS.register("bird_dropping_1", () -> new BirdDroppingItem(BirdDroppingVariant.ONE, new Item.Properties().stacksTo(16)));
+    public static final Supplier<Item> BIRD_DROPPING_2 = ITEMS.register("bird_dropping_2", () -> new BirdDroppingItem(BirdDroppingVariant.TWO, new Item.Properties().stacksTo(16)));
+    public static final Supplier<Item> BIRD_DROPPING_3 = ITEMS.register("bird_dropping_3", () -> new BirdDroppingItem(BirdDroppingVariant.THREE, new Item.Properties().stacksTo(16)));
+    public static final Supplier<Item> BIRD_DROPPING_4 = ITEMS.register("bird_dropping_4", () -> new BirdDroppingItem(BirdDroppingVariant.FOUR, new Item.Properties().stacksTo(16)));
+    public static final Supplier<Item> SMALL_BIRD_CAGE = GuaniaoItems.registerBirdCageItem(BirdCageVariant.SMALL, GuaniaoBlocks.SMALL_BIRD_CAGE);
+    public static final Supplier<Item> MEDIUM_BIRD_CAGE = GuaniaoItems.registerBirdCageItem(BirdCageVariant.MEDIUM, GuaniaoBlocks.MEDIUM_BIRD_CAGE);
+    public static final Supplier<Item> LARGE_BIRD_CAGE = GuaniaoItems.registerBirdCageItem(BirdCageVariant.LARGE, GuaniaoBlocks.LARGE_BIRD_CAGE);
+    public static final Supplier<Item> WOODEN_BIRD_BATH = GuaniaoItems.registerBirdBathItem(BirdBathVariant.WOODEN_BIRD_BATH, GuaniaoBlocks.WOODEN_BIRD_BATH);
+    public static final Supplier<Item> STONE_BIRD_BATH = GuaniaoItems.registerBirdBathItem(BirdBathVariant.STONE_BIRD_BATH, GuaniaoBlocks.STONE_BIRD_BATH);
+    public static final Supplier<Item> BIRD_BATH = GuaniaoItems.registerBirdBathItem(BirdBathVariant.BIRD_BATH, GuaniaoBlocks.BIRD_BATH);
+    public static final Supplier<Item> WOODEN_BIRD_BATH_2 = GuaniaoItems.registerBirdBathItem(BirdBathVariant.WOODEN_BIRD_BATH_2, GuaniaoBlocks.WOODEN_BIRD_BATH_2);
+    public static final Supplier<Item> STONE_BIRD_BATH_2 = GuaniaoItems.registerBirdBathItem(BirdBathVariant.STONE_BIRD_BATH_2, GuaniaoBlocks.STONE_BIRD_BATH_2);
+    public static final Supplier<Item> BIRD_BATH_2 = GuaniaoItems.registerBirdBathItem(BirdBathVariant.BIRD_BATH_2, GuaniaoBlocks.BIRD_BATH_2);
+    public static final Supplier<Item> CROW_NEST = ITEMS.register("crow_nest", () ->
             new CrowNestItem(GuaniaoBlocks.CROW_NEST.get(), new Item.Properties()));
-    public static final RegistryObject<Item> WIND_FEATHER_FAN = ITEMS.register("wind_feather_fan", () ->
+    public static final Supplier<Item> WIND_FEATHER_FAN = ITEMS.register("wind_feather_fan", () ->
             new FeatherFanItem(new Item.Properties().durability(250)));
-    public static final RegistryObject<Item> BURIAL_PLUME_BOOK = ITEMS.register("burial_plume_book", () ->
+    public static final Supplier<Item> BURIAL_PLUME_BOOK = ITEMS.register("burial_plume_book", () ->
             new BurialPlumeBookItem(new Item.Properties().stacksTo(1)));
-    public static final RegistryObject<Item> RIVEN_PLUME_BOOK = ITEMS.register("riven_plume_book", () ->
+    public static final Supplier<Item> RIVEN_PLUME_BOOK = ITEMS.register("riven_plume_book", () ->
             new RivenPlumeBookItem(new Item.Properties().stacksTo(1)));
-    public static final RegistryObject<Item> HUNTING_RETURN_BOOK = ITEMS.register("hunting_return_book", () ->
+    public static final Supplier<Item> HUNTING_RETURN_BOOK = ITEMS.register("hunting_return_book", () ->
             new HuntingReturnBookItem(new Item.Properties().stacksTo(1)));
-    public static final RegistryObject<Item> FEATHER_WHITE = GuaniaoItems.registerFeather("feather_white");
-    public static final RegistryObject<Item> FEATHER_GREY = GuaniaoItems.registerFeather("feather_grey");
-    public static final RegistryObject<Item> FEATHER_BLACK = GuaniaoItems.registerFeather("feather_black");
-    public static final RegistryObject<Item> FEATHER_BROWN = GuaniaoItems.registerFeather("feather_brown");
-    public static final RegistryObject<Item> FEATHER_CHESTNUT = GuaniaoItems.registerFeather("feather_chestnut");
-    public static final RegistryObject<Item> FEATHER_RED = GuaniaoItems.registerFeather("feather_red");
-    public static final RegistryObject<Item> FEATHER_ORANGE = GuaniaoItems.registerFeather("feather_orange");
-    public static final RegistryObject<Item> FEATHER_YELLOW = GuaniaoItems.registerFeather("feather_yellow");
-    public static final RegistryObject<Item> FEATHER_GREEN = GuaniaoItems.registerFeather("feather_green");
-    public static final RegistryObject<Item> FEATHER_BLUE = GuaniaoItems.registerFeather("feather_blue");
-    public static final RegistryObject<Item> FEATHER_PINK = GuaniaoItems.registerFeather("feather_pink");
-    public static final RegistryObject<Item> FEATHER_PURPLE = GuaniaoItems.registerFeather("feather_purple");
-    public static final RegistryObject<Item> FEATHER_RAINBOW = GuaniaoItems.registerFeather("feather_rainbow");
-    public static final RegistryObject<Item> FEATHER_SPECKLED = GuaniaoItems.registerFeather("feather_speckled");
-    public static final RegistryObject<Item> FEATHER_BARRED = GuaniaoItems.registerFeather("feather_barred");
+    public static final Supplier<Item> FEATHER_WHITE = GuaniaoItems.registerFeather("feather_white");
+    public static final Supplier<Item> FEATHER_GREY = GuaniaoItems.registerFeather("feather_grey");
+    public static final Supplier<Item> FEATHER_BLACK = GuaniaoItems.registerFeather("feather_black");
+    public static final Supplier<Item> FEATHER_BROWN = GuaniaoItems.registerFeather("feather_brown");
+    public static final Supplier<Item> FEATHER_CHESTNUT = GuaniaoItems.registerFeather("feather_chestnut");
+    public static final Supplier<Item> FEATHER_RED = GuaniaoItems.registerFeather("feather_red");
+    public static final Supplier<Item> FEATHER_ORANGE = GuaniaoItems.registerFeather("feather_orange");
+    public static final Supplier<Item> FEATHER_YELLOW = GuaniaoItems.registerFeather("feather_yellow");
+    public static final Supplier<Item> FEATHER_GREEN = GuaniaoItems.registerFeather("feather_green");
+    public static final Supplier<Item> FEATHER_BLUE = GuaniaoItems.registerFeather("feather_blue");
+    public static final Supplier<Item> FEATHER_PINK = GuaniaoItems.registerFeather("feather_pink");
+    public static final Supplier<Item> FEATHER_PURPLE = GuaniaoItems.registerFeather("feather_purple");
+    public static final Supplier<Item> FEATHER_RAINBOW = GuaniaoItems.registerFeather("feather_rainbow");
+    public static final Supplier<Item> FEATHER_SPECKLED = GuaniaoItems.registerFeather("feather_speckled");
+    public static final Supplier<Item> FEATHER_BARRED = GuaniaoItems.registerFeather("feather_barred");
 
     /** Each species' natural feather colors, in display order. The rainbow feather is not here — it only drops from rainbow mutation birds. */
-    private static final EnumMap<BirdSpecies, List<RegistryObject<Item>>> FEATHERS_BY_SPECIES = new EnumMap<>(BirdSpecies.class);
+    private static final EnumMap<BirdSpecies, List<Supplier<Item>>> FEATHERS_BY_SPECIES = new EnumMap<>(BirdSpecies.class);
 
     static {
         FEATHERS_BY_SPECIES.put(BirdSpecies.NIGHT_HERON, List.of(FEATHER_WHITE, FEATHER_GREY, FEATHER_BLACK));
@@ -150,28 +147,28 @@ public final class GuaniaoItems {
     private GuaniaoItems() {
     }
 
-    private static RegistryObject<Item> registerSpawnEgg(String id, Supplier<? extends EntityType<? extends Mob>> entityTypeSupplier, int baseColor, int spotColor) {
+    private static Supplier<Item> registerSpawnEgg(String id, Supplier<? extends EntityType<? extends Mob>> entityTypeSupplier, int baseColor, int spotColor) {
         return ITEMS.register(id, () -> new FullColorSpawnEggItem(entityTypeSupplier, baseColor, spotColor, new Item.Properties()));
     }
 
-    private static RegistryObject<Item> registerFeather(String id) {
+    private static Supplier<Item> registerFeather(String id) {
         return ITEMS.register(id, () -> new Item(new Item.Properties().stacksTo(64)));
     }
 
     /** A species' natural feather colors, or an empty list for non-birds. */
     public static List<Item> feathersFor(BirdSpecies species) {
-        List<RegistryObject<Item>> feathers = FEATHERS_BY_SPECIES.get(species);
+        List<Supplier<Item>> feathers = FEATHERS_BY_SPECIES.get(species);
         if (feathers == null || feathers.isEmpty()) {
             return List.of();
         }
-        return feathers.stream().map(RegistryObject::get).toList();
+        return feathers.stream().map(Supplier::get).toList();
     }
 
-    private static RegistryObject<Item> registerBirdCageItem(BirdCageVariant variant, Supplier<? extends Block> blockSupplier) {
+    private static Supplier<Item> registerBirdCageItem(BirdCageVariant variant, Supplier<? extends Block> blockSupplier) {
         return ITEMS.register(variant.id(), () -> new BirdCageItem(variant, blockSupplier.get(), new Item.Properties()));
     }
 
-    private static RegistryObject<Item> registerBirdBathItem(BirdBathVariant variant, Supplier<? extends Block> blockSupplier) {
+    private static Supplier<Item> registerBirdBathItem(BirdBathVariant variant, Supplier<? extends Block> blockSupplier) {
         return ITEMS.register(variant.id(), () -> new BirdBathItem(variant, blockSupplier.get(), new Item.Properties()));
     }
 }

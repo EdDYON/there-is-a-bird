@@ -20,13 +20,13 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.tick.*;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
-@Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
+@EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
 public final class KiwiFightCommands {
     private static final String AUDIENCE_TAG = "guaniao.kiwi_fight_audience";
     private static final int MIN_CELEBRATION_TICKS = 40;
@@ -47,8 +47,8 @@ public final class KiwiFightCommands {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || ACTIVE_AUDIENCE_SCENES.isEmpty()) {
+    public static void onServerTick(ServerTickEvent.Post event) {
+        if (ACTIVE_AUDIENCE_SCENES.isEmpty()) {
             return;
         }
         Iterator<AudienceScene> iterator = ACTIVE_AUDIENCE_SCENES.iterator();
@@ -173,7 +173,7 @@ public final class KiwiFightCommands {
         Vec3 towardCenter = center.subtract(desired);
         float yaw = (float)(Math.atan2(towardCenter.z, towardCenter.x) * 180.0D / Math.PI) - 90.0F;
         mob.moveTo(desired.x, stand.getY(), desired.z, yaw, 0.0F);
-        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(stand), MobSpawnType.COMMAND, null, null);
+        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(stand), MobSpawnType.COMMAND, null);
         mob.setYRot(yaw);
         mob.setYHeadRot(yaw);
         mob.yBodyRot = yaw;
@@ -350,7 +350,7 @@ public final class KiwiFightCommands {
             return null;
         }
         kiwi.moveTo(desired.x, stand.getY(), desired.z, yaw, 0.0F);
-        kiwi.finalizeSpawn(level, level.getCurrentDifficultyAt(stand), MobSpawnType.COMMAND, null, null);
+        kiwi.finalizeSpawn(level, level.getCurrentDifficultyAt(stand), MobSpawnType.COMMAND, null);
         kiwi.setPersistenceRequired();
         return kiwi;
     }

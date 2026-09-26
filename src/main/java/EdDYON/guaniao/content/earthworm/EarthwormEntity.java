@@ -24,7 +24,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.Nullable;
 
 /** A small server-controlled crawler; it only burrows while supported by soil. */
@@ -82,8 +81,8 @@ public final class EarthwormEntity extends Entity {
     }
 
     @Override
-    protected void defineSynchedData() {
-        this.entityData.define(BURROW, 0);
+    protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
+        builder.define(BURROW, 0);
     }
 
     @Override
@@ -163,7 +162,7 @@ public final class EarthwormEntity extends Entity {
     @Override public float getPickRadius() { return 0.08F; }
 
     @Override
-    public void lerpTo(double x, double y, double z, float yaw, float pitch, int steps, boolean teleport) {
+    public void lerpTo(double x, double y, double z, float yaw, float pitch, int steps) {
         this.lerpX = x; this.lerpY = y; this.lerpZ = z;
         this.lerpYaw = yaw;
         this.lerpSteps = Math.max(1, steps);
@@ -188,7 +187,7 @@ public final class EarthwormEntity extends Entity {
     }
 
     @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
+    public Packet<ClientGamePacketListener> getAddEntityPacket(net.minecraft.server.level.ServerEntity pairing) {
+        return super.getAddEntityPacket(pairing);
     }
 }

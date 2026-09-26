@@ -33,7 +33,7 @@ public final class PollutedCakeData extends SavedData {
     private Map.Entry<Long, Set<Long>> currentChunk;
 
     public static PollutedCakeData get(ServerLevel level) {
-        return level.getDataStorage().computeIfAbsent(PollutedCakeData::load, PollutedCakeData::new, DATA_NAME);
+        return level.getDataStorage().computeIfAbsent(new SavedData.Factory<>(PollutedCakeData::new, (tag, registries) -> PollutedCakeData.load(tag)), DATA_NAME);
     }
 
     public static PollutedCakeData load(CompoundTag tag) {
@@ -119,7 +119,7 @@ public final class PollutedCakeData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
         int size = this.positionsByChunk.values().stream().mapToInt(Set::size).sum();
         long[] packedPositions = new long[size];
         int index = 0;

@@ -3,12 +3,12 @@ package EdDYON.guaniao.event;
 import EdDYON.guaniao.GuaniaoMod;
 import EdDYON.guaniao.content.camera.LegacyPhotoMigration;
 import net.minecraft.world.inventory.Slot;
-import net.minecraftforge.event.entity.player.PlayerContainerEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.player.PlayerContainerEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
-@Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
+@EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
 public final class PhotoLegacyMigrationEvents {
     private PhotoLegacyMigrationEvents() {
     }

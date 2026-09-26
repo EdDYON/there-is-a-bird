@@ -18,15 +18,15 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.tick.*;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /** Operator-controlled bird load test with automatic reporting and cleanup. */
-@Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
+@EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
 public final class BirdStressTestManager {
     private static final String STRESS_TAG = "GuaniaoStressTest";
     private static final int SPAWNS_PER_TICK = 8;
@@ -100,11 +100,12 @@ public final class BirdStressTestManager {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase == TickEvent.Phase.START) {
-            tickStartedNanos = System.nanoTime();
-            return;
-        }
+    public static void onServerTickStart(ServerTickEvent.Pre event) {
+        tickStartedNanos = System.nanoTime();
+    }
+
+    @SubscribeEvent
+    public static void onServerTick(ServerTickEvent.Post event) {
         if (active == null) {
             return;
         }
@@ -153,7 +154,7 @@ public final class BirdStressTestManager {
             BlockPos pos = new BlockPos(x, surfaceY + 2 + session.level.random.nextInt(5), z);
             mob.moveTo(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D,
                     session.level.random.nextFloat() * 360.0F, 0.0F);
-            mob.finalizeSpawn(session.level, session.level.getCurrentDifficultyAt(pos), MobSpawnType.COMMAND, null, null);
+            mob.finalizeSpawn(session.level, session.level.getCurrentDifficultyAt(pos), MobSpawnType.COMMAND, null);
             mob.getPersistentData().putBoolean(STRESS_TAG, true);
             mob.setPersistenceRequired();
             if (!session.level.noCollision(mob, mob.getBoundingBox()) || !session.level.addFreshEntity(mob)) {

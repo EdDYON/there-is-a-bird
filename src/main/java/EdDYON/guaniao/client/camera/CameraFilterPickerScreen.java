@@ -693,7 +693,7 @@ public final class CameraFilterPickerScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalDelta, double delta) {
         if (delta == 0.0D) {
             return true;
         }

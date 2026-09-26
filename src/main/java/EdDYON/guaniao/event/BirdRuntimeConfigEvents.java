@@ -5,11 +5,11 @@ import EdDYON.guaniao.config.BirdConfigManager;
 import EdDYON.guaniao.network.BirdRuntimeConfigPacket;
 import EdDYON.guaniao.network.GuaniaoNetwork;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
-@Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
+@EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
 public final class BirdRuntimeConfigEvents {
     private BirdRuntimeConfigEvents() {
     }

@@ -1,140 +1,181 @@
-buildscript {
-    repositories {
-        maven { url = 'https://maven.minecraftforge.net' }
-        maven { url = 'https://maven.parchmentmc.org' }
-        maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
-        mavenCentral()
-    }
-    dependencies {
-        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '[6.0,6.2)', changing: true
-        classpath group: 'org.parchmentmc', name: 'librarian', version: '1.+', changing: true
-        classpath group: 'org.spongepowered', name: 'mixingradle', version: '0.7-SNAPSHOT'
-    }
-}
-
 plugins {
+    id 'java-library'
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
+    id 'net.neoforged.moddev' version '2.0.144'
 }
-
-apply plugin: 'net.minecraftforge.gradle'
-apply plugin: 'org.parchmentmc.librarian.forgegradle'
-apply plugin: 'org.spongepowered.mixin'
 
 version = mod_version
 group = mod_group_id
+base { archivesName = "${mod_id}-neoforge-${minecraft_version}" }
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+java.withSourcesJar()
 
-base {
-    archivesName = mod_id
-}
-
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
-
-println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
-
-minecraft {
-    mappings channel: mapping_channel, version: mapping_version
-
-    copyIdeResources = true
-
-    runs {
-        configureEach {
-            property 'forge.logging.markers', 'REGISTRIES'
-            property 'forge.logging.console.level', 'debug'
-            property 'forge.enabledGameTestNamespaces', mod_id
-            property 'geckolib.disable_examples', 'true'
-
-            mods {
-                create(mod_id) {
-                    source sourceSets.main
-                }
-            }
-        }
-
-        client {
-            workingDirectory project.file('run/client')
-        }
-
-        server {
-            workingDirectory project.file('run/server')
-        }
-
-        gameTestServer {
-            workingDirectory project.file('run/testServer')
-        }
-
-        data {
-            workingDirectory project.file('run/data')
-            args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
-        }
+sourceSets {
+    main.resources.srcDir 'src/generated/resources'
+    gameTest {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += output + compileClasspath + sourceSets.main.runtimeClasspath
     }
 }
 
-sourceSets.main.resources { srcDir 'src/generated/resources' }
-
-mixin {
-    add sourceSets.main, 'guaniao.refmap.json'
+neoForge {
+    version = project.neo_version
+    runs {
+        client { client() }
+        server { server(); programArgument '--nogui' }
+        data {
+            data()
+            programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources').absolutePath, '--existing', file('src/main/resources').absolutePath
+        }
+        clientSmoke {
+            client()
+            sourceSet = sourceSets.gameTest
+            gameDirectory = project.file('run-client-smoke')
+            programArguments.addAll '--quickPlaySingleplayer', 'port-test', '--width', '1280', '--height', '800'
+            systemProperty 'guaniao.portClientSmoke', 'true'
+        }
+        gameTestServer {
+            type = 'gameTestServer'
+            sourceSet = sourceSets.gameTest
+            gameDirectory = project.file('run-gametest')
+        }
+        configureEach {
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            systemProperty 'geckolib.disable_examples', 'true'
+        }
+    }
+    mods {
+        "${mod_id}" { sourceSet(sourceSets.main) }
+        guaniao_port_tests { sourceSet(sourceSets.gameTest) }
+    }
+    runs.configureEach { loadedMods = [mods[mod_id]] }
+    runs.clientSmoke { loadedMods = [mods[mod_id], mods.guaniao_port_tests] }
+    runs.gameTestServer {
+        loadedMods = [mods[mod_id], mods.guaniao_port_tests]
+        systemProperty 'neoforge.enabledGameTestNamespaces', 'guaniao_port_tests'
+    }
 }
 
 repositories {
     mavenCentral()
     maven {
+        name = 'GeckoLib'
         url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
-        content {
-            includeGroupByRegex('software\\.bernie.*')
-            includeGroup('com.eliotlash.mclib')
-        }
+        content { includeGroup 'software.bernie.geckolib' }
     }
 }
-
 dependencies {
-    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
-    implementation fg.deobf("software.bernie.geckolib:geckolib-forge-1.20.1:${geckolib_version}")
-    implementation "com.eliotlash.mclib:mclib:20"
-    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+    implementation "software.bernie.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
 }
 
-jar {
-    manifest {
-        attributes([
-                'Specification-Title'     : mod_name,
-                'Specification-Vendor'    : mod_authors,
-                'Specification-Version'   : '1',
-                'Implementation-Title'    : project.name,
-                'Implementation-Version'  : project.jar.archiveVersion,
-                'Implementation-Vendor'   : mod_authors
-        ])
-    }
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs.addAll(['-Xmaxerrs', '1000'])
+}
+
+tasks.named('processResources') {
+    inputs.property('mod_version', project.mod_version)
+    filesMatching('META-INF/neoforge.mods.toml') { expand mod_version: project.mod_version }
+}
+
+tasks.named('jar', Jar) {
+    manifest.attributes([
+        'Specification-Title': mod_name,
+        'Specification-Vendor': mod_authors,
+        'Specification-Version': '1',
+        'Implementation-Title': project.name,
+        'Implementation-Version': project.version,
+        'Implementation-Vendor': mod_authors
+    ])
     preserveFileTimestamps = false
     reproducibleFileOrder = true
-}
-
-jar.finalizedBy('reobfJar')
-
-task sourceJar(type: Jar) {
-    archiveClassifier.set('sources')
-    from sourceSets.main.allJava
-}
-
-artifacts {
-    archives sourceJar
 }
 
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            artifact jar
-            artifact sourceJar
+            artifactId = base.archivesName.get()
+            artifact tasks.named('jar')
+            artifact tasks.named('sourcesJar')
         }
     }
     repositories {
-        maven {
-            url "file://${project.projectDir}/mcmodsrepo"
+        maven { url = uri('mcmodsrepo') }
+    }
+}
+
+// Standalone regression programs need the mapped game and its runtime libraries.
+sourceSets.test {
+    compileClasspath += sourceSets.main.compileClasspath
+    runtimeClasspath += sourceSets.main.runtimeClasspath
+}
+
+// These regressions use main methods and need separate JVMs, not a JUnit engine.
+def regressionTasks = fileTree('src/test/java').matching { include '**/*Test.java' }.files.sort().collect { source ->
+    def className = file('src/test/java').toPath().relativize(source.toPath()).toString()
+            .replace(File.separator, '.').replaceAll(/\.java$/, '')
+    tasks.register("regression_${className.replace('.', '_')}", JavaExec) {
+        group = 'verification'
+        description = "Runs ${className}."
+        dependsOn tasks.named('testClasses')
+        classpath = sourceSets.test.runtimeClasspath
+        mainClass = className
+        javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
+        workingDir = projectDir
+        systemProperty 'java.awt.headless', 'true'
+    }
+}
+
+tasks.register('regressionTest') {
+    group = 'verification'
+    description = 'Runs every standalone Java regression test in its own JVM.'
+    dependsOn regressionTasks
+}
+
+
+tasks.register('verifyReleaseJar') {
+    group = 'verification'
+    description = 'Checks NeoForge metadata, resources, mixins, and isolation of runtime tests.'
+    dependsOn 'jar'
+    doLast {
+        def archive = tasks.named('jar', Jar).get().archiveFile.get().asFile
+        new java.util.jar.JarFile(archive).withCloseable { jarFile ->
+            if (jarFile.manifest.mainAttributes.getValue('Implementation-Version') != project.version.toString()) {
+                throw new GradleException('Release JAR version does not match mod_version')
+            }
+            def metadata = jarFile.getJarEntry('META-INF/neoforge.mods.toml')
+            if (metadata == null) throw new GradleException('NeoForge mod metadata missing')
+            def toml = jarFile.getInputStream(metadata).withCloseable { it.getText('UTF-8') }
+            if (!toml.contains('version="' + project.version + '"') || !toml.contains('config="guaniao.mixins.json"')
+                    || !toml.contains('enumExtensions="META-INF/enumextensions.json"')) {
+                throw new GradleException('Version, Mixin or camera arm pose registration missing')
+            }
+            def readJson = { String name ->
+                def entry = jarFile.getJarEntry(name)
+                if (entry == null) throw new GradleException("Release JAR is missing ${name}")
+                jarFile.getInputStream(entry).withCloseable { stream -> new groovy.json.JsonSlurper().parse(stream, 'UTF-8') }
+            }
+            def mixins = readJson('guaniao.mixins.json')
+            mixins.mixins.each { name ->
+                if (jarFile.getJarEntry("${mixins.package.replace('.', '/')}/${name}.class") == null) {
+                    throw new GradleException("Missing Mixin class: ${name}")
+                }
+            }
+            ['data/guaniao/recipe/nikon_d750.json', 'data/guaniao/enchantment/burial_plume.json',
+             'data/guaniao/enchantment/riven_plume.json', 'data/guaniao/enchantment/hunting_return.json',
+             'data/guaniao/jukebox_song/uwu_funk.json', 'data/guaniao/neoforge/biome_modifier/bird_spawns.json',
+             'data/neoforge/loot_modifiers/global_loot_modifiers.json', 'META-INF/enumextensions.json'].each { readJson(it) }
+            int jsonCount = 0
+            jarFile.entries().each { entry ->
+                if (entry.name.contains('/porttest/') || entry.name.startsWith('data/guaniao_port_tests/')
+                        || entry.name == 'META-INF/mods.toml') throw new GradleException("Unexpected test/Forge file: ${entry.name}")
+                if (!entry.directory && entry.name.endsWith('.json')) { readJson(entry.name); jsonCount++ }
+            }
+            logger.lifecycle("Verified NeoForge release JAR: ${archive.name}; ${jsonCount} JSON resources")
         }
     }
 }
 
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8'
-}
+tasks.named('check') { dependsOn 'regressionTest', 'verifyReleaseJar' }

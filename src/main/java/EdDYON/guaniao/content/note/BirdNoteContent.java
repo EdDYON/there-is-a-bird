@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.StringTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
@@ -326,15 +324,14 @@ public final class BirdNoteContent {
 
     private static ItemStack makeBook(String title, String author, String bodyKey) {
         ItemStack book = new ItemStack(Items.WRITTEN_BOOK);
-        CompoundTag tag = new CompoundTag();
-        tag.putString("title", title);
-        tag.putString("author", author);
-        tag.putBoolean("resolved", true);
-        tag.putByte(NOTE_TAG, (byte) 1);
-        ListTag pages = new ListTag();
-        pages.add(StringTag.valueOf("{\"translate\":\"" + bodyKey + "\"}"));
-        tag.put("pages", pages);
-        book.setTag(tag);
+        CompoundTag marker = new CompoundTag();
+        marker.putByte(NOTE_TAG, (byte) 1);
+        marker.putString("author", author);
+        EdDYON.guaniao.util.ItemData.write(book, marker);
+        book.set(net.minecraft.core.component.DataComponents.WRITTEN_BOOK_CONTENT,
+                new net.minecraft.world.item.component.WrittenBookContent(
+                        net.minecraft.server.network.Filterable.passThrough(title), author, 0,
+                        List.of(net.minecraft.server.network.Filterable.passThrough(net.minecraft.network.chat.Component.translatable(bodyKey))), true));
         return book;
     }
 

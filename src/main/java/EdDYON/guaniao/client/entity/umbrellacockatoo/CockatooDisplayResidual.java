@@ -1,11 +1,11 @@
 package EdDYON.guaniao.client.entity.umbrellacockatoo;
 
-import com.eliotlash.mclib.math.Constant;
-import com.eliotlash.mclib.math.IValue;
-import software.bernie.geckolib.core.animation.Animation;
-import software.bernie.geckolib.core.keyframe.BoneAnimation;
-import software.bernie.geckolib.core.keyframe.Keyframe;
-import software.bernie.geckolib.core.keyframe.KeyframeStack;
+import software.bernie.geckolib.loading.math.value.Constant;
+import software.bernie.geckolib.loading.math.MathValue;
+import software.bernie.geckolib.animation.Animation;
+import software.bernie.geckolib.animation.keyframe.BoneAnimation;
+import software.bernie.geckolib.animation.keyframe.Keyframe;
+import software.bernie.geckolib.animation.keyframe.KeyframeStack;
 
 import java.util.List;
 
@@ -25,7 +25,7 @@ final class CockatooDisplayResidual {
         return new Animation(NAME, source.length(), source.loopType(), result, source.keyFrames());
     }
 
-    private static KeyframeStack<Keyframe<IValue>> subtract(KeyframeStack<Keyframe<IValue>> frames,
+    private static KeyframeStack<Keyframe<MathValue>> subtract(KeyframeStack<Keyframe<MathValue>> frames,
                                                             CockatooExpressionSampler.Vector reference,
                                                             boolean rotation) {
         return new KeyframeStack<>(subtract(frames.xKeyframes(), reference.x(), rotation, -1),
@@ -33,7 +33,7 @@ final class CockatooDisplayResidual {
                 subtract(frames.zKeyframes(), reference.z(), rotation, 1));
     }
 
-    private static List<Keyframe<IValue>> subtract(List<Keyframe<IValue>> frames, double reference,
+    private static List<Keyframe<MathValue>> subtract(List<Keyframe<MathValue>> frames, double reference,
                                                   boolean rotation, int sign) {
         if (reference == 0) return frames;
         return frames.stream().map(frame -> new Keyframe<>(frame.length(),
@@ -41,8 +41,8 @@ final class CockatooDisplayResidual {
                 subtract(frame.endValue(), reference, rotation, sign), frame.easingType(), frame.easingArgs())).toList();
     }
 
-    private static IValue subtract(IValue value, double reference, boolean rotation, int sign) {
-        // 4.4.9 bakes Constant rotation values into signed radians. Molang expressions
+    private static MathValue subtract(MathValue value, double reference, boolean rotation, int sign) {
+        // GeckoLib 4.6.6 bakes Constant rotation values into signed radians. Molang expressions
         // remain in author degrees until AnimationController evaluates them each frame.
         if (value instanceof Constant) {
             return new Constant(value.get() - (rotation ? Math.toRadians(reference) * sign : reference));

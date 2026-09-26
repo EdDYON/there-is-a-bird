@@ -13,7 +13,7 @@ import net.minecraft.world.item.ItemStack;
 
 /** A vanilla chest screen with masked custom loot areas. */
 public final class CrowNestScreen extends AbstractContainerScreen<CrowNestMenu> {
-    private static final ResourceLocation GENERIC_54 = new ResourceLocation("textures/gui/container/generic_54.png");
+    private static final ResourceLocation GENERIC_54 = ResourceLocation.parse("textures/gui/container/generic_54.png");
     private static final int SCREEN_WIDTH = 176;
     private static final int SCREEN_HEIGHT = 222;
     private static final int LOOT_GRID_X = 8;

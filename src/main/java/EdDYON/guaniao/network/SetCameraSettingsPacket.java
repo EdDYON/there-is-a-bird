@@ -8,14 +8,20 @@ import EdDYON.guaniao.content.camera.CameraSettingsData;
 import EdDYON.guaniao.content.camera.CameraShootingMode;
 import EdDYON.guaniao.content.camera.CameraState;
 import EdDYON.guaniao.registry.GuaniaoItems;
-import java.util.function.Supplier;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.network.NetworkEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 
-public record SetCameraSettingsPacket(InteractionHand hand, CameraState state) {
+public record SetCameraSettingsPacket(InteractionHand hand, CameraState state) implements CustomPacketPayload {
+    public static final CustomPacketPayload.Type<SetCameraSettingsPacket> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath("guaniao", "set_camera_settings"));
+
+    @Override
+    public CustomPacketPayload.Type<SetCameraSettingsPacket> type() { return TYPE; }
+
     public static void encode(SetCameraSettingsPacket packet, FriendlyByteBuf buffer) {
         CameraState state = packet.state;
         buffer.writeEnum(packet.hand);
@@ -42,10 +48,9 @@ public record SetCameraSettingsPacket(InteractionHand hand, CameraState state) {
         return new SetCameraSettingsPacket(hand, state);
     }
 
-    public static void handle(SetCameraSettingsPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
-        NetworkEvent.Context context = contextSupplier.get();
+    public static void handle(SetCameraSettingsPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
-            ServerPlayer player = context.getSender();
+            ServerPlayer player = (context.player() instanceof ServerPlayer serverPlayer ? serverPlayer : null);
             if (player == null) {
                 return;
             }
@@ -57,6 +62,5 @@ public record SetCameraSettingsPacket(InteractionHand hand, CameraState state) {
                 CameraSettingsData.setState(camera, packet.state);
             }
         });
-        context.setPacketHandled(true);
     }
 }
