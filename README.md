@@ -22,7 +22,7 @@
 | NeoForge | 21.1.248 |
 | Java | 21 |
 | GeckoLib | 4.6.6（NeoForge 1.21.1） |
-| 本目录 | 已同步 Forge 1.20.1 / 3.5.0 修复的 NeoForge 迁移版本 |
+| `port/1.21.1` | 对应 Forge 1.20.1 / 3.5.0 内容的 NeoForge 维护分支 |
 | Forge 1.20.1 | 在 `main` 分支独立维护 |
 
 ## 下载与安装
@@ -33,7 +33,7 @@ ms：https://modrinth.com/mod/bird-watching
 
 1. 安装 Minecraft 1.21.1 对应的 NeoForge 21.1.248，并使用 Java 21。
 2. 安装 `geckolib-neoforge-1.21.1-4.6.6.jar`。
-3. 构建后将 `build/libs/guaniao-neoforge-1.21.1-3.5.0.jar` 放入游戏的 `mods` 目录；本地迁移构建尚未正式发布。
+3. 构建后将 `build/libs/guaniao-neoforge-1.21.1-3.5.0.jar` 放入游戏的 `mods` 目录；该版本尚未正式发布。
 4. 启动前备份重要世界；服务端与客户端应使用相同版本。
 
 
