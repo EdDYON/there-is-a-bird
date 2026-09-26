@@ -3,7 +3,7 @@
 
 # Bird Watching / 哪来的鸟？
 
-一个为 Minecraft制作的鸟类生态模组。
+一个为 Minecraft 制作的鸟类生态模组。
 
 [![Build](https://github.com/EdDYON/there-is-a-bird/actions/workflows/build.yml/badge.svg)](https://github.com/EdDYON/there-is-a-bird/actions/workflows/build.yml)
 ![Minecraft](https://img.shields.io/badge/Minecraft-1.20.1-62B47A)
@@ -12,6 +12,7 @@
 
 </div>
 
+鸟种介绍、玩法、截图、下载和安装说明见 [官网与使用手册](https://www.findedd.cn/mods/bird-watching/docs/)。
 
 ## 当前支持
 
@@ -27,9 +28,7 @@
 
 ## 下载与安装
 
-mc百科：https://center.mcmod.cn/1346649 
-cf：https://www.curseforge.com/minecraft/mc-mods/bird-watching
-ms：https://modrinth.com/mod/bird-watching
+[CurseForge](https://www.curseforge.com/minecraft/mc-mods/bird-watching) · [Modrinth](https://modrinth.com/mod/bird-watching)
 
 1. 安装 Minecraft 1.20.1 对应的 Forge 47.2.x。
 2. 安装与 1.20.1 兼容的 GeckoLib 4.4.x。
@@ -37,7 +36,13 @@ ms：https://modrinth.com/mod/bird-watching
 4. 启动前备份重要世界；服务端与客户端应使用相同版本。
 
 
-## 文档与贡献
+## 作者与账号
+
+[EdDYON / 蛋炒饭之神](https://www.findedd.cn/)
+
+[Bilibili](https://space.bilibili.com/291012087) · [GitHub](https://github.com/EdDYON) · [MC 百科](https://center.mcmod.cn/1346649/) · [Modrinth](https://modrinth.com/user/EdDYON) · [CurseForge](https://www.curseforge.com/members/eddyon/projects) · [爱发电](https://afdian.com/a/EdDYON)
+
+## 文档与反馈
 
 - [贡献指南](CONTRIBUTING.md)：开发环境、分支目标、验证与素材规则。
 - [服务端管理](docs/SERVER_ADMIN.md)：照片存储、维护命令与问题报告。
@@ -45,18 +50,7 @@ ms：https://modrinth.com/mod/bird-watching
 - [安全策略](SECURITY.md)：私密报告漏洞的方式。
 - [社区行为准则](CODE_OF_CONDUCT.md)：协作边界与执行方式。
 
-欢迎玩家提交可复现的 Bug、生态建议和版本迁移贡献。开始编码前请先创建或认领 Issue，避免多人重复处理同一模块。
-
-## 分支约定
-
-| 分支 | 用途 |
-| --- | --- |
-| `main` | 当前稳定维护的 Minecraft 1.20.1 源码 |
-| `port/<版本>` | 大版本迁移，例如 `port/1.21.1` |
-| `feature/<主题>` | 新功能开发 |
-| `fix/<主题>` | 缺陷修复 |
-
-模组版本使用 Git tag 和 GitHub Release 标记，不为每一个小版本长期保留独立分支。
+遇到问题或有玩法建议，可以提交 [Issue](https://github.com/EdDYON/there-is-a-bird/issues)。
 
 ## 许可与官方版本
 
