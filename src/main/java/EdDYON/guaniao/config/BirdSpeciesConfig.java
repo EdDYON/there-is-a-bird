@@ -24,7 +24,7 @@ public class BirdSpeciesConfig {
         this.maxGroup = species.defaultMaxGroup();
         this.maxWildNearby = switch (species) {
             case SPARROW, LONG_TAILED_TIT, PIGEON -> 8;
-            case BUDGERIGAR, SPOTTED_DOVE, SEAGULL, MYNA -> 6;
+            case BUDGERIGAR, SPOTTED_DOVE, SEAGULL, MYNA, HUMMINGBIRD -> 6;
             case COCKATIEL, CROW, KIWI, WOODCOCK -> 4;
             case KESTREL, CASSOWARY -> 2;
             case MACAW, NIGHT_HERON, UMBRELLA_COCKATOO -> 3;
@@ -35,7 +35,7 @@ public class BirdSpeciesConfig {
             case SEAGULL, MYNA -> 8;
             case COCKATIEL, SPOTTED_DOVE, CROW -> 6;
             case NIGHT_HERON, KIWI -> 4;
-            case WOODCOCK, KESTREL -> 2;
+            case WOODCOCK, KESTREL, HUMMINGBIRD -> 2;
             case CASSOWARY -> 1;
             case MACAW, UMBRELLA_COCKATOO -> 3;
         };

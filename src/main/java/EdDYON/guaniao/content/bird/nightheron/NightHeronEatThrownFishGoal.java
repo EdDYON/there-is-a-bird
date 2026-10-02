@@ -42,6 +42,7 @@ public class NightHeronEatThrownFishGoal extends Goal {
         }
         return this.targetFish != null
                 && this.targetFish.isAlive()
+                && !this.targetFish.getPersistentData().getBoolean(NightHeronFishTask.DELIVERED_MARKER)
                 && NightHeronEntity.isDroppedFishCandidate(this.targetFish.getItem())
                 && this.nightHeron.canEatThrownFish()
                 && this.nightHeron.distanceToSqr((Entity)this.targetFish) < 324.0;
@@ -61,7 +62,9 @@ public class NightHeronEatThrownFishGoal extends Goal {
             this.nightHeron.getNavigation().stop();
             return;
         }
-        if (this.targetFish == null || !this.targetFish.isAlive() || !NightHeronEntity.isDroppedFishCandidate(this.targetFish.getItem())) {
+        if (this.targetFish == null || !this.targetFish.isAlive()
+                || this.targetFish.getPersistentData().getBoolean(NightHeronFishTask.DELIVERED_MARKER)
+                || !NightHeronEntity.isDroppedFishCandidate(this.targetFish.getItem())) {
             this.targetFish = this.findNearestFish();
             this.eatDelayTicks = 0;
             if (this.targetFish == null) {
@@ -101,7 +104,9 @@ public class NightHeronEatThrownFishGoal extends Goal {
                 .getEntitiesOfClass(
                         ItemEntity.class,
                         this.nightHeron.getBoundingBox().inflate(12.0, 3.0, 12.0),
-                        itemEntity -> itemEntity.isAlive() && NightHeronEntity.isDroppedFishCandidate(itemEntity.getItem()))
+                        itemEntity -> itemEntity.isAlive()
+                                && !itemEntity.getPersistentData().getBoolean(NightHeronFishTask.DELIVERED_MARKER)
+                                && NightHeronEntity.isDroppedFishCandidate(itemEntity.getItem()))
                 .stream()
                 .min(Comparator.comparingDouble(itemEntity -> this.nightHeron.distanceToSqr((Entity)itemEntity)))
                 .orElse(null);

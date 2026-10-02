@@ -23,11 +23,13 @@ extends Goal {
     }
 
     public boolean canUse() {
+        if (this.nightHeron.isTame()) return false;
         int chance = this.nightHeron.level().isRaining() ? 650 : 900;
         return this.nightHeron.isActiveTime() && this.nightHeron.onGround() && this.nightHeron.getTarget() == null && !this.nightHeron.hasExternalFright() && this.nightHeron.getRandom().nextInt(chance) == 0;
     }
 
     public boolean canContinueToUse() {
+        if (this.nightHeron.isTame()) return false;
         return this.nightHeron.isControlledFlightActive() && (this.remainingTicks > 0 || !this.nightHeron.onGround()) && !this.nightHeron.hasExternalFright();
     }
 

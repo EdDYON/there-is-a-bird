@@ -37,7 +37,7 @@ public final class UmbrellaCockatooMimicry {
             case MYNA -> GuaniaoSoundEvents.MYNA_CALL_03.get();
             // Macaw has no dedicated imitation source here; same-species calls
             // use the cockatoo's normal voice rather than this mimicry path.
-            case MACAW, UMBRELLA_COCKATOO -> null;
+            case MACAW, UMBRELLA_COCKATOO, HUMMINGBIRD -> null;
         };
     }
 }

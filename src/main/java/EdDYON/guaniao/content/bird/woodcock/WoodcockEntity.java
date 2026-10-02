@@ -7,6 +7,7 @@ import EdDYON.guaniao.content.bird.BirdActivitySchedule;
 import EdDYON.guaniao.content.bird.BirdFlockSoundLimiter;
 import EdDYON.guaniao.content.bird.BirdFoodSafety;
 import EdDYON.guaniao.content.bird.BirdGroundAnimation;
+import EdDYON.guaniao.content.bird.BirdMovementAnimationController;
 import EdDYON.guaniao.content.bird.BirdLoudSoundListener;
 import EdDYON.guaniao.content.bird.BirdScanBudget;
 import EdDYON.guaniao.content.bird.BirdSleepWakeable;
@@ -117,7 +118,6 @@ public class WoodcockEntity extends SparrowEntity
     private static final double ROCK_WALK_STEP_SPEED = 0.76D;
     private static final double ROCK_WALK_SWAY_SPEED = 0.0D;
     private static final double ROCK_WALK_ANIMATION_SPEED = 1.25D;
-    private static final double NORMAL_WALK_ANIMATION_CADENCE = 1.15D;
     private static final double MIN_INDIVIDUAL_ANIMATION_CADENCE = 0.96D;
     private static final double INDIVIDUAL_ANIMATION_CADENCE_STEP = 0.005D;
 
@@ -950,20 +950,14 @@ public class WoodcockEntity extends SparrowEntity
             }
             case NORMAL_WALK, FORAGE_APPROACH, SEEK_COVER -> {
                 if (BirdGroundAnimation.hasWalkMotion(this, animationState.isMoving())) {
-                    animationState.getController().setAnimationSpeed(
-                            BirdGroundAnimation.walkAnimationSpeed(this,
-                                    NORMAL_WALK_ANIMATION_CADENCE * this.individualAnimationCadence()));
-                    yield animationState.setAndContinue(WALK_ANIMATION);
+                    yield BirdGroundAnimation.play(animationState, this, WALK_ANIMATION);
                 }
                 animationState.getController().setAnimationSpeed(this.individualAnimationCadence());
                 yield animationState.setAndContinue(IDLE_ANIMATION);
             }
             default -> {
                 if (BirdGroundAnimation.hasWalkMotion(this, animationState.isMoving())) {
-                    animationState.getController().setAnimationSpeed(
-                            BirdGroundAnimation.walkAnimationSpeed(this,
-                                    NORMAL_WALK_ANIMATION_CADENCE * this.individualAnimationCadence()));
-                    yield animationState.setAndContinue(WALK_ANIMATION);
+                    yield BirdGroundAnimation.play(animationState, this, WALK_ANIMATION);
                 }
                 animationState.getController().setAnimationSpeed(this.individualAnimationCadence());
                 yield animationState.setAndContinue(IDLE_ANIMATION);
@@ -971,7 +965,7 @@ public class WoodcockEntity extends SparrowEntity
         };
     }
 
-    /** Stable per bird, so nearby idle and walk loops slowly drift out of lockstep. */
+    /** Stable per bird, so nearby stationary idle loops slowly drift out of lockstep. */
     private double individualAnimationCadence() {
         int bucket = Math.floorMod(this.getUUID().hashCode(), 17);
         return MIN_INDIVIDUAL_ANIMATION_CADENCE + bucket * INDIVIDUAL_ANIMATION_CADENCE_STEP;
@@ -980,7 +974,7 @@ public class WoodcockEntity extends SparrowEntity
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController[]{
-                new AnimationController((GeoAnimatable)this, "movement", 1, this::movementController)
+                new BirdMovementAnimationController((GeoAnimatable)this, "movement", 1, this::movementController)
         });
     }
 

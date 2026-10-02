@@ -1,5 +1,9 @@
 package EdDYON.guaniao.registry;
 
+import EdDYON.guaniao.content.bird.BirdVisibility;
+import EdDYON.guaniao.content.bird.hummingbird.HummingbirdDefinition;
+import EdDYON.guaniao.content.bird.hummingbird.HummingbirdEntity;
+
 import EdDYON.guaniao.content.earthworm.EarthwormEntity;
 
 import EdDYON.guaniao.content.bird.budgerigar.BudgerigarDefinition;
@@ -66,6 +70,7 @@ public final class GuaniaoEntityTypes {
     public static final RegistryObject<EntityType<KestrelEntity>> KESTREL = GuaniaoEntityTypes.registerCreature(KestrelDefinition.ENTITY_ID, KestrelEntity::new, KestrelDefinition.WIDTH, KestrelDefinition.HEIGHT);
     public static final RegistryObject<EntityType<CassowaryEntity>> CASSOWARY = GuaniaoEntityTypes.registerCreature(CassowaryDefinition.ENTITY_ID, CassowaryEntity::new, CassowaryDefinition.WIDTH, CassowaryDefinition.HEIGHT);
     public static final RegistryObject<EntityType<UmbrellaCockatooEntity>> UMBRELLA_COCKATOO = GuaniaoEntityTypes.registerCreature(UmbrellaCockatooDefinition.ENTITY_ID, UmbrellaCockatooEntity::new, UmbrellaCockatooDefinition.WIDTH, UmbrellaCockatooDefinition.HEIGHT);
+    public static final RegistryObject<EntityType<HummingbirdEntity>> HUMMINGBIRD = GuaniaoEntityTypes.registerCreature(HummingbirdDefinition.ENTITY_ID, HummingbirdEntity::new, HummingbirdDefinition.WIDTH, HummingbirdDefinition.HEIGHT);
     public static final RegistryObject<EntityType<PhotographEntity>> PHOTOGRAPH = ENTITY_TYPES.register("photograph", () ->
             EntityType.Builder.<PhotographEntity>of(PhotographEntity::new, MobCategory.MISC)
                     .sized(0.5F, 0.5F)
@@ -100,6 +105,6 @@ public final class GuaniaoEntityTypes {
     }
 
     private static <T extends Mob> RegistryObject<EntityType<T>> registerCreature(String id, EntityType.EntityFactory<T> factory, float width, float height) {
-        return ENTITY_TYPES.register(id, () -> EntityType.Builder.of((EntityType.EntityFactory)factory, BIRD).sized(width, height).clientTrackingRange(8).build(new ResourceLocation("guaniao", id).toString()));
+        return ENTITY_TYPES.register(id, () -> EntityType.Builder.of((EntityType.EntityFactory)factory, BIRD).sized(width, height).clientTrackingRange(BirdVisibility.TRACKING_RANGE_CHUNKS).build(new ResourceLocation("guaniao", id).toString()));
     }
 }

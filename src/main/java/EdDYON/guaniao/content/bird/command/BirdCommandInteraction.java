@@ -13,6 +13,11 @@ public final class BirdCommandInteraction {
 
     public static InteractionResult tryHandle(TamableAnimal bird, CommandableBird commandable, Player player,
                                               InteractionHand hand) {
+        return tryHandle(bird, commandable, player, hand, true);
+    }
+
+    public static InteractionResult tryHandle(TamableAnimal bird, CommandableBird commandable, Player player,
+                                              InteractionHand hand, boolean showMessage) {
         if (!BirdConfigManager.petBirdCommandsEnabled()
                 || !bird.isTame() || !bird.isOwnedBy(player) || !player.isShiftKeyDown()
                 || !player.getItemInHand(hand).isEmpty()) {
@@ -22,7 +27,7 @@ public final class BirdCommandInteraction {
             BirdCommandMode next = commandable.getBirdCommandMode().next();
             commandable.setBirdCommandMode(next);
             bird.getNavigation().stop();
-            player.displayClientMessage(Component.translatable(next.translationKey(), bird.getDisplayName()), true);
+            if (showMessage) player.displayClientMessage(Component.translatable(next.translationKey(), bird.getDisplayName()), true);
         }
         return InteractionResult.sidedSuccess(bird.level().isClientSide);
     }

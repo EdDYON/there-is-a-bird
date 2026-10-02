@@ -32,6 +32,8 @@ public class GuaniaoMod {
     public GuaniaoMod() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         GeckoLib.initialize();
+        net.minecraftforge.fml.ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.COMMON,
+                EdDYON.guaniao.config.HummingbirdConfig.SPEC, "guaniao-hummingbird.toml");
         GuaniaoBlocks.BLOCKS.register(modEventBus);
         GuaniaoBlockEntityTypes.BLOCK_ENTITY_TYPES.register(modEventBus);
         GuaniaoItems.ITEMS.register(modEventBus);

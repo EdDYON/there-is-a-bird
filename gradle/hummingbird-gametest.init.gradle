@@ -1,0 +1,25 @@
+// Runs the isolated hummingbird ecology suite, excluding the earlier heron/visibility suites.
+gradle.projectsEvaluated {
+    def p = gradle.rootProject
+    def qa = p.sourceSets.create('hummingbirdQa') {
+        java {
+            srcDir(p.file('src/gametest/java'))
+            include 'EdDYON/guaniao/content/bird/hummingbird/**'
+            include 'EdDYON/guaniao/content/garden/**'
+        }
+        resources {
+            srcDir(p.file('src/gametest/resources'))
+            include 'data/guaniao_hummingbird_qa/**'
+            include 'data/guaniao_hummingbird_garden_qa/**'
+        }
+        compileClasspath += p.sourceSets.main.output + p.sourceSets.main.compileClasspath
+        runtimeClasspath += output + compileClasspath + p.sourceSets.main.runtimeClasspath
+    }
+    p.minecraft.runs.gameTestServer {
+        workingDirectory p.file('.tmp_hummingbird/test-world')
+        property 'forge.enabledGameTestNamespaces', 'guaniao_hummingbird_qa,guaniao_hummingbird_garden_qa'
+        property 'forge.logging.console.level', 'info'
+        jvmArgs '-Xms512m', '-Xmx2G'
+        mods { guaniao { source qa } }
+    }
+}

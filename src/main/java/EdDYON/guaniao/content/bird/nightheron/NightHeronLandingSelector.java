@@ -155,7 +155,7 @@ public final class NightHeronLandingSelector {
         return null;
     }
 
-    private static boolean isSafeLanding(Level level, BlockPos pos) {
+    static boolean isSafeLanding(Level level, BlockPos pos) {
         if (!NightHeronEntity.canReadChunk((LevelReader)level, pos)) {
             return false;
         }

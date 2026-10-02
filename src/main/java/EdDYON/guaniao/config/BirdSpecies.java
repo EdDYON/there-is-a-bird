@@ -28,7 +28,8 @@ public enum BirdSpecies {
     CASSOWARY("cassowary", 1, 1, 3600, 6000, false),
     KESTREL("kestrel", 1, 1, 3600, 6000),
     WOODCOCK("woodcock", 1, 2, 3600, 6000, false),
-    UMBRELLA_COCKATOO("umbrella_cockatoo", 2, 4, 3600, 6000, false);
+    UMBRELLA_COCKATOO("umbrella_cockatoo", 2, 4, 3600, 6000, false),
+    HUMMINGBIRD("hummingbird", 1, 2, 3600, 6000, false);
 
     private final String id;
     private final int defaultMinGroup;

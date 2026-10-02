@@ -83,6 +83,17 @@ final class BirdConfigPacketCodec {
         }
         buffer.writeEnum(BirdConfigScope.sanitize(data.storageScope));
         buffer.writeBoolean(data.worldScopeAllowed);
+        buffer.writeBoolean(global.nightHeronTamingEnabled);
+        buffer.writeBoolean(global.nightHeronFishingEnabled);
+        buffer.writeBoolean(global.nightHeronGiftsEnabled);
+        buffer.writeDouble(global.nightHeronTamingChance);
+        buffer.writeVarInt(global.nightHeronFishingRadius);
+        buffer.writeVarInt(global.nightHeronOwnerRange);
+        buffer.writeVarInt(global.nightHeronWorkMinSeconds);
+        buffer.writeVarInt(global.nightHeronWorkMaxSeconds);
+        buffer.writeVarInt(global.nightHeronGiftMinSeconds);
+        buffer.writeVarInt(global.nightHeronGiftMaxSeconds);
+
     }
 
     static BirdConfigData decode(FriendlyByteBuf buffer) {
@@ -159,6 +170,17 @@ final class BirdConfigPacketCodec {
         }
         data.storageScope = BirdConfigScope.sanitize(buffer.readEnum(BirdConfigScope.class));
         data.worldScopeAllowed = buffer.readBoolean();
+        data.global.nightHeronTamingEnabled = buffer.readBoolean();
+        data.global.nightHeronFishingEnabled = buffer.readBoolean();
+        data.global.nightHeronGiftsEnabled = buffer.readBoolean();
+        data.global.nightHeronTamingChance = buffer.readDouble();
+        data.global.nightHeronFishingRadius = buffer.readVarInt();
+        data.global.nightHeronOwnerRange = buffer.readVarInt();
+        data.global.nightHeronWorkMinSeconds = buffer.readVarInt();
+        data.global.nightHeronWorkMaxSeconds = buffer.readVarInt();
+        data.global.nightHeronGiftMinSeconds = buffer.readVarInt();
+        data.global.nightHeronGiftMaxSeconds = buffer.readVarInt();
+
         return data;
     }
 }

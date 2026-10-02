@@ -48,7 +48,7 @@ public class BirdSenses {
 
         if (now >= this.nextPlayerScanTick) {
             this.nextPlayerScanTick = now + threatInterval;
-            this.nearestPlayer = bird.level().getNearestPlayer(bird, profile.playerSenseRadius());
+            this.nearestPlayer = profile.findNearestRelevantPlayer(bird);
             if (this.nearestPlayer != null && !this.nearestPlayer.isSpectator()) {
                 this.nearestPlayerDistance = Math.sqrt(bird.distanceToSqr(this.nearestPlayer));
                 this.nearestPlayerSprinting = this.nearestPlayer.isSprinting();

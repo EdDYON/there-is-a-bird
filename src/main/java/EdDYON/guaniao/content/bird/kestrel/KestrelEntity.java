@@ -1,11 +1,17 @@
 package EdDYON.guaniao.content.bird.kestrel;
 
+import EdDYON.guaniao.content.bird.BirdVisibility;
+
+import EdDYON.guaniao.content.bird.BirdBodyRotationControl;
+import net.minecraft.world.entity.ai.control.BodyRotationControl;
+
 import EdDYON.guaniao.config.BirdConfigManager;
 import EdDYON.guaniao.config.BirdSpecies;
 import EdDYON.guaniao.content.advancement.BirdAdvancements;
 import EdDYON.guaniao.content.bird.BirdFlockSoundLimiter;
 import EdDYON.guaniao.content.bird.BirdFoodSafety;
 import EdDYON.guaniao.content.bird.BirdGroundAnimation;
+import EdDYON.guaniao.content.bird.BirdMovementAnimationController;
 import EdDYON.guaniao.content.bird.BirdItemSafety;
 import EdDYON.guaniao.content.bird.BirdScanBudget;
 import EdDYON.guaniao.content.bird.BirdSoundVolume;
@@ -202,6 +208,27 @@ public class KestrelEntity extends TamableAnimal implements GeoEntity, FlyingAni
     private UUID fetchTargetId;
     @Nullable
     private ResourceLocation learnedFetchItem;
+
+    @Override
+    protected BodyRotationControl createBodyControl() {
+        return new BirdBodyRotationControl(this, bird -> {
+            // The hover motor intentionally looks at prey while making small
+            // sideways corrections. Preserve that aim, but align normal flight.
+            if (!this.isBirdFlightActive()) return false;
+            boolean hover = switch (this.getKestrelBehaviorState()) {
+                case HOVER_SEARCH, TARGET_LOCKED, ASSIST_ATTACK, SCOUT -> true;
+                default -> false;
+            };
+            double deltaX = this.getX() - this.xo;
+            double deltaZ = this.getZ() - this.zo;
+            return hover && deltaX * deltaX + deltaZ * deltaZ < 0.08D * 0.08D;
+        });
+    }
+
+    @Override
+    public boolean shouldRenderAtSqrDistance(double distanceSquared) {
+        return BirdVisibility.shouldRender(distanceSquared, getViewScale());
+    }
 
     public KestrelEntity(EntityType<? extends KestrelEntity> entityType, Level level) {
         super(entityType, level);
@@ -1346,7 +1373,7 @@ public class KestrelEntity extends TamableAnimal implements GeoEntity, FlyingAni
 
     private boolean isValidHuntTarget(@Nullable LivingEntity target) {
         return target != null && target.isAlive() && !target.isRemoved() && target.level() == this.level()
-                && target != this && !this.isAlliedTo(target)
+                && target != this && !(target instanceof EdDYON.guaniao.content.bird.hummingbird.HummingbirdEntity) && !this.isAlliedTo(target)
                 && (!target.getType().is(BirdTags.KESTREL_PREY) || !this.hasSameOwner(target));
     }
 
@@ -1396,7 +1423,7 @@ public class KestrelEntity extends TamableAnimal implements GeoEntity, FlyingAni
     private boolean shouldLeaveOwnerPerch(Player owner) {
         return !this.isOwnedBy(owner) || this.getBirdCommandMode() != BirdCommandMode.FOLLOW
                 || !owner.isAlive() || owner.isSpectator() || owner.isSleeping()
-                || owner.isInWaterOrBubble() || owner.isFallFlying() || owner.isShiftKeyDown()
+                || owner.isInWaterOrBubble() || owner.isFallFlying()
                 || this.isValidHuntTarget(this.ownerAttackTarget) || this.hurtTime > 0;
     }
 
@@ -1415,8 +1442,25 @@ public class KestrelEntity extends TamableAnimal implements GeoEntity, FlyingAni
     }
 
     public Vec3 ownerHeadOffset(float headYaw, float headPitch) {
+        Player owner = this.getVehicle() instanceof Player p ? p : this.getOwner() instanceof Player p ? p : null;
         return KestrelHeadPerch.offset(headYaw, headPitch, KestrelTalons.SOLE_Y * this.getModelRenderScale(),
-                KestrelTalons.FORWARD * this.getModelRenderScale());
+                KestrelTalons.FORWARD * this.getModelRenderScale(), owner != null && owner.isCrouching());
+    }
+
+    /** Called after the common server interaction has validated the support, reach and permissions. */
+    public boolean placeFromOwnerHead(Player owner, BlockPos support, Vec3 feet) {
+        if (this.level().isClientSide || !this.isAlive() || !this.isOwnedBy(owner) || this.getVehicle() != owner) return false;
+        this.stopRiding();
+        if (this.isPassenger() || this.getVehicle() != null) return false;
+        this.setBirdCommandMode(BirdCommandMode.STAY);
+        this.getNavigation().stop();
+        this.ownerPerchCooldown = 100;
+        this.setPos(feet.x, feet.y, feet.z);
+        this.setDeltaMovement(Vec3.ZERO);
+        this.setNoGravity(false);
+        this.resetFallDistance();
+        this.changeState(KestrelBehaviorState.STAY, 100);
+        return true;
     }
 
     public boolean hasExtendedTalons() {
@@ -1846,8 +1890,7 @@ public class KestrelEntity extends TamableAnimal implements GeoEntity, FlyingAni
             return BirdFlightAnimation.play(animationState, GLIDE_ANIMATION);
         }
         if (BirdGroundAnimation.hasWalkMotion(this, animationState.isMoving())) {
-            animationState.getController().setAnimationSpeed(BirdGroundAnimation.walkAnimationSpeed(this, 1.0D));
-            return animationState.setAndContinue(WALK_ANIMATION);
+            return BirdGroundAnimation.play(animationState, this, WALK_ANIMATION);
         }
         return this.playIdleAnimation(animationState);
     }
@@ -1864,7 +1907,7 @@ public class KestrelEntity extends TamableAnimal implements GeoEntity, FlyingAni
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController[]{
-                new AnimationController((GeoAnimatable)this, "movement", 3, this::movementController)
+                new BirdMovementAnimationController((GeoAnimatable)this, "movement", 3, this::movementController)
         });
     }
 

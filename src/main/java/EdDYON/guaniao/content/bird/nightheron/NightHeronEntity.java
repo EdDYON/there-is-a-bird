@@ -1,5 +1,24 @@
 package EdDYON.guaniao.content.bird.nightheron;
 
+import EdDYON.guaniao.content.bird.BirdVisibility;
+
+import EdDYON.guaniao.content.bird.BirdBodyRotationControl;
+import EdDYON.guaniao.content.advancement.BirdAdvancements;
+import EdDYON.guaniao.content.bird.command.BirdCommandInteraction;
+import EdDYON.guaniao.content.bird.command.BirdCommandMode;
+import EdDYON.guaniao.content.bird.command.CommandableBird;
+import net.minecraft.world.entity.TamableAnimal;
+import net.minecraft.world.entity.AgeableMob;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.animal.Animal;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.item.FishingRodItem;
+import net.minecraftforge.event.ForgeEventFactory;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraft.world.entity.ai.control.BodyRotationControl;
+
 import EdDYON.guaniao.content.bird.flight.BirdFlightAnimation;
 import EdDYON.guaniao.config.BirdConfigManager;
 import EdDYON.guaniao.content.bird.BirdSoundVolume;
@@ -12,6 +31,8 @@ import EdDYON.guaniao.content.bird.flock.FlockCompatibleBird;
 import EdDYON.guaniao.content.bird.mutation.BirdMutation;
 import EdDYON.guaniao.content.bird.mutation.BirdMutationHolder;
 import EdDYON.guaniao.content.bird.BirdGroundAnimation;
+import EdDYON.guaniao.content.bird.BirdMovementAnimationController;
+import EdDYON.guaniao.content.bird.BirdWalkStride;
 import EdDYON.guaniao.content.bird.BirdSleepWakeable;
 import EdDYON.guaniao.content.bird.PollutedFoodReactionUtil;
 import EdDYON.guaniao.content.bird.brain.BirdBrain;
@@ -93,8 +114,15 @@ import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 public class NightHeronEntity
-extends PathfinderMob
-implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, BirdBathFeedingAnimatable, FlockCompatibleBird, BirdSleepWakeable, BirdMutationHolder {
+extends TamableAnimal
+implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, BirdBathFeedingAnimatable, FlockCompatibleBird, BirdSleepWakeable, BirdMutationHolder, CommandableBird {
+    private static final EntityDataAccessor<Integer> COMMAND_MODE = SynchedEntityData.defineId(NightHeronEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> FISH_PURPOSE = SynchedEntityData.defineId(NightHeronEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> OFFER_TICKS = SynchedEntityData.defineId(NightHeronEntity.class, EntityDataSerializers.INT);
+    private final NightHeronFishTask fishTask = new NightHeronFishTask(this);
+    private boolean capturingFish;
+    private long lastPetInteractionTick = Long.MIN_VALUE;
+    private java.util.UUID handFeeder;
     private static final EntityDataAccessor<Integer> BEHAVIOR_STATE = SynchedEntityData.defineId(NightHeronEntity.class, (EntityDataSerializer)EntityDataSerializers.INT);
     private static final EntityDataAccessor<Float> MODEL_SCALE = SynchedEntityData.defineId(NightHeronEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<ItemStack> HELD_FISH = SynchedEntityData.defineId(NightHeronEntity.class, EntityDataSerializers.ITEM_STACK);
@@ -115,6 +143,7 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
     private static final RawAnimation FLY_FLAPPING_WING_ANIMATION = RawAnimation.begin().thenPlay("fly_flapping_wing").thenLoop("fly_flapping_wing_loop");
     private static final RawAnimation FLY_FLAPPING_WING_LOOP_ANIMATION = RawAnimation.begin().thenLoop("fly_flapping_wing_loop");
     private static final RawAnimation EAT_ANIMATION = RawAnimation.begin().thenPlay("eat").thenLoop("idle");
+    private static final RawAnimation OFFER_ANIMATION = RawAnimation.begin().thenPlay("offer_fish").thenLoop("idle");
     private static final RawAnimation SLEEP_ANIMATION = RawAnimation.begin().thenPlay("sleep").thenLoop("sleep_loop");
     private static final int WATER_SEARCH_RADIUS = 8;
     private static final double RUNNING_SPEED_THRESHOLD = 0.018;
@@ -142,6 +171,7 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
     private int pollutedFoodReactionTicks;
     private Vec3 pollutedFoodSource = Vec3.ZERO;
     private int controlledFlightTicks;
+    private long petFollowFlightTick = -100;
     private int groundedAirborneTicks;
     private int blockedFlightRecoveryActivityTicks;
     private int obstructedFlightTicks;
@@ -155,6 +185,16 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
     private Vec3 flybyFlightDirection = Vec3.ZERO;
     private BlockPos flybyLandingTarget;
 
+    @Override
+    protected BodyRotationControl createBodyControl() {
+        return new BirdBodyRotationControl(this);
+    }
+
+    @Override
+    public boolean shouldRenderAtSqrDistance(double distanceSquared) {
+        return BirdVisibility.shouldRender(distanceSquared, getViewScale());
+    }
+
     public NightHeronEntity(EntityType<? extends NightHeronEntity> entityType, Level level) {
         super(entityType, level);
         this.setPathfindingMalus(BlockPathTypes.LEAVES, 0.0f);
@@ -164,6 +204,9 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
 
     protected void defineSynchedData() {
         super.defineSynchedData();
+        this.entityData.define(COMMAND_MODE, BirdCommandMode.FREE.ordinal());
+        this.entityData.define(FISH_PURPOSE, HeldFishPurpose.NONE.id());
+        this.entityData.define(OFFER_TICKS, 0);
         this.entityData.define(BEHAVIOR_STATE, NightHeronBehaviorState.IDLE.ordinal());
         this.entityData.define(MODEL_SCALE, BirdModelScale.DEFAULT_INDIVIDUAL_SCALE);
         this.entityData.define(HELD_FISH, ItemStack.EMPTY);
@@ -203,7 +246,7 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
 
     @Override
     public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType spawnType, SpawnGroupData spawnGroupData, CompoundTag compoundTag) {
-        SpawnGroupData data = super.finalizeSpawn(level, difficulty, spawnType, spawnGroupData, compoundTag);
+        SpawnGroupData data = super.finalizeSpawn(level, difficulty, spawnType, new AgeableMob.AgeableMobGroupData(false), compoundTag);
         if (compoundTag == null || !compoundTag.contains(BirdModelScale.NBT_KEY, 5)) {
             this.randomizeModelScale();
         }
@@ -217,8 +260,12 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
         this.goalSelector.addGoal(0, (Goal)new FloatGoal((Mob)this));
         this.goalSelector.addGoal(0, new BirdMigrationGoal(this, this::birdBrain));
         this.goalSelector.addGoal(1, (Goal)new NightHeronFrightGoal(this));
+        this.goalSelector.addGoal(2, new NightHeronPetGoal(this));
         this.goalSelector.addGoal(3, (Goal)new NightHeronEatThrownFishGoal(this));
-        this.goalSelector.addGoal(4, (Goal)new CleanBirdTemptGoal((PathfinderMob)this, 1.0, TEMPT_ITEMS, false));
+        this.goalSelector.addGoal(4, new CleanBirdTemptGoal(this, 1.0, TEMPT_ITEMS, false) {
+            @Override public boolean canUse() { return !hasHeldFishForRendering() && super.canUse(); }
+            @Override public boolean canContinueToUse() { return !hasHeldFishForRendering() && super.canContinueToUse(); }
+        });
         this.goalSelector.addGoal(5, (Goal)new BirdBathUseGoal(this, 1.0D, 13.0D, 42,
                 BirdBathAttraction::isAttractiveToNightHeron,
                 this::canUseBirdBath,
@@ -276,6 +323,7 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
             this.tickPollutedFoodReaction();
             this.tickEatingFish();
             this.tickWaterEscape();
+            this.fishTask.tick();
             if (this.blockedFlightRecoveryActivityTicks > 0) {
                 --this.blockedFlightRecoveryActivityTicks;
             }
@@ -310,7 +358,7 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
             if (BirdConfigManager.aprilFoolsMode() && attacker instanceof Player) {
                 return true;
             }
-            this.receiveFlockFright(sourcePos, true);
+            this.receiveFright(sourcePos, true);
             this.rememberFright(true);
         }
         return hurt;
@@ -323,11 +371,19 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
         this.birdBrain.save(compoundTag);
         BirdModelScale.save(compoundTag, this.getIndividualModelScale(), this.modelScaleProfile());
         compoundTag.putInt(MUTATION_NBT_KEY, this.getBirdMutation().ordinal());
+        compoundTag.putInt(CommandableBird.COMMAND_MODE_NBT_KEY, this.getBirdCommandMode().ordinal());
+        CompoundTag pet = this.fishTask.save();
+        pet.putInt("Version", 1);
+        pet.putInt("Purpose", this.getHeldFishPurpose().id());
+        pet.put("HeldFish", this.getHeldFishForRendering().save(new CompoundTag()));
+        pet.putInt("EatingTicks", this.entityData.get(EATING_TICKS));
+        compoundTag.put("NightHeronPet", pet);
     }
 
     @Override
     public void readAdditionalSaveData(CompoundTag compoundTag) {
         super.readAdditionalSaveData(compoundTag);
+        this.handFeeder = null;
         this.clearSerializedFlightState();
         this.birdBrain.load(compoundTag);
         if (compoundTag.contains(BirdModelScale.NBT_KEY, 5)) {
@@ -338,6 +394,22 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
         if (compoundTag.contains(MUTATION_NBT_KEY, 3)) {
             this.setBirdMutation(BirdMutation.byId(compoundTag.getInt(MUTATION_NBT_KEY)));
         }
+        this.setOrderedToSit(false);
+        this.setInSittingPose(false);
+        this.entityData.set(COMMAND_MODE, this.isTame()
+                ? (compoundTag.contains(CommandableBird.COMMAND_MODE_NBT_KEY, 3)
+                    ? BirdCommandMode.byId(compoundTag.getInt(CommandableBird.COMMAND_MODE_NBT_KEY)).ordinal()
+                    : BirdCommandMode.FOLLOW.ordinal()) : BirdCommandMode.FREE.ordinal());
+        CompoundTag pet = compoundTag.getCompound("NightHeronPet");
+        HeldFishPurpose purpose = pet.getInt("Version") == 1 ? HeldFishPurpose.byId(pet.getInt("Purpose")) : HeldFishPurpose.NONE;
+        ItemStack held = ItemStack.of(pet.getCompound("HeldFish"));
+        if (purpose == HeldFishPurpose.OWNER_DELIVERY && (!this.isTame() || this.getOwnerUUID() == null
+                || !(held.is(Items.COD) || held.is(Items.SALMON)))) purpose = HeldFishPurpose.NONE;
+        this.setHeldFish(held, purpose);
+        if (purpose == HeldFishPurpose.SELF_FOOD) {
+            this.entityData.set(EATING_TICKS, Mth.clamp(pet.getInt("EatingTicks"), 0, 100));
+        }
+        this.fishTask.load(pet);
     }
 
     public float getWalkTargetValue(BlockPos pos, LevelReader level) {
@@ -435,7 +507,7 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
     }
 
     public ItemStack getHeldFishForRendering() {
-        return this.entityData == null ? ItemStack.EMPTY : this.entityData.get(HELD_FISH);
+        return this.entityData == null ? ItemStack.EMPTY : this.entityData.get(HELD_FISH).copy();
     }
 
     public int getHeldFishPoseSeed() {
@@ -447,7 +519,119 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
     }
 
     public boolean isEatingFish() {
-        return this.entityData != null && ((Integer)this.entityData.get(EATING_TICKS) > 0 || this.hasHeldFishForRendering());
+        return this.getHeldFishPurpose() == HeldFishPurpose.SELF_FOOD
+                && (this.entityData.get(EATING_TICKS) > 0 || this.hasHeldFishForRendering());
+    }
+
+    public HeldFishPurpose getHeldFishPurpose() { return HeldFishPurpose.byId(this.entityData.get(FISH_PURPOSE)); }
+    public boolean hasDeliveryFish() { return this.getHeldFishPurpose() == HeldFishPurpose.OWNER_DELIVERY && this.hasHeldFishForRendering(); }
+    public NightHeronFishTask fishTask() { return this.fishTask; }
+    void setOfferTicks(int ticks) { this.entityData.set(OFFER_TICKS, Math.max(0, ticks)); }
+
+    void setHeldFish(ItemStack stack, HeldFishPurpose purpose) {
+        ItemStack copy = stack.copy();
+        if (copy.isEmpty() || purpose == HeldFishPurpose.NONE) {
+            copy = ItemStack.EMPTY;
+            purpose = HeldFishPurpose.NONE;
+        } else copy.setCount(1);
+        this.entityData.set(HELD_FISH, copy);
+        this.entityData.set(FISH_PURPOSE, purpose.id());
+        this.entityData.set(HELD_FISH_POSE_SEED, copy.isEmpty() ? 0 : this.nextHeldFishPoseSeed());
+        this.entityData.set(EATING_TICKS, 0);
+    }
+
+    @Override public BirdCommandMode getBirdCommandMode() { return BirdCommandMode.byId(this.entityData.get(COMMAND_MODE)); }
+    @Override public void setBirdCommandMode(BirdCommandMode mode) {
+        this.entityData.set(COMMAND_MODE, mode.ordinal());
+        if (!this.level().isClientSide && this.fishTask != null) {
+            this.setOfferTicks(0);
+            this.getNavigation().stop();
+            this.flybyFlightTicks = 0;
+            this.flybyFlightDirection = Vec3.ZERO;
+            this.flybyLandingTarget = null;
+            if (!this.isBirdEmergencyOverrideActive()) this.settleInterruptedFlight(NightHeronBehaviorState.IDLE);
+        }
+    }
+    @Override public boolean isBirdEmergencyOverrideActive() {
+        return this.hasExternalFright() || this.getBehaviorState().isEscape() || this.isInWaterOrBubble() || this.hurtTime > 0;
+    }
+    @Override public boolean isFood(ItemStack stack) { return false; }
+    @Override public boolean canMate(Animal other) { return false; }
+    @Override public AgeableMob getBreedOffspring(ServerLevel level, AgeableMob mate) { return null; }
+    @Override public void setAge(int age) { super.setAge(0); }
+    @Override public boolean removeWhenFarAway(double distance) {
+        return !this.isTame() && distance > BirdVisibility.TRACKING_DISTANCE_SQUARED;
+    }
+
+    public Player findNearestThreatPlayer(double radius) {
+        if (this.isTame()) return null;
+        Player nearest = null;
+        double closest = radius * radius;
+        for (Player player : this.level().players()) {
+            if (!player.isAlive() || player.isSpectator() || this.isOwnedBy(player)
+                    || this.isEatingFish() && player.getUUID().equals(this.handFeeder)) continue;
+            double distance = this.distanceToSqr(player);
+            if (distance < closest) { closest = distance; nearest = player; }
+        }
+        return nearest;
+    }
+
+    @Override public InteractionResult mobInteract(Player player, InteractionHand hand) {
+        if (!this.isAlive() || player.isSpectator()) return InteractionResult.PASS;
+        ItemStack stack = player.getItemInHand(hand);
+        boolean owner = this.isTame() && this.isOwnedBy(player);
+        boolean food = BirdFoodSafety.matchesClean(BirdTags.NIGHT_HERON_TAMING, stack);
+        boolean receive = owner && hand == InteractionHand.MAIN_HAND && !player.isShiftKeyDown() && stack.isEmpty() && this.hasDeliveryFish();
+        // An occupied offhand must not turn feeding/item use into an empty-hand command.
+        boolean command = owner && player.isShiftKeyDown() && BirdConfigManager.petBirdCommandsEnabled()
+                && hand == InteractionHand.MAIN_HAND && stack.isEmpty() && player.getOffhandItem().isEmpty();
+        boolean feed = food && (!this.isTame() ? BirdConfigManager.nightHeronTamingEnabled() : owner);
+        if (!(command || receive || feed)) {
+            // Do not pass food to Animal's breeding interaction or let an offhand empty click change modes.
+            return stack.isEmpty() || food || stack.getItem() instanceof FishingRodItem
+                    ? InteractionResult.PASS : super.mobInteract(player, hand);
+        }
+        if (this.level().isClientSide) return InteractionResult.SUCCESS;
+        long now = this.level().getGameTime();
+        if (this.lastPetInteractionTick == now) return InteractionResult.CONSUME;
+        this.lastPetInteractionTick = now;
+        if (command) {
+            BirdCommandInteraction.tryHandle(this, this, player, hand, false);
+        } else if (receive) {
+            this.fishTask.deliver(player, true);
+        } else if (!this.hasHeldFishForRendering() && this.pollutedFoodReactionTicks <= 0) {
+            ItemStack serving = stack.copy();
+            serving.setCount(1);
+            if (!player.getAbilities().instabuild) stack.shrink(1);
+            if (this.isTame()) {
+                this.heal(2.0F);
+            } else if (this.getRandom().nextDouble() < BirdConfigManager.nightHeronTamingChance()
+                    && !ForgeEventFactory.onAnimalTame(this, player)) {
+                this.tame(player);
+                this.clearExternalFright();
+                this.frightMemoryTicks = 0;
+                this.recentFrightCount = 0;
+                this.setBirdCommandMode(BirdCommandMode.FOLLOW);
+                BirdAdvancements.awardTamedBird(player, this);
+                this.level().broadcastEntityEvent(this, (byte)7);
+            } else this.level().broadcastEntityEvent(this, (byte)6);
+            // Command changes reset the animation state, so start the meal last.
+            this.handFeeder = player.getUUID();
+            this.startEatingFish(serving, 45 + this.getRandom().nextInt(21));
+        }
+        return InteractionResult.CONSUME;
+    }
+
+    @Override protected void dropCustomDeathLoot(DamageSource source, int looting, boolean hitByPlayer) {
+        super.dropCustomDeathLoot(source, looting, hitByPlayer);
+        if (this.hasDeliveryFish()) {
+            ItemEntity drop = this.spawnAtLocation(this.getHeldFishForRendering());
+            if (drop != null) {
+                drop.setTarget(this.getOwnerUUID());
+                drop.getPersistentData().putBoolean(NightHeronFishTask.DELIVERED_MARKER, true);
+                this.setHeldFish(ItemStack.EMPTY, HeldFishPurpose.NONE);
+            }
+        }
     }
 
     public NightHeronBehaviorState getBehaviorState() {
@@ -506,6 +690,7 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
     }
 
     public void startFlybyFlight(Vec3 direction, BlockPos landingTarget, int ticks) {
+        if (this.isTame()) return;
         this.clearEatingFish();
         this.clearExternalFright();
         this.flybyFlightDirection = this.normalizeHorizontal(direction);
@@ -546,6 +731,7 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
 
     @Override
     public void startBirdBathFeedingAnimation(BirdBathContentType contentType, int ticks) {
+        if (this.hasDeliveryFish()) return;
         this.getNavigation().stop();
         if (contentType == BirdBathContentType.FISH) {
             this.showHeldFoodDuringBirdBathFeeding(new ItemStack(Items.COD), ticks);
@@ -619,6 +805,15 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
 
     int getControlledFlightTicks() {
         return this.controlledFlightTicks;
+    }
+
+    void markPetFollowFlight() {
+        this.petFollowFlightTick = this.level().getGameTime();
+    }
+
+    void beginPetLanding() {
+        this.controlledFlightTicks = 0;
+        this.clearLandingApproach();
     }
 
     boolean isControlledFlightActive() {
@@ -766,7 +961,7 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
     boolean canEatThrownFish() {
         NightHeronBehaviorState state = this.getBehaviorState();
         return this.pollutedFoodReactionTicks <= 0
-                && !this.isEatingFish()
+                && !this.hasHeldFishForRendering()
                 && this.thrownFishEatCooldown <= 0
                 && this.preyStrikeCooldown <= 0
                 && this.onGround()
@@ -781,7 +976,7 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
     private boolean canUseBirdBath() {
         NightHeronBehaviorState state = this.getBehaviorState();
         return this.pollutedFoodReactionTicks <= 0
-                && !this.isEatingFish()
+                && !this.hasHeldFishForRendering()
                 && this.thrownFishEatCooldown <= 0
                 && this.onGround()
                 && !state.isAirborne()
@@ -793,6 +988,7 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
     }
 
     private void consumeBirdBathServing(EdDYON.guaniao.content.bath.BirdBathBlockEntity bath, BirdBathContentType contentType) {
+        if (this.hasDeliveryFish()) return;
         if (contentType == BirdBathContentType.FISH) {
             this.startEatingFish(new ItemStack(Items.COD), 45 + this.getRandom().nextInt(21));
             return;
@@ -812,6 +1008,8 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
     }
 
     void eatThrownFish(ItemEntity itemEntity) {
+        if (this.level().isClientSide || this.hasHeldFishForRendering() || !this.canEatThrownFish()
+                || itemEntity.getPersistentData().getBoolean(NightHeronFishTask.DELIVERED_MARKER)) return;
         ItemStack stack = itemEntity.getItem();
         if (!NightHeronEntity.isDroppedFishCandidate(stack)) {
             return;
@@ -832,9 +1030,11 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
     }
 
     private void startPollutedFoodReaction(ItemStack foodStack, Vec3 sourcePos) {
+        if (this.hasDeliveryFish()) return;
         ItemStack copy = foodStack.copy();
         copy.setCount(1);
         this.entityData.set(HELD_FISH, copy);
+        this.entityData.set(FISH_PURPOSE, HeldFishPurpose.SELF_FOOD.id());
         this.entityData.set(HELD_FISH_POSE_SEED, this.nextHeldFishPoseSeed());
         this.entityData.set(EATING_TICKS, POLLUTED_FOOD_REACTION_TICKS);
         this.pollutedFoodReactionTicks = POLLUTED_FOOD_REACTION_TICKS;
@@ -858,6 +1058,7 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
             this.playSound(GuaniaoSoundEvents.NIGHT_HERON_AMBIENT.get(), 0.95F, 1.08F + this.getRandom().nextFloat() * 0.18F);
             ItemStack spatFood = this.getHeldFishForRendering().copy();
             this.entityData.set(HELD_FISH, ItemStack.EMPTY);
+            this.entityData.set(FISH_PURPOSE, HeldFishPurpose.NONE.id());
             this.entityData.set(HELD_FISH_POSE_SEED, 0);
             this.entityData.set(EATING_TICKS, 0);
             this.setBehaviorState(NightHeronBehaviorState.ALERT_FREEZE);
@@ -878,9 +1079,11 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
     }
 
     void startEatingFish(ItemStack fishStack, int ticks) {
+        if (this.hasHeldFishForRendering() || fishStack.isEmpty()) return;
         ItemStack copy = fishStack.copy();
         copy.setCount(1);
         this.entityData.set(HELD_FISH, copy);
+        this.entityData.set(FISH_PURPOSE, HeldFishPurpose.SELF_FOOD.id());
         this.entityData.set(HELD_FISH_POSE_SEED, this.nextHeldFishPoseSeed());
         this.entityData.set(EATING_TICKS, Math.max(1, ticks));
         this.getNavigation().stop();
@@ -892,9 +1095,11 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
     }
 
     private void showHeldFoodDuringBirdBathFeeding(ItemStack foodStack, int ticks) {
+        if (this.hasDeliveryFish()) return;
         ItemStack copy = foodStack.copy();
         copy.setCount(1);
         this.entityData.set(HELD_FISH, copy);
+        this.entityData.set(FISH_PURPOSE, HeldFishPurpose.SELF_FOOD.id());
         this.entityData.set(HELD_FISH_POSE_SEED, this.nextHeldFishPoseSeed());
         this.entityData.set(EATING_TICKS, Math.max(1, ticks));
         this.getNavigation().stop();
@@ -904,7 +1109,7 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
     }
 
     private void tickEatingFish() {
-        if (this.pollutedFoodReactionTicks > 0) {
+        if (this.pollutedFoodReactionTicks > 0 || this.getHeldFishPurpose() != HeldFishPurpose.SELF_FOOD) {
             return;
         }
         int ticks = this.entityData.get(EATING_TICKS);
@@ -925,8 +1130,11 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
     }
 
     private void clearEatingFish() {
+        if (this.getHeldFishPurpose() == HeldFishPurpose.OWNER_DELIVERY) return;
+        this.handFeeder = null;
         boolean wasEating = this.isEatingFish();
         this.entityData.set(HELD_FISH, ItemStack.EMPTY);
+        this.entityData.set(FISH_PURPOSE, HeldFishPurpose.NONE.id());
         this.entityData.set(HELD_FISH_POSE_SEED, 0);
         this.entityData.set(EATING_TICKS, 0);
         if (wasEating) {
@@ -949,18 +1157,47 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
     }
 
     boolean catchFish(AbstractFish fish) {
-        if (fish == null || !fish.isAlive() || this.isEatingFish()) {
-            return false;
-        }
-        ItemStack caughtFish = new ItemStack(this.itemForCaughtFish(fish));
-        fish.discard();
-        this.preyStrikeCooldown = NightHeronDefinition.FORAGE_ATTACK_COOLDOWN;
-        this.startEatingFish(caughtFish, 45 + this.getRandom().nextInt(21));
-        this.heal(0.5F);
-        return true;
+        return this.catchFish(fish, HeldFishPurpose.SELF_FOOD);
     }
 
-    private net.minecraft.world.item.Item itemForCaughtFish(AbstractFish fish) {
+    boolean catchFish(AbstractFish fish, HeldFishPurpose purpose) {
+        if (this.level().isClientSide || this.capturingFish || !this.canCaptureFish(fish, purpose)) return false;
+        this.capturingFish = true;
+        try {
+            if (MinecraftForge.EVENT_BUS.post(new NightHeronFishCaptureEvent(this, fish, purpose))
+                    || !this.canCaptureFish(fish, purpose)) return false;
+            ItemStack caught = new ItemStack(itemForCaughtFish(fish));
+            fish.discard();
+            this.preyStrikeCooldown = NightHeronDefinition.FORAGE_ATTACK_COOLDOWN;
+            this.startEatingFish(caught, 45 + this.getRandom().nextInt(21));
+            this.heal(0.5F);
+            return true;
+        } finally { this.capturingFish = false; }
+    }
+
+    private boolean canCaptureFish(AbstractFish fish, HeldFishPurpose purpose) {
+        return this.isAlive() && !this.hasHeldFishForRendering() && this.canStrikePrey()
+                && this.canHuntPrey(fish) && itemForCaughtFish(fish) != null
+                // Companion gifts are generated in the mouth slot, without converting live fish.
+                && purpose == HeldFishPurpose.SELF_FOOD
+                && (!this.isTame() || NightHeronFishing.canReachFish(this, fish));
+    }
+
+    public boolean canHuntPrey(LivingEntity prey) {
+        if (prey == null || !prey.isAlive() || prey.isRemoved() || prey.level() != this.level()
+                || !canReadChunk(this.level(), prey.blockPosition()) || prey.isInvulnerableTo(this.damageSources().mobAttack(this))) return false;
+        if (!this.isTame()) return prey.getType().is(BirdTags.NIGHT_HERON_PREY);
+        return prey instanceof AbstractFish fish && NightHeronFishing.isPetPrey(fish);
+    }
+
+    @Override public boolean doHurtTarget(Entity target) {
+        // Pet fish capture has one explicit conversion path, never an attack fallback.
+        return !this.isTame() && super.doHurtTarget(target);
+    }
+
+    static net.minecraft.world.item.Item itemForCaughtFish(AbstractFish fish) {
+        if (fish == null) return null;
+        if (fish.getType() == EntityType.COD) return Items.COD;
         if (fish.getType() == EntityType.SALMON) {
             return Items.SALMON;
         }
@@ -970,7 +1207,7 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
         if (fish.getType() == EntityType.PUFFERFISH) {
             return Items.PUFFERFISH;
         }
-        return Items.COD;
+        return null;
     }
 
     void rememberFright(boolean severe) {
@@ -983,6 +1220,11 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
     }
 
     void receiveFlockFright(Vec3 source, boolean severe) {
+        if (this.isTame()) return;
+        this.receiveFright(source, severe);
+    }
+
+    private void receiveFright(Vec3 source, boolean severe) {
         this.clearEatingFish();
         this.externalFrightSource = source;
         this.externalFrightTicks = severe ? 100 : 55;
@@ -1308,6 +1550,9 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
         if (this.isEatingFish()) {
             return animationState.setAndContinue(EAT_ANIMATION);
         }
+        if (this.entityData.get(OFFER_TICKS) > 0 && this.hasDeliveryFish() && this.onGround()) {
+            return animationState.setAndContinue(OFFER_ANIMATION);
+        }
         if (this.shouldUseFlyingAnimation()) {
             return BirdFlightAnimation.play(animationState, this.chooseFlyingAnimation());
         }
@@ -1315,22 +1560,19 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
         if (state == NightHeronBehaviorState.ROOSTING) {
             return animationState.setAndContinue(SLEEP_ANIMATION);
         }
-        double horizontalSpeed = this.getDeltaMovement().horizontalDistanceSqr();
-        if (BirdGroundAnimation.canPlayWalk(this)
+        double horizontalSpeed = Math.pow(BirdGroundAnimation.horizontalSpeed(this), 2);
+        if (BirdGroundAnimation.hasWalkMotion(this)
                 && (state == NightHeronBehaviorState.RUN_ESCAPE || horizontalSpeed > RUNNING_SPEED_THRESHOLD)) {
-            animationState.getController().setAnimationSpeed(
-                    Math.max(1.20D, BirdGroundAnimation.walkAnimationSpeed(this)));
-            return animationState.setAndContinue(RUN_ANIMATION);
+            return BirdGroundAnimation.play(animationState, this, RUN_ANIMATION, BirdWalkStride.Gait.RUN);
         }
         if (this.shouldPlayWalkAnimation(state, animationState.isMoving())) {
-            animationState.getController().setAnimationSpeed(BirdGroundAnimation.walkAnimationSpeed(this));
-            return animationState.setAndContinue(WALK_ANIMATION);
+            return BirdGroundAnimation.play(animationState, this, WALK_ANIMATION);
         }
         return animationState.setAndContinue(this.pickIdleAnimation());
     }
 
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController[]{new AnimationController((GeoAnimatable)this, "movement", 4, this::movementController)});
+        controllers.add(new AnimationController[]{new BirdMovementAnimationController((GeoAnimatable)this, "movement", 4, this::movementController)});
     }
 
     public AnimatableInstanceCache getAnimatableInstanceCache() {
@@ -1465,7 +1707,8 @@ implements GeoEntity, ScalableBirdModel, BirdFlightAware, BirdBathMountable, Bir
         if (!this.onGround()) {
             ++this.controlledFlightTicks;
             this.groundedAirborneTicks = 0;
-            if (this.controlledFlightTicks > MAX_CONTROLLED_FLIGHT_TICKS) {
+            if (this.controlledFlightTicks > MAX_CONTROLLED_FLIGHT_TICKS
+                    && this.level().getGameTime() - this.petFollowFlightTick > 1) {
                 this.beginEmergencyDescent();
             }
             return;

@@ -1,6 +1,12 @@
 package EdDYON.guaniao.content.bird.crow;
 
+import EdDYON.guaniao.content.bird.BirdVisibility;
+
+import EdDYON.guaniao.content.bird.BirdBodyRotationControl;
+import net.minecraft.world.entity.ai.control.BodyRotationControl;
+
 import EdDYON.guaniao.content.bird.flight.BirdFlightAnimation;
+import EdDYON.guaniao.content.bird.flight.BirdNavigationMoveControl;
 import EdDYON.guaniao.content.bird.BirdSoundVolume;
 import EdDYON.guaniao.content.bird.BirdFlockSoundLimiter;
 import EdDYON.guaniao.content.bath.BirdBathAttraction;
@@ -24,6 +30,7 @@ import EdDYON.guaniao.content.bird.flock.BirdFlockManager;
 import EdDYON.guaniao.content.bird.mutation.BirdMutation;
 import EdDYON.guaniao.content.bird.mutation.BirdMutationHolder;
 import EdDYON.guaniao.content.bird.BirdGroundAnimation;
+import EdDYON.guaniao.content.bird.BirdMovementAnimationController;
 import EdDYON.guaniao.content.bird.PollutedFoodReactionUtil;
 import EdDYON.guaniao.content.bird.flight.BirdFlightAware;
 import EdDYON.guaniao.content.bird.flight.BirdFlightBoids;
@@ -66,7 +73,6 @@ import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.ai.control.FlyingMoveControl;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
@@ -101,6 +107,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
     private static final EntityDataAccessor<Integer> BEHAVIOR_STATE = SynchedEntityData.defineId(CrowEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Float> MODEL_SCALE = SynchedEntityData.defineId(CrowEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Boolean> FLYING_ANIMATION_ACTIVE = SynchedEntityData.defineId(CrowEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Boolean> NAVIGATION_FLIGHT_ACTIVE = SynchedEntityData.defineId(CrowEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Integer> FLIGHT_ANIMATION_SEQUENCE = SynchedEntityData.defineId(CrowEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<ItemStack> HELD_FOOD = SynchedEntityData.defineId(CrowEntity.class, EntityDataSerializers.ITEM_STACK);
     private static final EntityDataAccessor<Integer> HELD_FOOD_POSE_SEED = SynchedEntityData.defineId(CrowEntity.class, EntityDataSerializers.INT);
@@ -178,9 +185,19 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
     private Vec3 frightSource;
     private UUID rememberedPlayerUUID;
 
+    @Override
+    protected BodyRotationControl createBodyControl() {
+        return new BirdBodyRotationControl(this);
+    }
+
+    @Override
+    public boolean shouldRenderAtSqrDistance(double distanceSquared) {
+        return BirdVisibility.shouldRender(distanceSquared, getViewScale());
+    }
+
     public CrowEntity(EntityType<? extends CrowEntity> entityType, Level level) {
         super(entityType, level);
-        this.moveControl = new FlyingMoveControl(this, 12, true);
+        this.moveControl = new BirdNavigationMoveControl(this, 12, true);
         this.setPathfindingMalus(BlockPathTypes.LEAVES, 0.0F);
         this.setPathfindingMalus(BlockPathTypes.WATER, -1.0F);
         this.setPathfindingMalus(BlockPathTypes.DANGER_FIRE, 16.0F);
@@ -267,6 +284,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         this.entityData.define(BEHAVIOR_STATE, CrowBehaviorState.IDLE.ordinal());
         this.entityData.define(MODEL_SCALE, BirdModelScale.DEFAULT_INDIVIDUAL_SCALE);
         this.entityData.define(FLYING_ANIMATION_ACTIVE, false);
+        this.entityData.define(NAVIGATION_FLIGHT_ACTIVE, false);
         this.entityData.define(FLIGHT_ANIMATION_SEQUENCE, 0);
         this.entityData.define(HELD_FOOD, ItemStack.EMPTY);
         this.entityData.define(HELD_FOOD_POSE_SEED, 0);
@@ -376,6 +394,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
         if (this.level().isClientSide) {
             return;
         }
+        this.entityData.set(NAVIGATION_FLIGHT_ACTIVE, BirdNavigationMoveControl.flightActiveAfterTravel(this));
         this.tickCounters();
         this.tickNestBuilding();
         this.tickPollutedFoodReaction();
@@ -1816,7 +1835,8 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
     private boolean shouldPlayFlyAnimation() {
         return BirdFlightController.shouldPlayFlyAnimation(
                 this,
-                this.getBehaviorState().isAirborne() || this.isFlyingAnimationActive(),
+                this.getBehaviorState().isAirborne() || this.isFlyingAnimationActive()
+                        || this.entityData.get(NAVIGATION_FLIGHT_ACTIVE),
                 this.onGround(),
                 this.isNoGravity(),
                 this.getDeltaMovement(),
@@ -1842,7 +1862,8 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
     }
 
     private boolean shouldPlayGlideAnimation() {
-        if (this.getBehaviorState() == CrowBehaviorState.FLEEING
+        if (this.entityData.get(NAVIGATION_FLIGHT_ACTIVE) && !this.isFlyingAnimationActive()
+                || this.getBehaviorState() == CrowBehaviorState.FLEEING
                 || this.landingFlight) {
             return false;
         }
@@ -1875,8 +1896,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
             return animationState.setAndContinue(this.sleepAnimation());
         }
         if (this.shouldPlayWalkAnimation(state, animationState.isMoving())) {
-            animationState.getController().setAnimationSpeed(BirdGroundAnimation.walkAnimationSpeed(this));
-            return animationState.setAndContinue(WALK_ANIMATION);
+            return BirdGroundAnimation.play(animationState, this, WALK_ANIMATION);
         }
         if (state == CrowBehaviorState.WATCHING || state == CrowBehaviorState.ALERT) {
             return animationState.setAndContinue(IDLE_DIFF_2_ANIMATION);
@@ -1889,7 +1909,7 @@ public class CrowEntity extends TamableAnimal implements GeoEntity, FlyingAnimal
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        this.movementAnimationController = new AnimationController<>(this, "movement", 0, this::movementController);
+        this.movementAnimationController = new BirdMovementAnimationController<>(this, "movement", 0, this::movementController);
         controllers.add(this.movementAnimationController);
     }
 

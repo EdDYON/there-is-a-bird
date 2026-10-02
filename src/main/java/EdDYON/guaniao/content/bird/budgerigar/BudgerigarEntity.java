@@ -1,5 +1,10 @@
 package EdDYON.guaniao.content.bird.budgerigar;
 
+import EdDYON.guaniao.content.bird.BirdVisibility;
+
+import EdDYON.guaniao.content.bird.BirdBodyRotationControl;
+import net.minecraft.world.entity.ai.control.BodyRotationControl;
+
 import EdDYON.guaniao.config.BirdConfigManager;
 import EdDYON.guaniao.content.bird.BirdSoundVolume;
 import EdDYON.guaniao.content.bird.BirdFlockSoundLimiter;
@@ -17,6 +22,7 @@ import EdDYON.guaniao.content.bird.flock.BirdFlockManager;
 import EdDYON.guaniao.content.bird.mutation.BirdMutation;
 import EdDYON.guaniao.content.bird.mutation.BirdMutationHolder;
 import EdDYON.guaniao.content.bird.BirdGroundAnimation;
+import EdDYON.guaniao.content.bird.BirdMovementAnimationController;
 import EdDYON.guaniao.content.bird.brain.BirdBrain;
 import EdDYON.guaniao.content.bird.brain.BirdMigrationGoal;
 import EdDYON.guaniao.content.bird.flight.BirdFlightAware;
@@ -24,6 +30,7 @@ import EdDYON.guaniao.content.bird.flight.BirdFlightBoids;
 import EdDYON.guaniao.content.bird.flight.BirdFlightController;
 import EdDYON.guaniao.content.bird.flight.BirdFlightProfile;
 import EdDYON.guaniao.content.bird.flight.BirdFlightAnimation;
+import EdDYON.guaniao.content.bird.flight.BirdNavigationMoveControl;
 import EdDYON.guaniao.content.bird.flight.BirdFlightTargeting;
 import EdDYON.guaniao.content.bird.scale.BirdModelScale;
 import EdDYON.guaniao.content.bird.scale.BirdModelScaleProfile;
@@ -70,7 +77,6 @@ import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.ai.control.FlyingMoveControl;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
@@ -103,6 +109,7 @@ import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 public class BudgerigarEntity extends TamableAnimal implements GeoEntity, FlyingAnimal, ScalableBirdModel, BirdFlightAware, BirdBathMountable, BirdBathFeedingAnimatable, CommandableBird, FlockCompatibleBird, BirdSleepWakeable, BirdMutationHolder {
+    private static final EntityDataAccessor<Boolean> NAVIGATION_FLIGHT_ACTIVE = SynchedEntityData.defineId(BudgerigarEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Integer> BEHAVIOR_STATE = SynchedEntityData.defineId(BudgerigarEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> SKIN_VARIANT = SynchedEntityData.defineId(BudgerigarEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Float> MODEL_SCALE = SynchedEntityData.defineId(BudgerigarEntity.class, EntityDataSerializers.FLOAT);
@@ -164,9 +171,19 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
     private Vec3 pendingFrightSource;
     private Vec3 flightTarget;
 
+    @Override
+    protected BodyRotationControl createBodyControl() {
+        return new BirdBodyRotationControl(this);
+    }
+
+    @Override
+    public boolean shouldRenderAtSqrDistance(double distanceSquared) {
+        return BirdVisibility.shouldRender(distanceSquared, getViewScale());
+    }
+
     public BudgerigarEntity(EntityType<? extends BudgerigarEntity> entityType, Level level) {
         super(entityType, level);
-        this.moveControl = new FlyingMoveControl(this, 10, true);
+        this.moveControl = new BirdNavigationMoveControl(this, 10, true);
         this.setPathfindingMalus(BlockPathTypes.LEAVES, 0.0F);
         this.setPathfindingMalus(BlockPathTypes.WATER, -1.0F);
         this.setPathfindingMalus(BlockPathTypes.DANGER_FIRE, 16.0F);
@@ -227,6 +244,7 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
         this.goalSelector.addGoal(7, (Goal)new BudgerigarFollowOwnerGoal(this, 1.0D, 2.5F, 8.5F));
         this.goalSelector.addGoal(8, (Goal)new BudgerigarFlockGoal(this));
         this.goalSelector.addGoal(9, (Goal)new BudgerigarCuriousFollowGoal(this));
+        this.goalSelector.addGoal(10, new HummingbirdObservationGoal(this));
         this.goalSelector.addGoal(10, (Goal)new BudgerigarIdleGoal(this));
         this.goalSelector.addGoal(11, (Goal)new RandomLookAroundGoal((Mob)this));
     }
@@ -248,6 +266,7 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
     @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
+        this.entityData.define(NAVIGATION_FLIGHT_ACTIVE, false);
         this.entityData.define(BEHAVIOR_STATE, BudgerigarBehaviorState.IDLE.ordinal());
         this.entityData.define(SKIN_VARIANT, 0);
         this.entityData.define(MODEL_SCALE, BirdModelScale.DEFAULT_INDIVIDUAL_SCALE);
@@ -289,6 +308,9 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
     @Override
     public void aiStep() {
         super.aiStep();
+        if (!this.level().isClientSide) {
+            this.entityData.set(NAVIGATION_FLIGHT_ACTIVE, BirdNavigationMoveControl.flightActiveAfterTravel(this));
+        }
         if (this.isPassenger()) {
             this.getNavigation().stop();
             if (this.level().isClientSide) {
@@ -1499,7 +1521,7 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
     protected final boolean shouldPlayFlyAnimation() {
         return BirdFlightController.shouldPlayFlyAnimation(
                 this,
-                this.getBehaviorState().isAirborne(),
+                this.getBehaviorState().isAirborne() || this.entityData.get(NAVIGATION_FLIGHT_ACTIVE),
                 this.onGround(),
                 this.isNoGravity(),
                 this.getDeltaMovement(),
@@ -1567,8 +1589,7 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
             return animationState.setAndContinue(DANCE_ANIMATION);
         }
         if (this.shouldPlayWalkAnimation(state, animationState.isMoving())) {
-            animationState.getController().setAnimationSpeed(BirdGroundAnimation.walkAnimationSpeed(this));
-            return animationState.setAndContinue(WALK_ANIMATION);
+            return BirdGroundAnimation.play(animationState, this, WALK_ANIMATION);
         }
         if (state == BudgerigarBehaviorState.PREENING) {
             return animationState.setAndContinue(PREEN_ANIMATION);
@@ -1581,7 +1602,7 @@ public class BudgerigarEntity extends TamableAnimal implements GeoEntity, Flying
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController[]{new AnimationController((GeoAnimatable)this, "movement", 4, this::movementController)});
+        controllers.add(new AnimationController[]{new BirdMovementAnimationController((GeoAnimatable)this, "movement", 4, this::movementController)});
     }
 
     @Override

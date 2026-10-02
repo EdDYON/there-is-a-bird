@@ -36,7 +36,7 @@ public final class BirdGroundLocomotion {
         // The cassowary owns its patrol, acceleration and three movement bands.
         // Applying the shared random pace modifier would make its movement and
         // speed-driven GeckoLib animations drift apart.
-        if (species == BirdSpecies.CASSOWARY) {
+        if (species == BirdSpecies.CASSOWARY || species == BirdSpecies.HUMMINGBIRD) {
             removeModifier(movementSpeed);
             STATES.remove(bird);
             return;
@@ -114,6 +114,7 @@ public final class BirdGroundLocomotion {
 
     private static LocomotionProfile profile(BirdSpecies species) {
         return switch (species) {
+            case HUMMINGBIRD -> new LocomotionProfile(1F, 0F, 1, 0, 0, 100, 100);
             case NIGHT_HERON -> new LocomotionProfile(0.72F, 0.08F, 55, 40, 5, 80, 220);
             case SPARROW -> new LocomotionProfile(1.10F, 0.10F, 25, 55, 20, 30, 100);
             case LONG_TAILED_TIT -> new LocomotionProfile(1.05F, 0.10F, 25, 55, 20, 30, 90);

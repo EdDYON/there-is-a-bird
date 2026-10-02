@@ -14,6 +14,10 @@ public abstract class BirdSpeciesProfile {
         return 18.0D;
     }
 
+    public Player findNearestRelevantPlayer(PathfinderMob bird) {
+        return bird.level().getNearestPlayer(bird, this.playerSenseRadius());
+    }
+
     public float baseBoldness() {
         return 0.35F;
     }

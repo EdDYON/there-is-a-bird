@@ -3,6 +3,7 @@ package EdDYON.guaniao.content.bird.myna;
 import EdDYON.guaniao.content.bird.flight.BirdFlightAnimation;
 import EdDYON.guaniao.content.bird.BirdActivitySchedule;
 import EdDYON.guaniao.content.bird.BirdGroundAnimation;
+import EdDYON.guaniao.content.bird.BirdMovementAnimationController;
 import EdDYON.guaniao.content.bird.BirdSleepWakeable;
 import EdDYON.guaniao.content.bird.BirdTags;
 import EdDYON.guaniao.content.bird.brain.BirdIntent;
@@ -445,8 +446,7 @@ public class MynaEntity extends SparrowEntity implements FlyingAnimal, BirdSleep
             return animationState.setAndContinue(IDLE_2_ANIMATION);
         }
         if (BirdGroundAnimation.hasWalkMotion(this, animationState.isMoving())) {
-            animationState.getController().setAnimationSpeed(BirdGroundAnimation.walkAnimationSpeed(this));
-            return animationState.setAndContinue(WALK_ANIMATION);
+            return BirdGroundAnimation.play(animationState, this, WALK_ANIMATION);
         }
         return animationState.setAndContinue(IDLE_ANIMATION);
     }
@@ -454,7 +454,7 @@ public class MynaEntity extends SparrowEntity implements FlyingAnimal, BirdSleep
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController[]{
-                new AnimationController((GeoAnimatable)this, "movement", 4, this::movementController)
+                new BirdMovementAnimationController((GeoAnimatable)this, "movement", 4, this::movementController)
         });
     }
 

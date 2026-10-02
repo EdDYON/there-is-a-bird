@@ -215,6 +215,16 @@ public final class BirdConfigManager {
     public static int flybyBirdLifetimeTicks() { return config.global.flybyBirdLifetimeTicks; }
     public static int flockRefreshTicks() { return config.global.flockRefreshTicks; }
     public static int habitatCacheTicks() { return config.global.habitatCacheTicks; }
+    public static boolean nightHeronTamingEnabled() { return config.global.nightHeronTamingEnabled; }
+    public static boolean nightHeronFishingEnabled() { return config.global.nightHeronFishingEnabled; }
+    public static boolean nightHeronGiftsEnabled() { return config.global.nightHeronGiftsEnabled; }
+    public static double nightHeronTamingChance() { return config.global.nightHeronTamingChance; }
+    public static int nightHeronFishingRadius() { return config.global.nightHeronFishingRadius; }
+    public static int nightHeronOwnerRange() { return config.global.nightHeronOwnerRange; }
+    public static int nightHeronWorkMinSeconds() { return config.global.nightHeronWorkMinSeconds; }
+    public static int nightHeronWorkMaxSeconds() { return config.global.nightHeronWorkMaxSeconds; }
+    public static int nightHeronGiftMinSeconds() { return config.global.nightHeronGiftMinSeconds; }
+    public static int nightHeronGiftMaxSeconds() { return config.global.nightHeronGiftMaxSeconds; }
     public static boolean petBirdCommandsEnabled() { return config.global.enablePetBirdCommands; }
     public static boolean seagullStealingEnabled() { return config.global.enableSeagullStealing; }
     public static boolean crowItemSafetyEnabled() { return config.global.crowItemSafety; }
@@ -380,6 +390,16 @@ public final class BirdConfigManager {
         normalized.global.photoTrashRetentionDays = clamp(sourceGlobal.photoTrashRetentionDays, 1, 90);
         normalized.global.maxConcurrentPhotoDownloads = clamp(sourceGlobal.maxConcurrentPhotoDownloads, 1, 128);
         normalized.global.photoDownloadKiBPerTick = clamp(sourceGlobal.photoDownloadKiBPerTick, 24, 2048);
+        normalized.global.nightHeronTamingEnabled = sourceGlobal.nightHeronTamingEnabled;
+        normalized.global.nightHeronFishingEnabled = sourceGlobal.nightHeronFishingEnabled;
+        normalized.global.nightHeronGiftsEnabled = sourceGlobal.nightHeronGiftsEnabled;
+        normalized.global.nightHeronTamingChance = finiteClamp(sourceGlobal.nightHeronTamingChance, 0.0D, 1.0D, 1.0D / 3.0D);
+        normalized.global.nightHeronFishingRadius = clamp(sourceGlobal.nightHeronFishingRadius, 4, 32);
+        normalized.global.nightHeronOwnerRange = clamp(sourceGlobal.nightHeronOwnerRange, 8, 64);
+        normalized.global.nightHeronWorkMinSeconds = clamp(sourceGlobal.nightHeronWorkMinSeconds, 5, 600);
+        normalized.global.nightHeronWorkMaxSeconds = clamp(sourceGlobal.nightHeronWorkMaxSeconds, normalized.global.nightHeronWorkMinSeconds, 600);
+        normalized.global.nightHeronGiftMinSeconds = clamp(sourceGlobal.nightHeronGiftMinSeconds, 60, 3600);
+        normalized.global.nightHeronGiftMaxSeconds = clamp(sourceGlobal.nightHeronGiftMaxSeconds, normalized.global.nightHeronGiftMinSeconds, 3600);
         normalized.birds.clear();
 
         for (BirdSpecies species : BirdSpecies.values()) {

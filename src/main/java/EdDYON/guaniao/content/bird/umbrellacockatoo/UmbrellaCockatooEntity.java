@@ -5,6 +5,7 @@ import EdDYON.guaniao.content.advancement.BirdAdvancements;
 import EdDYON.guaniao.content.bird.BirdActivitySchedule;
 import EdDYON.guaniao.content.bird.BirdFlockSoundLimiter;
 import EdDYON.guaniao.content.bird.BirdGroundAnimation;
+import EdDYON.guaniao.content.bird.BirdMovementAnimationController;
 import EdDYON.guaniao.content.bird.BirdLoudSoundListener;
 import EdDYON.guaniao.content.bird.BirdScanBudget;
 import EdDYON.guaniao.content.bird.BirdTags;
@@ -1013,7 +1014,7 @@ public class UmbrellaCockatooEntity extends BudgerigarEntity implements BirdLoud
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController<>(this, "movement", 5, this::movementController));
+        controllers.add(new BirdMovementAnimationController<>(this, "movement", 5, this::movementController));
     }
 
     private <T extends UmbrellaCockatooEntity> PlayState movementController(AnimationState<T> animationState) {
@@ -1048,8 +1049,7 @@ public class UmbrellaCockatooEntity extends BudgerigarEntity implements BirdLoud
             return animationState.setAndContinue(SLEEP_ANIMATION);
         }
         if (walking) {
-            animationState.getController().setAnimationSpeed(BirdGroundAnimation.walkAnimationSpeed(this));
-            return animationState.setAndContinue(WALK_ANIMATION);
+            return BirdGroundAnimation.play(animationState, this, WALK_ANIMATION);
         }
         RawAnimation idle = this.pickIdleAnimation(displayAllowed);
         return animationState.setAndContinue(this.displayAnimation.playsBody(this.cockatooAnimationTick)

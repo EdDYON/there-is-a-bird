@@ -23,6 +23,10 @@ public class NightHeronHeldFishLayer extends GeoRenderLayer<NightHeronEntity> {
     private static final float X_ROTATION_VARIATION = 4.0F;
     private static final float Z_ROTATION_VARIATION = 22.0F;
     private static final float ITEM_SCALE = 0.55F;
+    // The bill ends at local Z = -13.10648; keep the carried sprite just beyond its tip.
+    private static final double DELIVERY_ANCHOR_Y = 14.05D / 16.0D;
+    private static final double DELIVERY_ANCHOR_Z = -13.35D / 16.0D;
+    private static final float DELIVERY_SCALE = 0.34F;
 
     public NightHeronHeldFishLayer(GeoRenderer<NightHeronEntity> renderer) {
         super(renderer);
@@ -30,21 +34,26 @@ public class NightHeronHeldFishLayer extends GeoRenderLayer<NightHeronEntity> {
 
     @Override
     public void renderForBone(PoseStack poseStack, NightHeronEntity nightHeron, GeoBone bone, RenderType renderType, MultiBufferSource bufferSource, VertexConsumer buffer, float partialTick, int packedLight, int packedOverlay) {
+        if (!MOUTH_BONE.equals(bone.getName())) return;
         ItemStack stack = getStackForRendering(nightHeron);
-        if (!MOUTH_BONE.equals(bone.getName()) || stack.isEmpty()) {
+        if (stack.isEmpty()) {
             return;
         }
         int poseSeed = getPoseSeed(nightHeron, stack);
+        boolean delivery = nightHeron.hasDeliveryFish();
         poseStack.pushPose();
         try {
-            poseStack.translate(0.0D, MOUTH_ANCHOR_Y, MOUTH_ANCHOR_Z);
-            poseStack.mulPose(Axis.XP.rotationDegrees(BASE_X_ROTATION + seededOffset(poseSeed, 11, X_ROTATION_VARIATION)));
-            poseStack.mulPose(Axis.ZP.rotationDegrees(BASE_Z_ROTATION + seededOffset(poseSeed, 37, Z_ROTATION_VARIATION)));
-            poseStack.scale(ITEM_SCALE, ITEM_SCALE, ITEM_SCALE);
+            poseStack.translate(0.0D, delivery ? DELIVERY_ANCHOR_Y : MOUTH_ANCHOR_Y,
+                    delivery ? DELIVERY_ANCHOR_Z : MOUTH_ANCHOR_Z);
+            // Keep the fish's depth fixed in front of the bill; tilting it can cut back through the beak.
+            poseStack.mulPose(Axis.XP.rotationDegrees(delivery ? 0 : BASE_X_ROTATION + seededOffset(poseSeed, 11, X_ROTATION_VARIATION)));
+            poseStack.mulPose(Axis.ZP.rotationDegrees(delivery ? -20 : BASE_Z_ROTATION + seededOffset(poseSeed, 37, Z_ROTATION_VARIATION)));
+            float scale = delivery ? DELIVERY_SCALE : ITEM_SCALE;
+            poseStack.scale(scale, scale, scale);
             Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer().renderItem(
                     nightHeron,
                     stack,
-                    ItemDisplayContext.GROUND,
+                    delivery ? ItemDisplayContext.NONE : ItemDisplayContext.GROUND,
                     false,
                     poseStack,
                     bufferSource,

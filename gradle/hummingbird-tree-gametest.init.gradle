@@ -1,0 +1,24 @@
+// Only real hummingbird tree scenarios; the shared fixture is compiled but its batches are disabled.
+gradle.projectsEvaluated {
+    def p = gradle.rootProject
+    def qa = p.sourceSets.create('hummingbirdTreeQa') {
+        java {
+            srcDir(p.file('src/gametest/java'))
+            include 'EdDYON/guaniao/content/bird/hummingbird/HummingbirdTreeGameTests.java'
+            include 'EdDYON/guaniao/content/bird/hummingbird/HummingbirdEcologyGameTests.java'
+        }
+        resources {
+            srcDir(p.file('src/gametest/resources'))
+            include 'data/guaniao_hummingbird_tree_qa/**'
+        }
+        compileClasspath += p.sourceSets.main.output + p.sourceSets.main.compileClasspath
+        runtimeClasspath += output + compileClasspath + p.sourceSets.main.runtimeClasspath
+    }
+    p.minecraft.runs.gameTestServer {
+        workingDirectory p.file('.tmp_hummingbird_tree/test-world')
+        property 'forge.enabledGameTestNamespaces', 'guaniao_hummingbird_tree_qa'
+        property 'forge.logging.console.level', 'info'
+        jvmArgs '-Xms512m', '-Xmx2G'
+        mods { guaniao { source qa } }
+    }
+}

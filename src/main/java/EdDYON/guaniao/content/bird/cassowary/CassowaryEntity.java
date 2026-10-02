@@ -1,10 +1,17 @@
 package EdDYON.guaniao.content.bird.cassowary;
 
+import EdDYON.guaniao.content.bird.BirdVisibility;
+
+import EdDYON.guaniao.content.bird.BirdBodyRotationControl;
+import net.minecraft.world.entity.ai.control.BodyRotationControl;
+
 import EdDYON.guaniao.config.BirdConfigManager;
 import EdDYON.guaniao.config.BirdSpecies;
 import EdDYON.guaniao.content.bird.BirdFlockSoundLimiter;
 import EdDYON.guaniao.content.bird.BirdFoodSafety;
 import EdDYON.guaniao.content.bird.BirdGroundAnimation;
+import EdDYON.guaniao.content.bird.BirdMovementAnimationController;
+import EdDYON.guaniao.content.bird.BirdWalkStride;
 import EdDYON.guaniao.content.bird.BirdScanBudget;
 import EdDYON.guaniao.content.bird.BirdSoundVolume;
 import EdDYON.guaniao.content.bird.BirdTags;
@@ -158,6 +165,21 @@ public class CassowaryEntity extends PathfinderMob
     private float clientLowerNeckPitch;
     private float clientGazeWeight;
     private GuidePreviewAnimation guidePreviewAnimation = GuidePreviewAnimation.NONE;
+
+    @Override
+    protected BodyRotationControl createBodyControl() {
+        return new BirdBodyRotationControl(this);
+    }
+
+    @Override
+    public boolean shouldRenderAtSqrDistance(double distanceSquared) {
+        return BirdVisibility.shouldRender(distanceSquared, getViewScale());
+    }
+
+    @Override
+    public boolean removeWhenFarAway(double distanceSquared) {
+        return distanceSquared > BirdVisibility.TRACKING_DISTANCE_SQUARED && super.removeWhenFarAway(distanceSquared);
+    }
 
     public CassowaryEntity(EntityType<? extends CassowaryEntity> entityType, Level level) {
         super(entityType, level);
@@ -1260,18 +1282,15 @@ public class CassowaryEntity extends PathfinderMob
 
     private <T extends CassowaryEntity> PlayState movementAnimation(AnimationState<T> animationState,
                                                                      boolean forceFast) {
-        double speed = Math.sqrt(this.getDeltaMovement().horizontalDistanceSqr());
+        double speed = BirdGroundAnimation.horizontalSpeed(this);
+        if (!BirdGroundAnimation.hasWalkMotion(this)) return animationState.setAndContinue(IDLE_ANIMATION);
         if (forceFast || speed >= 0.30D) {
-            animationState.getController().setAnimationSpeed(Mth.clamp(speed / 0.43D, 0.82D, 1.38D));
-            return animationState.setAndContinue(SPRINT_ANIMATION);
+            return BirdGroundAnimation.play(animationState, this, SPRINT_ANIMATION, BirdWalkStride.Gait.SPRINT);
         }
         if (speed >= 0.17D) {
-            animationState.getController().setAnimationSpeed(Mth.clamp(speed / 0.22D, 0.72D, 1.40D));
-            return animationState.setAndContinue(TROT_ANIMATION);
+            return BirdGroundAnimation.play(animationState, this, TROT_ANIMATION, BirdWalkStride.Gait.TROT);
         }
-        animationState.getController().setAnimationSpeed(Mth.clamp(
-                BirdGroundAnimation.walkAnimationSpeed(this, 0.90D), 0.62D, 1.45D));
-        return animationState.setAndContinue(WALK_ANIMATION);
+        return BirdGroundAnimation.play(animationState, this, WALK_ANIMATION);
     }
 
     public enum GuidePreviewAnimation {
@@ -1288,7 +1307,7 @@ public class CassowaryEntity extends PathfinderMob
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        AnimationController movement = new AnimationController(
+        AnimationController movement = new BirdMovementAnimationController(
                 (GeoAnimatable)this, "movement", 4, this::movementController);
         AnimationController action = new AnimationController(
                 (GeoAnimatable)this, "action", 0, state -> PlayState.STOP)

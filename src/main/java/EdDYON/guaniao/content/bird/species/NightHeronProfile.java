@@ -31,6 +31,10 @@ public final class NightHeronProfile extends BirdSpeciesProfile {
         return 0.34F;
     }
 
+    @Override public Player findNearestRelevantPlayer(PathfinderMob bird) {
+        return ((NightHeronEntity)bird).findNearestThreatPlayer(this.playerSenseRadius());
+    }
+
     @Override
     public float baseWariness() {
         return 0.68F;
@@ -75,7 +79,7 @@ public final class NightHeronProfile extends BirdSpeciesProfile {
         return bird.level().getEntitiesOfClass(
                         LivingEntity.class,
                         bird.getBoundingBox().inflate(8.0D),
-                        entity -> entity.isAlive() && this.isPreferredPrey(entity)
+                        entity -> ((NightHeronEntity)bird).canHuntPrey(entity)
                 ).stream()
                 .min((a, b) -> Double.compare(bird.distanceToSqr(a), bird.distanceToSqr(b)))
                 .orElse(null);

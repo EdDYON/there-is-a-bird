@@ -65,7 +65,7 @@ public final class BirdConfigUiTest {
         int end = source.indexOf("private LivingEntity previewEntity()", split);
         List<String> global = keys(source.substring(start, split)); global.add("scope");
         List<String> species = keys(source.substring(split, end));
-        require(global.size() == 52, "All 52 original global settings remain reachable");
+        require(global.size() == 58, "All 52 original and 6 active night heron global settings remain reachable");
         require(species.size() == 14, "All 14 original per-species settings remain reachable");
         for (String key : global) coverage(key, List.of(BirdConfigCategory.values()));
         for (String key : species) coverage(key, BirdConfigCategory.SPECIES);
@@ -76,7 +76,7 @@ public final class BirdConfigUiTest {
             for (String key : global) require(json.has("gui.guaniao.bird_config.setting." + key), "Global label: " + key);
             for (String key : species) require(json.has("gui.guaniao.bird_config.setting." + key), "Species label: " + key);
         }
-        System.out.println("PASS: " + layouts + " settings layouts, scrollbar bounds/dragging, category coverage and zh/en labels (52 global + 14 species settings)");
+        System.out.println("PASS: " + layouts + " settings layouts, scrollbar bounds/dragging, category coverage and zh/en labels (58 global + 14 species settings)");
     }
 
     private static List<String> keys(String source) {

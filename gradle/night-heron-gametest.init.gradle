@@ -1,0 +1,25 @@
+// Run with: gradlew --init-script gradle/night-heron-gametest.init.gradle runGameTestServer
+// The QA mod and fixture never enter the normal jar/source sets.
+gradle.projectsEvaluated {
+    def p = gradle.rootProject
+    def qa = p.sourceSets.create('heronQa') {
+        java.srcDir(p.file('src/gametest/java'))
+        resources.srcDir(p.file('src/gametest/resources'))
+        compileClasspath += p.sourceSets.main.output + p.sourceSets.main.compileClasspath
+        runtimeClasspath += output + compileClasspath + p.sourceSets.main.runtimeClasspath
+    }
+    p.minecraft.runs.gameTestServer {
+        workingDirectory p.file('.tmp_heron_pet/test-world')
+        property 'forge.enabledGameTestNamespaces', 'guaniao_heron_qa'
+        property 'forge.logging.console.level', 'info'
+        jvmArgs '-Xms512m', '-Xmx2G'
+        mods { guaniao { source qa } }
+    }
+    p.minecraft.runs.client {
+        workingDirectory p.file('.tmp_motion_probe/run')
+        property 'forge.logging.console.level', 'info'
+        jvmArgs '-Xms512m', '-Xmx2G'
+        args '--width', '1280', '--height', '720'
+        mods { guaniao { source qa } }
+    }
+}

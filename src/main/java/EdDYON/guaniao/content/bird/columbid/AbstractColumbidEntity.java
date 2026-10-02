@@ -1,5 +1,10 @@
 package EdDYON.guaniao.content.bird.columbid;
 
+import EdDYON.guaniao.content.bird.BirdVisibility;
+
+import EdDYON.guaniao.content.bird.BirdBodyRotationControl;
+import net.minecraft.world.entity.ai.control.BodyRotationControl;
+
 import EdDYON.guaniao.content.bird.flight.BirdFlightAnimation;
 import EdDYON.guaniao.config.BirdConfigManager;
 import EdDYON.guaniao.config.BirdSpecies;
@@ -20,6 +25,7 @@ import EdDYON.guaniao.content.bird.flock.BirdFlockManager;
 import EdDYON.guaniao.content.bird.mutation.BirdMutation;
 import EdDYON.guaniao.content.bird.mutation.BirdMutationHolder;
 import EdDYON.guaniao.content.bird.BirdGroundAnimation;
+import EdDYON.guaniao.content.bird.BirdMovementAnimationController;
 import EdDYON.guaniao.content.bird.brain.BirdBrain;
 import EdDYON.guaniao.content.bird.brain.BirdIntent;
 import EdDYON.guaniao.content.bird.brain.BirdMigrationGoal;
@@ -174,6 +180,16 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
     protected UUID pairPartnerUUID;
     private int danceGraceScans;
     private BlockPos danceTargetPos;
+
+    @Override
+    protected BodyRotationControl createBodyControl() {
+        return new BirdBodyRotationControl(this);
+    }
+
+    @Override
+    public boolean shouldRenderAtSqrDistance(double distanceSquared) {
+        return BirdVisibility.shouldRender(distanceSquared, getViewScale());
+    }
 
     protected AbstractColumbidEntity(EntityType<? extends AbstractColumbidEntity> entityType, Level level, BirdSpeciesProfile profile) {
         super(entityType, level);
@@ -1529,15 +1545,14 @@ public abstract class AbstractColumbidEntity extends TamableAnimal implements Ge
             return animationState.setAndContinue(DANCE_ANIMATION);
         }
         if (this.shouldPlayWalkAnimation(animationState.isMoving())) {
-            animationState.getController().setAnimationSpeed(BirdGroundAnimation.walkAnimationSpeed(this));
-            return animationState.setAndContinue(WALK_ANIMATION);
+            return BirdGroundAnimation.play(animationState, this, WALK_ANIMATION);
         }
         return animationState.setAndContinue(this.pickIdleAnimation());
     }
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController[]{new AnimationController((GeoAnimatable)this, "movement", 4, this::movementController)});
+        controllers.add(new AnimationController[]{new BirdMovementAnimationController((GeoAnimatable)this, "movement", 4, this::movementController)});
     }
 
     @Override

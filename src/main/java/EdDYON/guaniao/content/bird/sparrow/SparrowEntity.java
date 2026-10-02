@@ -1,5 +1,10 @@
 package EdDYON.guaniao.content.bird.sparrow;
 
+import EdDYON.guaniao.content.bird.BirdVisibility;
+
+import EdDYON.guaniao.content.bird.BirdBodyRotationControl;
+import net.minecraft.world.entity.ai.control.BodyRotationControl;
+
 import EdDYON.guaniao.content.bird.flight.BirdFlightAnimation;
 import EdDYON.guaniao.content.bird.BirdSoundVolume;
 import EdDYON.guaniao.content.bird.BirdFlockSoundLimiter;
@@ -21,6 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import EdDYON.guaniao.content.bird.BirdActivitySchedule;
 import EdDYON.guaniao.content.bird.BirdGroundAnimation;
+import EdDYON.guaniao.content.bird.BirdMovementAnimationController;
 import EdDYON.guaniao.content.bird.brain.BirdBrain;
 import EdDYON.guaniao.content.bird.brain.BirdIntent;
 import EdDYON.guaniao.content.bird.brain.BirdMigrationGoal;
@@ -183,6 +189,16 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
     private long nextTideMove;
     private long nextTideAlarm;
     private int tideFlockSize;
+
+    @Override
+    protected BodyRotationControl createBodyControl() {
+        return new BirdBodyRotationControl(this);
+    }
+
+    @Override
+    public boolean shouldRenderAtSqrDistance(double distanceSquared) {
+        return BirdVisibility.shouldRender(distanceSquared, getViewScale());
+    }
 
     public SparrowEntity(EntityType<? extends SparrowEntity> entityType, Level level) {
         this(entityType, level, SparrowProfile.INSTANCE);
@@ -2126,8 +2142,7 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
             return BirdFlightAnimation.play(animationState, FLY_ANIMATION);
         }
         if (this.shouldPlayWalkAnimation(state, animationState.isMoving())) {
-            animationState.getController().setAnimationSpeed(BirdGroundAnimation.walkAnimationSpeed(this));
-            return animationState.setAndContinue(WALK_ANIMATION);
+            return BirdGroundAnimation.play(animationState, this, WALK_ANIMATION);
         }
         if (state == SparrowBehaviorState.PECKING) {
             return animationState.setAndContinue(PECK_ANIMATION);
@@ -2143,7 +2158,7 @@ public class SparrowEntity extends TamableAnimal implements GeoEntity, ScalableB
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController[]{new AnimationController((GeoAnimatable)this, "movement", 4, this::movementController)});
+        controllers.add(new AnimationController[]{new BirdMovementAnimationController((GeoAnimatable)this, "movement", 4, this::movementController)});
     }
 
     @Override

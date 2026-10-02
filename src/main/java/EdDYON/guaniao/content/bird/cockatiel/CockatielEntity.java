@@ -3,6 +3,7 @@ package EdDYON.guaniao.content.bird.cockatiel;
 import EdDYON.guaniao.config.BirdConfigManager;
 import EdDYON.guaniao.config.BirdSpecies;
 import EdDYON.guaniao.content.bird.BirdGroundAnimation;
+import EdDYON.guaniao.content.bird.BirdMovementAnimationController;
 import EdDYON.guaniao.content.bird.BirdScanBudget;
 import EdDYON.guaniao.content.bird.BirdTags;
 import EdDYON.guaniao.content.bird.budgerigar.BudgerigarBehaviorState;
@@ -224,12 +225,15 @@ public class CockatielEntity extends BudgerigarEntity {
 
     @Override
     protected SoundEvent getAmbientSound() {
-        return GuaniaoSoundEvents.COCKATIEL_AMBIENT.get();
+        // Keep the original call pool available to wild birds and other species' mimicry.
+        return this.isTame() && this.getRandom().nextBoolean()
+                ? GuaniaoSoundEvents.COCKATIEL_TAMED_AMBIENT.get()
+                : GuaniaoSoundEvents.COCKATIEL_AMBIENT.get();
     }
 
     @Override
     protected SoundEvent getInteractionSound() {
-        return GuaniaoSoundEvents.COCKATIEL_AMBIENT.get();
+        return this.getAmbientSound();
     }
 
     @Override
@@ -258,7 +262,7 @@ public class CockatielEntity extends BudgerigarEntity {
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController[]{new AnimationController((GeoAnimatable) this, "movement", 4, this::movementController)});
+        controllers.add(new AnimationController[]{new BirdMovementAnimationController((GeoAnimatable) this, "movement", 4, this::movementController)});
     }
 
     private <T extends CockatielEntity> PlayState movementController(AnimationState<T> animationState) {
@@ -296,8 +300,7 @@ public class CockatielEntity extends BudgerigarEntity {
         }
         if (shouldWalk(state, animationState.isMoving())) {
             this.happyDanceUntilTick = 0L;
-            animationState.getController().setAnimationSpeed(BirdGroundAnimation.walkAnimationSpeed(this));
-            return animationState.setAndContinue(WALK_ANIMATION);
+            return BirdGroundAnimation.play(animationState, this, WALK_ANIMATION);
         }
         if (state == BudgerigarBehaviorState.PREENING) {
             return animationState.setAndContinue(PREEN_ANIMATION);

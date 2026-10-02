@@ -3,10 +3,16 @@ package EdDYON.guaniao.event;
 import EdDYON.guaniao.GuaniaoMod;
 import EdDYON.guaniao.config.BirdConfigManager;
 import EdDYON.guaniao.config.BirdSpecies;
+import EdDYON.guaniao.content.bird.hummingbird.FlowerHabitatIndex;
+import EdDYON.guaniao.content.bird.hummingbird.GardenAttraction;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.level.biome.MobSpawnSettings;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraftforge.event.entity.living.MobSpawnEvent;
 import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.eventbus.api.Event;
@@ -17,6 +23,8 @@ import java.util.ArrayList;
 
 @Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
 public final class BirdSpawnConfigEvents {
+    private static final TagKey<Biome> HUMMINGBIRD_HABITAT = TagKey.create(Registries.BIOME,
+            new ResourceLocation(GuaniaoMod.MOD_ID, "hummingbird_habitat"));
     private BirdSpawnConfigEvents() {
     }
 
@@ -37,6 +45,17 @@ public final class BirdSpawnConfigEvents {
                     : remainingCapacity(level, event.getPos().getX(), event.getPos().getZ(), species);
             if (multiplier <= 0.0D || available <= 0) {
                 continue;
+            }
+            if (species == BirdSpecies.HUMMINGBIRD) {
+                if (level == null || !level.getBiome(event.getPos()).is(HUMMINGBIRD_HABITAT)) continue;
+                // Counts come from a budgeted loaded-chunk index. An unready/empty garden
+                // contributes no candidate; requesting a count never generates chunks.
+                double gardenMultiplier = GardenAttraction.hummingbirdSpawnMultiplier(level, event.getPos());
+                if (gardenMultiplier <= 0) continue;
+                multiplier *= Math.min(3.0D, gardenMultiplier);
+            } else if (level != null) {
+                multiplier *= Math.max(1.0D, Math.min(1.15D,
+                        GardenAttraction.songbirdMultiplier(level, event.getPos(), species)));
             }
             int weight = Math.max(1, (int)Math.round(original.getWeight().asInt() * multiplier));
             int minGroup = BirdConfigManager.minGroup(species);
@@ -79,6 +98,12 @@ public final class BirdSpawnConfigEvents {
             return;
         }
         if (event.getLevel() instanceof ServerLevel level) {
+            if (species == BirdSpecies.HUMMINGBIRD
+                    && (!level.getBiome(event.getPos()).is(HUMMINGBIRD_HABITAT)
+                    || FlowerHabitatIndex.countFlowers(level, event.getPos(), 16) < 5)) {
+                event.setResult(Event.Result.DENY);
+                return;
+            }
             if (!isBelowGlobalCaps(level, event.getPos().getX(), event.getPos().getZ())
                     || !isBelowSpeciesCap(level, event.getPos().getX(), event.getPos().getZ(), species)) {
                 event.setResult(Event.Result.DENY);

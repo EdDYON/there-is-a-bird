@@ -53,6 +53,17 @@ public class BirdGlobalConfig {
     public int maxConcurrentPhotoDownloads = 16;
     public int photoDownloadKiBPerTick = 256;
 
+    public boolean nightHeronTamingEnabled = true;
+    public boolean nightHeronFishingEnabled = true;
+    public boolean nightHeronGiftsEnabled = true;
+    public double nightHeronTamingChance = 1.0D / 3.0D;
+    public int nightHeronFishingRadius = 16;
+    public int nightHeronOwnerRange = 32;
+    public int nightHeronWorkMinSeconds = 30;
+    public int nightHeronWorkMaxSeconds = 60;
+    public int nightHeronGiftMinSeconds = 300;
+    public int nightHeronGiftMaxSeconds = 600;
+
     public BirdGlobalConfig copy() {
         BirdGlobalConfig copy = new BirdGlobalConfig();
         copy.naturalSpawning = this.naturalSpawning;
@@ -106,6 +117,16 @@ public class BirdGlobalConfig {
         copy.photoTrashRetentionDays = this.photoTrashRetentionDays;
         copy.maxConcurrentPhotoDownloads = this.maxConcurrentPhotoDownloads;
         copy.photoDownloadKiBPerTick = this.photoDownloadKiBPerTick;
+        copy.nightHeronTamingEnabled = this.nightHeronTamingEnabled;
+        copy.nightHeronFishingEnabled = this.nightHeronFishingEnabled;
+        copy.nightHeronGiftsEnabled = this.nightHeronGiftsEnabled;
+        copy.nightHeronTamingChance = this.nightHeronTamingChance;
+        copy.nightHeronFishingRadius = this.nightHeronFishingRadius;
+        copy.nightHeronOwnerRange = this.nightHeronOwnerRange;
+        copy.nightHeronWorkMinSeconds = this.nightHeronWorkMinSeconds;
+        copy.nightHeronWorkMaxSeconds = this.nightHeronWorkMaxSeconds;
+        copy.nightHeronGiftMinSeconds = this.nightHeronGiftMinSeconds;
+        copy.nightHeronGiftMaxSeconds = this.nightHeronGiftMaxSeconds;
         return copy;
     }
 }

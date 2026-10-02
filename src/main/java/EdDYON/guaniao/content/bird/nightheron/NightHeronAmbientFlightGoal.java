@@ -23,6 +23,7 @@ extends Goal {
     }
 
     public boolean canUse() {
+        if (this.nightHeron.isTame()) return false;
         int chance;
         if (!this.nightHeron.onGround() || this.nightHeron.getTarget() != null || this.nightHeron.hasExternalFright()) {
             return false;
@@ -39,6 +40,7 @@ extends Goal {
     }
 
     public boolean canContinueToUse() {
+        if (this.nightHeron.isTame()) return false;
         return this.nightHeron.isControlledFlightActive() && (this.remainingTicks > 0 || !this.nightHeron.onGround()) && this.landingTarget != null && !this.nightHeron.hasExternalFright();
     }
 

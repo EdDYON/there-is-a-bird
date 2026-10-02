@@ -1,0 +1,31 @@
+// Isolated real-client sound QA. The additional source set is not part of the release JAR.
+gradle.projectsEvaluated {
+    def p = gradle.rootProject
+    def qa = p.sourceSets.create('hummingbirdWingClientQa') {
+        java { srcDir(p.file('src/clientqa/java')); include 'EdDYON/guaniao/client/hummingbird/HummingbirdWingClientQa.java' }
+        compileClasspath += p.sourceSets.main.output + p.sourceSets.main.compileClasspath
+        runtimeClasspath += output + compileClasspath + p.sourceSets.main.runtimeClasspath
+    }
+    def resultFile = p.file("build/verification/hummingbird-wing-cadence-client-${p.version}/qa-result.json")
+    p.minecraft.runs.client {
+        workingDirectory p.file('.tmp_hummingbird_wing_client_qa')
+        property 'forge.logging.console.level', 'info'
+        property 'guaniao.hummingbirdClientQa', 'true'
+        property 'guaniao.hummingbirdClientQa.result', resultFile.absolutePath
+        jvmArgs '-Xms512m', '-Xmx2G'
+        args '--width', '960', '--height', '540'
+        mods { guaniao { source qa } }
+    }
+    p.tasks.matching { it.name == 'runClient' }.configureEach {
+        doFirst {
+            resultFile.parentFile.mkdirs()
+            if (resultFile.exists() && !resultFile.delete()) throw new GradleException('Could not clear the previous isolated client QA result')
+        }
+        doLast {
+            if (!resultFile.exists()) throw new GradleException('Isolated client QA did not produce a result')
+            def result = new groovy.json.JsonSlurper().parse(resultFile)
+            if (result.passed != true) throw new GradleException("Isolated client QA failed: ${result.failure}")
+            println "Hummingbird real-client QA passed: ${result.checks.size()} phases; ${result.realSourceStarts} real OpenAL starts."
+        }
+    }
+}

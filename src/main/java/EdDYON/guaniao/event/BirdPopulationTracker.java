@@ -3,13 +3,19 @@ package EdDYON.guaniao.event;
 import EdDYON.guaniao.GuaniaoMod;
 import EdDYON.guaniao.config.BirdConfigManager;
 import EdDYON.guaniao.config.BirdSpecies;
+import EdDYON.guaniao.content.bird.BirdVisibility;
+import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.animal.Animal;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.EntityLeaveLevelEvent;
 import net.minecraftforge.event.level.LevelEvent;
@@ -31,7 +37,7 @@ public final class BirdPopulationTracker {
     private static final double EXCESS_CULL_DISTANCE_SQR = 32.0D * 32.0D;
     private static final double NEARBY_PLAYER_DISTANCE_SQR = 32.0D * 32.0D;
     private static final double UNOBSERVED_CULL_DISTANCE_SQR = 48.0D * 48.0D;
-    private static final double VISIBLE_CULL_GUARD_DISTANCE_SQR = 64.0D * 64.0D;
+    private static final double VISIBLE_CULL_GUARD_DISTANCE_SQR = BirdVisibility.TRACKING_DISTANCE_SQUARED;
     private static final Map<ServerLevel, LevelPopulation> LEVELS = new WeakHashMap<>();
 
     private BirdPopulationTracker() {
@@ -198,11 +204,30 @@ public final class BirdPopulationTracker {
                 continue;
             }
             if (player.distanceToSqr(mob) <= VISIBLE_CULL_GUARD_DISTANCE_SQR
-                    && player.hasLineOfSight(mob)) {
+                    && mayBeVisible(level, player, mob)) {
                 return false;
             }
         }
         return true;
+    }
+
+    private static boolean mayBeVisible(ServerLevel level, ServerPlayer player, Mob mob) {
+        Vec3 start = player.getEyePosition();
+        Vec3 end = mob.getEyePosition();
+        BlockPos min = BlockPos.containing(Math.min(start.x, end.x) - 1, Math.min(start.y, end.y), Math.min(start.z, end.z) - 1);
+        BlockPos max = BlockPos.containing(Math.max(start.x, end.x) + 1, Math.max(start.y, end.y), Math.max(start.z, end.z) + 1);
+        // Clip slightly extends its endpoints. Include their neighboring blocks, and never
+        // request or wait for chunks just to clean up a bird (hasChunk can include pending chunks).
+        for (int chunkX = min.getX() >> 4; chunkX <= max.getX() >> 4; chunkX++) {
+            for (int chunkZ = min.getZ() >> 4; chunkZ <= max.getZ() >> 4; chunkZ++) {
+                if (level.getChunkSource().getChunkNow(chunkX, chunkZ) == null) {
+                    return true;
+                }
+            }
+        }
+        // LivingEntity.hasLineOfSight has a 128-block cap, below our tracking range.
+        return level.clip(new ClipContext(start, end, ClipContext.Block.COLLIDER,
+                ClipContext.Fluid.NONE, player)).getType() == HitResult.Type.MISS;
     }
 
     private static long elapsed(long now, long since) {

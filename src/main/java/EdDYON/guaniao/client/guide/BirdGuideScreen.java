@@ -895,7 +895,7 @@ public class BirdGuideScreen extends Screen {
 
     private List<String> tagsFor(BirdGuideEntry entry) {
         return switch (entry.id()) {
-            case "night_heron" -> List.of("nocturnal", "wetland", "fish_eater", "alert");
+            case "night_heron" -> List.of("nocturnal", "wetland", "fish_eater", "tameable");
             case "sparrow" -> List.of("diurnal", "village", "seed_eater", "social", "tameable");
             case "long_tailed_tit" -> List.of("diurnal", "forest", "seed_eater", "social", "tameable");
             case "cockatiel" -> List.of("diurnal", "savanna", "seed_eater", "social", "tameable");

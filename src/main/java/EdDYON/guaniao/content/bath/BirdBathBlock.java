@@ -4,6 +4,7 @@ import EdDYON.guaniao.client.particle.PlaceableBlockBreakEffects;
 import EdDYON.guaniao.registry.GuaniaoItems;
 import EdDYON.guaniao.registry.GuaniaoBlockEntityTypes;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -70,6 +71,21 @@ public class BirdBathBlock extends BaseEntityBlock {
         if (stack.isEmpty()) {
             return this.handleEmptyHand(level, pos, player, birdBath);
         }
+        if (stack.is(Items.SUGAR)) {
+            if (!birdBath.canSweetenWater()) {
+                if (!level.isClientSide) player.displayClientMessage(Component.translatable(
+                        "message.guaniao.bird_bath.sugar_requires_clean_water"), true);
+            } else if (!level.isClientSide && birdBath.sweetenWater()) {
+                if (!player.getAbilities().instabuild) stack.shrink(1);
+                BirdBathEffects.waterAdded(level, pos, net.minecraft.sounds.SoundEvents.BOTTLE_EMPTY);
+            }
+            return InteractionResult.sidedSuccess(level.isClientSide);
+        }
+        if ((stack.is(Items.WATER_BUCKET) || isWaterBottle(stack)) && birdBath.containsSugarWater()) {
+            if (!level.isClientSide) player.displayClientMessage(Component.translatable(
+                    "message.guaniao.bird_bath.no_dilution"), true);
+            return InteractionResult.sidedSuccess(level.isClientSide);
+        }
         if (stack.is(Items.WATER_BUCKET)) {
             return this.fillWithWaterBucket(level, pos, player, hand, stack, birdBath);
         }
@@ -89,7 +105,7 @@ public class BirdBathBlock extends BaseEntityBlock {
                 && level.getBlockEntity(pos) instanceof BirdBathBlockEntity birdBath
                 && !birdBath.isEmpty()) {
             BirdBathContentType content = birdBath.getContentType();
-            if (content == BirdBathContentType.WATER) {
+            if (content.isLiquid()) {
                 spawnDestroyedContent(serverLevel, pos, ParticleTypes.SPLASH, 10);
                 spawnDestroyedContent(serverLevel, pos, ParticleTypes.FALLING_WATER, 5);
             } else if (content == BirdBathContentType.FROZEN_WATER) {
@@ -250,7 +266,8 @@ public class BirdBathBlock extends BaseEntityBlock {
     }
 
     private static boolean isWaterBottle(ItemStack stack) {
-        return stack.is(Items.POTION) && PotionUtils.getPotion(stack) == Potions.WATER;
+        return stack.is(Items.POTION) && PotionUtils.getPotion(stack) == Potions.WATER
+                && PotionUtils.getCustomEffects(stack).isEmpty();
     }
 
     private static void giveOrReplaceHeldItem(Player player, InteractionHand hand, ItemStack replacement) {

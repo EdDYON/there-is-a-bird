@@ -23,6 +23,7 @@ import EdDYON.guaniao.client.particle.HuntingStreakParticle;
 import EdDYON.guaniao.client.particle.PlaceableBreakFleckParticle;
 import EdDYON.guaniao.client.entity.mutation.BirdMutationTextureFactory;
 import EdDYON.guaniao.client.entity.budgerigar.BudgerigarRenderer;
+import EdDYON.guaniao.client.entity.hummingbird.HummingbirdRenderer;
 import EdDYON.guaniao.client.entity.columbid.PigeonRenderer;
 import EdDYON.guaniao.client.entity.columbid.SpottedDoveRenderer;
 import EdDYON.guaniao.client.entity.crow.CrowRenderer;
@@ -70,6 +71,7 @@ public final class ClientModEvents {
     @SubscribeEvent
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(GuaniaoEntityTypes.EARTHWORM.get(), EarthwormRenderer::new);
+        event.registerEntityRenderer(GuaniaoEntityTypes.HUMMINGBIRD.get(), HummingbirdRenderer::new);
         event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.NIGHT_HERON.get(), NightHeronRenderer::new);
         event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.SPARROW.get(), SparrowRenderer::new);
         event.registerEntityRenderer((EntityType)GuaniaoEntityTypes.LONG_TAILED_TIT.get(), LongTailedTitRenderer::new);

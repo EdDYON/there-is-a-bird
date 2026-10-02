@@ -40,6 +40,7 @@ extends Goal {
     }
 
     public boolean canContinueToUse() {
+        if (this.nightHeron.isTame() && !this.nightHeron.hasExternalFright()) return false;
         this.threat = this.findNearestRelevantPlayer();
         if (this.nightHeron.hasExternalFright()) {
             this.externalThreatPosition = this.nightHeron.getExternalFrightSource();
@@ -121,6 +122,8 @@ extends Goal {
     }
 
     private Response chooseResponse() {
+        // A pet reacts to actual damage briefly, without starting a wild long-distance escape.
+        if (this.nightHeron.isTame()) return this.nightHeron.hasExternalFright() ? Response.WALK : Response.NONE;
         Player player = this.threat != null ? this.threat : this.findNearestRelevantPlayer();
         if (player == null && !this.nightHeron.hasExternalFright()) {
             return Response.NONE;
@@ -166,8 +169,7 @@ extends Goal {
         if (BirdConfigManager.aprilFoolsMode()) {
             return null;
         }
-        Player player = this.nightHeron.level().getNearestPlayer((Entity)this.nightHeron, 17.0);
-        return player != null && !player.isSpectator() ? player : null;
+        return this.nightHeron.findNearestThreatPlayer(17.0);
     }
 
     private void tickAlert() {

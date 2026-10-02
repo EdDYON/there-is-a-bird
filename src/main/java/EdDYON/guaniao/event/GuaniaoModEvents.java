@@ -16,6 +16,7 @@ import EdDYON.guaniao.content.bird.longtailedtit.LongTailedTitEntity;
 import EdDYON.guaniao.content.bird.cockatiel.CockatielEntity;
 import EdDYON.guaniao.content.bird.macaw.MacawEntity;
 import EdDYON.guaniao.content.bird.umbrellacockatoo.UmbrellaCockatooEntity;
+import EdDYON.guaniao.content.bird.hummingbird.HummingbirdEntity;
 import EdDYON.guaniao.content.dropping.BirdDroppingUtil;
 import EdDYON.guaniao.registry.GuaniaoEntityTypes;
 import EdDYON.guaniao.registry.GuaniaoItems;
@@ -59,6 +60,7 @@ public final class GuaniaoModEvents {
         event.put((EntityType)GuaniaoEntityTypes.KESTREL.get(), KestrelEntity.createAttributes().build());
         event.put((EntityType)GuaniaoEntityTypes.CASSOWARY.get(), CassowaryEntity.createAttributes().build());
         event.put((EntityType)GuaniaoEntityTypes.UMBRELLA_COCKATOO.get(), UmbrellaCockatooEntity.createUmbrellaCockatooAttributes().build());
+        event.put(GuaniaoEntityTypes.HUMMINGBIRD.get(), HummingbirdEntity.createAttributes().build());
     }
 
     @SubscribeEvent
@@ -79,6 +81,7 @@ public final class GuaniaoModEvents {
         event.register(GuaniaoEntityTypes.KESTREL.get(), SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING, KestrelEntity::canSpawn, SpawnPlacementRegisterEvent.Operation.REPLACE);
         event.register(GuaniaoEntityTypes.CASSOWARY.get(), SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, CassowaryEntity::canSpawn, SpawnPlacementRegisterEvent.Operation.REPLACE);
         event.register(GuaniaoEntityTypes.UMBRELLA_COCKATOO.get(), SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING, UmbrellaCockatooEntity::canUmbrellaCockatooSpawn, SpawnPlacementRegisterEvent.Operation.REPLACE);
+        event.register(GuaniaoEntityTypes.HUMMINGBIRD.get(), SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, HummingbirdEntity::canSpawn, SpawnPlacementRegisterEvent.Operation.REPLACE);
     }
 
     @SubscribeEvent
@@ -103,6 +106,7 @@ public final class GuaniaoModEvents {
             event.accept((ItemLike)GuaniaoItems.KESTREL_SPAWN_EGG.get());
             event.accept((ItemLike)GuaniaoItems.CASSOWARY_SPAWN_EGG.get());
             event.accept((ItemLike)GuaniaoItems.UMBRELLA_COCKATOO_SPAWN_EGG.get());
+            event.accept(GuaniaoItems.HUMMINGBIRD_SPAWN_EGG.get());
         }
     }
 }

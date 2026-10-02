@@ -92,7 +92,9 @@ public final class BirdBathAttraction {
     }
 
     public static boolean consumeServingForBird(BirdBathBlockEntity bath) {
-        return bath != null && bath.consumeOneServing();
+        // Nectar has a separate hovering goal. Ordinary bath visitors must never consume it,
+        // including when a player sweetens the water during their feeding warmup.
+        return bath != null && !bath.containsSugarWater() && bath.consumeOneServing();
     }
 
     public static boolean tryClaimUse(BirdBathBlockEntity bath, Entity bird, int ticks) {

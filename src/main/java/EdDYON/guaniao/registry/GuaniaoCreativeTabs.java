@@ -58,6 +58,7 @@ public final class GuaniaoCreativeTabs {
         output.accept((ItemLike)GuaniaoItems.KESTREL_SPAWN_EGG.get());
         output.accept((ItemLike)GuaniaoItems.CASSOWARY_SPAWN_EGG.get());
         output.accept((ItemLike)GuaniaoItems.UMBRELLA_COCKATOO_SPAWN_EGG.get());
+        output.accept(GuaniaoItems.HUMMINGBIRD_SPAWN_EGG.get());
         output.accept((ItemLike)GuaniaoItems.FEATHER_WHITE.get());
         output.accept((ItemLike)GuaniaoItems.FEATHER_GREY.get());
         output.accept((ItemLike)GuaniaoItems.FEATHER_BLACK.get());

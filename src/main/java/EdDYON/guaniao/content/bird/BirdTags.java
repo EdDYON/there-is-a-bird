@@ -46,6 +46,9 @@ public final class BirdTags {
     public static final TagKey<EntityType<?>> NIGHT_HERON_PREY = entityType("night_heron_prey");
     public static final TagKey<EntityType<?>> KESTREL_PREY = entityType("kestrel_prey");
 
+    public static final TagKey<Item> NIGHT_HERON_TAMING = item("taming/night_heron");
+    public static final TagKey<EntityType<?>> PET_NIGHT_HERON_PREY = entityType("pet_night_heron_prey");
+
     private BirdTags() {
     }
 

@@ -451,6 +451,13 @@ public class BirdConfigScreen extends Screen {
         if (species == null) {
             BirdGlobalConfig global = this.data.global;
             settings.add(SettingSpec.storageScope());
+            settings.add(SettingSpec.toggle("night_heron_taming", () -> global.nightHeronTamingEnabled, value -> global.nightHeronTamingEnabled = value));
+            settings.add(SettingSpec.toggle("night_heron_gifts", () -> global.nightHeronGiftsEnabled, value -> global.nightHeronGiftsEnabled = value));
+            settings.add(SettingSpec.number("night_heron_taming_chance", () -> global.nightHeronTamingChance, value -> global.nightHeronTamingChance = value, 0.0D, 1.0D, false));
+            settings.add(SettingSpec.number("night_heron_owner_range", () -> global.nightHeronOwnerRange, value -> global.nightHeronOwnerRange = (int)value, 8.0D, 64.0D, true));
+            settings.add(SettingSpec.number("night_heron_gift_min_seconds", () -> global.nightHeronGiftMinSeconds, value -> global.nightHeronGiftMinSeconds = (int)value, 60.0D, 3600.0D, true));
+            settings.add(SettingSpec.number("night_heron_gift_max_seconds", () -> global.nightHeronGiftMaxSeconds, value -> global.nightHeronGiftMaxSeconds = (int)value, 60.0D, 3600.0D, true));
+
             settings.add(SettingSpec.toggle("april_fools_mode", () -> global.aprilFoolsMode, value -> global.aprilFoolsMode = value));
             settings.add(SettingSpec.toggle("sparrow_tide_mode", () -> global.sparrowTideMode, value -> global.sparrowTideMode = value));
             settings.add(SettingSpec.toggle("sky_bird_ecology", () -> global.skyBirdEcologyEnabled, value -> global.skyBirdEcologyEnabled = value));
@@ -518,7 +525,9 @@ public class BirdConfigScreen extends Screen {
         settings.add(SettingSpec.number("flock_max_members", () -> bird.flockMaxMembers, value -> bird.flockMaxMembers = (int)value, 2.0D, 64.0D, true));
         settings.add(SettingSpec.number("food_scan_interval", () -> bird.foodScanInterval, value -> bird.foodScanInterval = (int)value, 5.0D, 1200.0D, true));
         settings.add(SettingSpec.number("threat_scan_interval", () -> bird.threatScanInterval, value -> bird.threatScanInterval = (int)value, 5.0D, 1200.0D, true));
-        settings.add(SettingSpec.number("owner_teleport_distance", () -> bird.ownerTeleportDistance, value -> bird.ownerTeleportDistance = value, 8.0D, 128.0D, false));
+        if (species != BirdSpecies.NIGHT_HERON && species != BirdSpecies.HUMMINGBIRD) {
+            settings.add(SettingSpec.number("owner_teleport_distance", () -> bird.ownerTeleportDistance, value -> bird.ownerTeleportDistance = value, 8.0D, 128.0D, false));
+        }
         settings.add(SettingSpec.number("ambient_sound_cooldown", () -> bird.ambientSoundCooldownMultiplier, value -> bird.ambientSoundCooldownMultiplier = value, 0.25D, 8.0D, false));
         return settings;
     }

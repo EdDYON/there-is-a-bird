@@ -1,6 +1,7 @@
 package EdDYON.guaniao.content.bird.flight;
 
 import com.google.gson.JsonObject;
+import EdDYON.guaniao.content.bird.BirdMovementAnimationController;
 import com.google.gson.JsonParser;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -98,7 +99,7 @@ public final class BirdTakeoffPoseTest {
         public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
             RawAnimation idle = RawAnimation.begin().thenLoop(species.idle);
             RawAnimation fly = RawAnimation.begin().thenLoop(species.fly);
-            controllers.add(new AnimationController<>(this, "movement", species.transition, state -> {
+            controllers.add(new BirdMovementAnimationController<>(this, "movement", species.transition, state -> {
                 state.getController().transitionLength(species.transition);
                 if (!flying) return state.setAndContinue(idle);
                 if (useFlightHelper) return BirdFlightAnimation.play(state, fly);

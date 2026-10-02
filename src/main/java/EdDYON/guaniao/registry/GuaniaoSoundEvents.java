@@ -27,6 +27,7 @@ public final class GuaniaoSoundEvents {
     public static final RegistryObject<SoundEvent> BUDGERIGAR_DEATH = register("entity.budgerigar.death");
     public static final RegistryObject<SoundEvent> BUDGERIGAR_INTERACT = register("entity.budgerigar.interact");
     public static final RegistryObject<SoundEvent> COCKATIEL_AMBIENT = register("entity.cockatiel.ambient");
+    public static final RegistryObject<SoundEvent> COCKATIEL_TAMED_AMBIENT = register("entity.cockatiel.tamed_ambient");
     public static final RegistryObject<SoundEvent> COCKATIEL_HURT = register("entity.cockatiel.hurt");
     public static final RegistryObject<SoundEvent> COCKATIEL_DEATH = register("entity.cockatiel.death");
     public static final RegistryObject<SoundEvent> MACAW_AMBIENT = register("entity.macaw.ambient");
@@ -53,6 +54,16 @@ public final class GuaniaoSoundEvents {
     public static final RegistryObject<SoundEvent> SEAGULL_AMBIENT = register("entity.seagull.ambient");
     public static final RegistryObject<SoundEvent> KESTREL_AMBIENT = register("entity.kestrel.ambient");
     public static final RegistryObject<SoundEvent> KESTREL_HURT = register("entity.kestrel.hurt");
+    // Match the audio definition: otherwise quiet calls are only sent to players within 16 blocks.
+    public static final RegistryObject<SoundEvent> HUMMINGBIRD_AMBIENT = SOUND_EVENTS.register("entity.hummingbird.ambient",
+            () -> SoundEvent.createFixedRangeEvent(new ResourceLocation(GuaniaoMod.MOD_ID, "entity.hummingbird.ambient"), 32F));
+    public static final RegistryObject<SoundEvent> HUMMINGBIRD_HURT = SOUND_EVENTS.register("entity.hummingbird.hurt",
+            () -> SoundEvent.createFixedRangeEvent(new ResourceLocation(GuaniaoMod.MOD_ID, "entity.hummingbird.hurt"), 32F));
+    public static final RegistryObject<SoundEvent> HUMMINGBIRD_DEATH = SOUND_EVENTS.register("entity.hummingbird.death",
+            () -> SoundEvent.createFixedRangeEvent(new ResourceLocation(GuaniaoMod.MOD_ID, "entity.hummingbird.death"), 32F));
+    public static final RegistryObject<SoundEvent> HUMMINGBIRD_INTERACT = SOUND_EVENTS.register("entity.hummingbird.interact",
+            () -> SoundEvent.createFixedRangeEvent(new ResourceLocation(GuaniaoMod.MOD_ID, "entity.hummingbird.interact"), 32F));
+    public static final RegistryObject<SoundEvent> HUMMINGBIRD_WING = register("entity.hummingbird.wing");
     public static final RegistryObject<SoundEvent> CASSOWARY_AMBIENT = register("entity.cassowary.ambient");
     public static final RegistryObject<SoundEvent> CASSOWARY_WARNING = register("entity.cassowary.warning");
     public static final RegistryObject<SoundEvent> CASSOWARY_HURT = register("entity.cassowary.hurt");

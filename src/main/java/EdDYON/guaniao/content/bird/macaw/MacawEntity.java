@@ -3,6 +3,7 @@ package EdDYON.guaniao.content.bird.macaw;
 import EdDYON.guaniao.config.BirdSpecies;
 import EdDYON.guaniao.content.bird.BirdActivitySchedule;
 import EdDYON.guaniao.content.bird.BirdGroundAnimation;
+import EdDYON.guaniao.content.bird.BirdMovementAnimationController;
 import EdDYON.guaniao.content.bird.BirdTags;
 import EdDYON.guaniao.content.bird.BirdFlockSoundLimiter;
 import EdDYON.guaniao.content.bird.budgerigar.BudgerigarBehaviorState;
@@ -184,7 +185,7 @@ public class MacawEntity extends BudgerigarEntity {
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController[]{new AnimationController((GeoAnimatable) this, "movement", 5, this::movementController)});
+        controllers.add(new AnimationController[]{new BirdMovementAnimationController((GeoAnimatable) this, "movement", 5, this::movementController)});
     }
 
     private <T extends MacawEntity> PlayState movementController(AnimationState<T> animationState) {
@@ -210,8 +211,7 @@ public class MacawEntity extends BudgerigarEntity {
             return animationState.setAndContinue(DANCE_ANIMATION);
         }
         if (shouldWalk(state, animationState.isMoving())) {
-            animationState.getController().setAnimationSpeed(BirdGroundAnimation.walkAnimationSpeed(this));
-            return animationState.setAndContinue(WALK_ANIMATION);
+            return BirdGroundAnimation.play(animationState, this, WALK_ANIMATION);
         }
         if (state == BudgerigarBehaviorState.PREENING) {
             return animationState.setAndContinue(PREEN_ANIMATION);
@@ -322,7 +322,7 @@ public class MacawEntity extends BudgerigarEntity {
             case SPOTTED_DOVE -> GuaniaoSoundEvents.SPOTTED_DOVE_AMBIENT.get();
             case PIGEON -> GuaniaoSoundEvents.PIGEON_AMBIENT.get();
             case WOODCOCK -> GuaniaoSoundEvents.WOODCOCK_AMBIENT.get();
-            case CROW, SEAGULL, MACAW, KIWI, MYNA, KESTREL, CASSOWARY, UMBRELLA_COCKATOO -> null;
+            case CROW, SEAGULL, MACAW, KIWI, MYNA, KESTREL, CASSOWARY, UMBRELLA_COCKATOO, HUMMINGBIRD -> null;
         };
     }
 

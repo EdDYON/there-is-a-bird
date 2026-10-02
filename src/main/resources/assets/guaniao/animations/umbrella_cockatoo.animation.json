@@ -1118,14 +1118,7 @@
 					}
 				},
 				"root": {
-					"position": {
-						"0.0": {
-							"vector": [0, 0, 0]
-						},
-						"1.0": {
-							"vector": [0, 0, -10]
-						}
-					},
+					"position": {"vector": [0, 0, 0]},
 					"scale": {
 						"0.0": {
 							"post": {
@@ -1173,7 +1166,7 @@
 				},
 				"all": {
 					"rotation": {
-						"vector": [0, "math.cos(query.anim_time*360)*25", "math.cos(query.anim_time*360)*5"]
+						"vector": [0, 0, "math.cos(query.anim_time*360)*5"]
 					},
 					"position": {
 						"vector": ["math.cos(query.anim_time*360-30)/4", "-0.8-math.cos(query.anim_time*720-30)", "math.cos(query.anim_time*720)/4"]

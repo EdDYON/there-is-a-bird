@@ -274,6 +274,14 @@
       "guaniao:entity/cockatiel/ambient_03"
     ]
   },
+  "entity.cockatiel.tamed_ambient": {
+    "subtitle": "subtitles.guaniao.entity.cockatiel.ambient",
+    "sounds": [
+      "guaniao:entity/cockatiel/pp2_denoised",
+      "guaniao:entity/cockatiel/pp3_denoised",
+      "guaniao:entity/cockatiel/pp4_denoised"
+    ]
+  },
   "entity.cockatiel.hurt": {
     "subtitle": "subtitles.guaniao.entity.cockatiel.hurt",
     "sounds": [
@@ -502,6 +510,91 @@
     "subtitle": "subtitles.guaniao.entity.umbrella_cockatoo.interact",
     "sounds": [
       "guaniao:entity/umbrella_cockatoo/phrase_04"
+    ]
+  },
+  "guide.cockatiel.pp2_denoised": {
+    "sounds": [
+      {
+        "name": "guaniao:entity/cockatiel/pp2_denoised",
+        "stream": false
+      }
+    ]
+  },
+  "guide.cockatiel.pp3_denoised": {
+    "sounds": [
+      {
+        "name": "guaniao:entity/cockatiel/pp3_denoised",
+        "stream": false
+      }
+    ]
+  },
+  "guide.cockatiel.pp4_denoised": {
+    "sounds": [
+      {
+        "name": "guaniao:entity/cockatiel/pp4_denoised",
+        "stream": false
+      }
+    ]
+  },
+  "entity.hummingbird.ambient": {
+    "subtitle": "subtitles.guaniao.entity.hummingbird.ambient",
+    "sounds": [
+      {
+        "name": "guaniao:entity/hummingbird/call_1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guaniao:entity/hummingbird/call_2",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guaniao:entity/hummingbird/call_3",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guaniao:entity/hummingbird/call_4",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guaniao:entity/hummingbird/call_5",
+        "attenuation_distance": 32
+      }
+    ]
+  },
+  "entity.hummingbird.wing": {
+    "subtitle": "subtitles.guaniao.entity.hummingbird.wing",
+    "sounds": [
+      {
+        "name": "guaniao:entity/hummingbird/wing_loop",
+        "attenuation_distance": 16
+      }
+    ]
+  },
+  "entity.hummingbird.hurt": {
+    "subtitle": "subtitles.guaniao.entity.hummingbird.hurt",
+    "sounds": [
+      {
+        "name": "guaniao:entity/hummingbird/call_5",
+        "attenuation_distance": 32
+      }
+    ]
+  },
+  "entity.hummingbird.death": {
+    "subtitle": "subtitles.guaniao.entity.hummingbird.death",
+    "sounds": [
+      {
+        "name": "guaniao:entity/hummingbird/call_5",
+        "attenuation_distance": 32
+      }
+    ]
+  },
+  "entity.hummingbird.interact": {
+    "subtitle": "subtitles.guaniao.entity.hummingbird.interact",
+    "sounds": [
+      {
+        "name": "guaniao:entity/hummingbird/call_5",
+        "attenuation_distance": 32
+      }
     ]
   }
 }

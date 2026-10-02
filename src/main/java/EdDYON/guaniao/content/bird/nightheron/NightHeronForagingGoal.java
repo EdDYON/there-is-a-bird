@@ -35,7 +35,7 @@ extends Goal {
     }
 
     public boolean canUse() {
-        if (this.nightHeron.isEatingFish() || !this.nightHeron.birdBrain().wantsForage()) {
+        if (this.nightHeron.hasHeldFishForRendering() || !this.nightHeron.birdBrain().wantsForage()) {
             return false;
         }
         int chance = this.nightHeron.level().isRaining() ? 7 : 12;
@@ -43,6 +43,7 @@ extends Goal {
     }
 
     public boolean canContinueToUse() {
+        if (this.nightHeron.hasDeliveryFish()) return false;
         if (this.nightHeron.birdBrain().motivation().fear() > NightHeronDefinition.FORAGING_STOP_FEAR_THRESHOLD) {
             return false;
         }
@@ -98,10 +99,11 @@ extends Goal {
     }
 
     private boolean isPrey(LivingEntity entity) {
-        return entity.getType().is(BirdTags.NIGHT_HERON_PREY);
+        return this.nightHeron.canHuntPrey(entity);
     }
 
     private void stalkPrey(LivingEntity prey) {
+        if (!this.isPrey(prey)) return;
         this.nightHeron.setBehaviorState(NightHeronBehaviorState.FORAGING);
         this.nightHeron.getLookControl().setLookAt((Entity)prey, 30.0f, 30.0f);
         double distanceSqr = this.nightHeron.distanceToSqr((Entity)prey);
@@ -117,7 +119,8 @@ extends Goal {
         this.nightHeron.getNavigation().stop();
         if (this.nightHeron.canStrikePrey()) {
             this.nightHeron.triggerNeckStretch();
-            if (prey instanceof AbstractFish fish && this.nightHeron.catchFish(fish)) {
+            if (prey instanceof AbstractFish fish) {
+                this.nightHeron.catchFish(fish);
                 return;
             }
             boolean damaged = this.nightHeron.doHurtTarget((Entity)prey);

@@ -9,7 +9,9 @@ public enum BirdBathContentType {
     MEAT,
     BREAD,
     FROZEN_WATER,
-    SPOILED;
+    SPOILED,
+    // Append only: ContentType and SpoiledContentType in existing saves use ordinals.
+    SUGAR_WATER;
 
     public String serializedName() {
         return this.name().toLowerCase(Locale.ROOT);
@@ -25,6 +27,14 @@ public enum BirdBathContentType {
 
     public boolean isFood() {
         return this == FISH || this == MEAT || this == BREAD;
+    }
+
+    public boolean isPerishable() {
+        return isFood() || this == SUGAR_WATER;
+    }
+
+    public boolean isLiquid() {
+        return this == WATER || this == SUGAR_WATER;
     }
 
     public static BirdBathContentType fromOrdinal(int ordinal) {

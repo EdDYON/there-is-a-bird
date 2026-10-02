@@ -11,7 +11,7 @@ import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid = GuaniaoMod.MOD_ID)
 public final class BurialPlumeAnvilEvents {
-    private static final int ANVIL_LEVEL_COST = 8;
+    public static final int ANVIL_LEVEL_COST = 8;
 
     private BurialPlumeAnvilEvents() {
     }

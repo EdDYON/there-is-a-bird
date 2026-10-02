@@ -2,6 +2,7 @@ package EdDYON.guaniao.content.bird.nightheron;
 
 import EdDYON.guaniao.content.bird.flight.BirdFlightBoids;
 import EdDYON.guaniao.content.bird.flight.BirdFlightController;
+import EdDYON.guaniao.content.bird.kestrel.KestrelFlightMotor;
 import EdDYON.guaniao.content.bird.nightheron.NightHeronBehaviorState;
 import EdDYON.guaniao.content.bird.nightheron.NightHeronEntity;
 import java.util.Collections;
@@ -44,6 +45,52 @@ public final class NightHeronFlightController {
 
     public static void tickLocalFlight(NightHeronEntity nightHeron, Vec3 direction) {
         NightHeronFlightController.tickDirectedFlight(nightHeron, direction, 0.36, 7.0, 13.0, -0.045, false, NightHeronBehaviorState.LOCAL_FLIGHT);
+    }
+
+    static boolean canLaunchPet(NightHeronEntity bird) {
+        return hasVerticalClearance(bird, 2.4);
+    }
+
+    /** Follow a moving owner/orbit target; no fixed transit timer or distant landing point. */
+    static void tickPetFollow(NightHeronEntity bird, Vec3 target, double speed) {
+        Vec3 difference = target.subtract(bird.position());
+        Vec3 horizontal = difference.multiply(1, 0, 1);
+        Vec3 desired = horizontal.normalize().scale(speed)
+                .add(0, Mth.clamp(difference.y * 0.16, -0.22, 0.28), 0);
+        desired = avoidPetObstacles(bird, desired);
+        // Reuse the kestrel's bounded turning, while retaining the heron's travel and animation.
+        Vec3 next = KestrelFlightMotor.advance(bird.getDeltaMovement(), desired,
+                KestrelFlightMotor.Mode.FOLLOW, bird.getYRot());
+        if (!petPathClear(bird, next, 1)) next = Vec3.ZERO;
+        bird.setBehaviorState(bird.isTakeoffFlapping() ? NightHeronBehaviorState.TAKEOFF
+                : NightHeronBehaviorState.LOCAL_FLIGHT);
+        if (next.lengthSqr() > 0.0025) bird.markPetFollowFlight();
+        applyMovement(bird, next);
+    }
+
+    private static Vec3 avoidPetObstacles(NightHeronEntity bird, Vec3 desired) {
+        if (petPathClear(bird, desired, 4)
+                && petPathClear(bird, bird.getDeltaMovement().scale(0.65).add(desired.scale(0.35)), 4)) return desired;
+        Vec3 best = Vec3.ZERO;
+        double bestScore = -Double.MAX_VALUE;
+        for (int turn : new int[]{0, -25, 25, -45, 45, -90, 90}) {
+            for (double lift : new double[]{desired.y, 0.24}) {
+                Vec3 rotated = desired.yRot((float)Math.toRadians(turn));
+                Vec3 candidate = new Vec3(rotated.x, lift, rotated.z);
+                if (!petPathClear(bird, candidate, 4)) continue;
+                double score = -candidate.distanceToSqr(desired) - Math.abs(turn) * 0.001;
+                if (score > bestScore) { bestScore = score; best = candidate; }
+            }
+        }
+        return best;
+    }
+
+    private static boolean petPathClear(NightHeronEntity bird, Vec3 velocity, double ticks) {
+        AABB box = bird.getBoundingBox().deflate(0.015).expandTowards(velocity.scale(ticks));
+        return canReadBox(bird.level(), box)
+                && bird.level().getWorldBorder().isWithinBounds(BlockPos.containing(box.minX, box.minY, box.minZ))
+                && bird.level().getWorldBorder().isWithinBounds(BlockPos.containing(box.maxX, box.maxY, box.maxZ))
+                && bird.level().noCollision(bird, box) && !containsBlockedFluid(bird.level(), box);
     }
 
     public static void tickLongEscapeFlight(NightHeronEntity nightHeron, Vec3 direction, double speed, double targetHeight, double maxHeight) {
@@ -108,6 +155,28 @@ public final class NightHeronFlightController {
         Vec3 desired = approachDirection.scale(speed).add(0.0, verticalSpeed, 0.0);
         Vec3 movement = nightHeron.getDeltaMovement().scale(0.58).add(desired.scale(0.42));
         NightHeronFlightController.applyMovement(nightHeron, movement);
+        return false;
+    }
+
+    /** Slow terminal landing on a pet's small perch, after the existing flight motor has climbed above it. */
+    static boolean tickPetLanding(NightHeronEntity bird, BlockPos target) {
+        Vec3 difference = Vec3.atBottomCenterOf(target).subtract(bird.position());
+        double distance = difference.horizontalDistance();
+        if (bird.onGround()) { bird.finishFlight(NightHeronBehaviorState.IDLE); return true; }
+        if (distance > 4.0) return tickLandingApproach(bird, target);
+        bird.setBehaviorState(NightHeronBehaviorState.LANDING);
+        Vec3 horizontal = new Vec3(difference.x, 0, difference.z);
+        double speed = Math.min(0.18, distance * 0.35);
+        double lift = distance > 0.45
+                ? Mth.clamp((target.getY() + 0.8 - bird.getY()) * 0.12, -0.06, 0.10)
+                : Mth.clamp(difference.y * 0.18, -0.10, -0.025);
+        Vec3 desired = horizontal.normalize().scale(speed).add(0, lift, 0);
+        if (!bird.level().noCollision(bird, bird.getBoundingBox().expandTowards(desired.multiply(3, 0, 3)))) {
+            tickBlockedRecovery(bird, horizontal);
+            return false;
+        }
+        // Decelerate toward the actual perch center; a natural transit's straight flare can overshoot it.
+        applyMovement(bird, bird.getDeltaMovement().scale(0.25).add(desired.scale(0.75)));
         return false;
     }
 

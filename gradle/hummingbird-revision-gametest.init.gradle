@@ -1,0 +1,40 @@
+// The hummingbird scenarios affected by tree routing and sound range; no other bird suites.
+gradle.projectsEvaluated {
+    def p = gradle.rootProject
+    def qaWorld = p.file(p.findProperty('hummingbirdQaWorkingDir') ?: '.tmp_hummingbird_revision/flat-world')
+    def qa = p.sourceSets.create('hummingbirdRevisionQa') {
+        java {
+            srcDir(p.file('src/gametest/java'))
+            include 'EdDYON/guaniao/content/bird/hummingbird/**'
+            include 'EdDYON/guaniao/content/garden/**'
+        }
+        resources {
+            srcDir(p.file('src/gametest/resources'))
+            include 'data/guaniao_hummingbird_qa/**'
+            include 'data/guaniao_hummingbird_garden_qa/**'
+            include 'data/guaniao_hummingbird_tree_qa/**'
+            include 'data/guaniao_hummingbird_sound_qa/**'
+        }
+        compileClasspath += p.sourceSets.main.output + p.sourceSets.main.compileClasspath
+        runtimeClasspath += output + compileClasspath + p.sourceSets.main.runtimeClasspath
+    }
+    p.minecraft.runs.gameTestServer {
+        workingDirectory qaWorld
+        property 'forge.enabledGameTestNamespaces', 'guaniao_hummingbird_qa,guaniao_hummingbird_garden_qa,guaniao_hummingbird_tree_qa,guaniao_hummingbird_sound_qa'
+        property 'forge.logging.console.level', 'info'
+        jvmArgs '-Xms512m', '-Xmx2G'
+        mods { guaniao { source qa } }
+    }
+    p.tasks.matching { it.name == 'runGameTestServer' }.configureEach {
+        doFirst {
+            def propertiesFile = new File(qaWorld, 'server.properties')
+            if (!propertiesFile.exists()) {
+                qaWorld.mkdirs()
+                // Forge launches through server Main; its default is a normal world,
+                // placing the test structures at -60 amid caves and flowing lava.
+                propertiesFile.setText('level-type=minecraft:flat\n' +
+                    'generator-settings={"biome":"minecraft:plains","layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:dirt","height":2},{"block":"minecraft:grass_block","height":1}],"lakes":false,"features":false,"structure_overrides":[]}\n', 'UTF-8')
+            }
+        }
+    }
+}

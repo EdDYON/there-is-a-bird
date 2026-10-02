@@ -1,6 +1,7 @@
 package EdDYON.guaniao.registry;
 
 import EdDYON.guaniao.content.earthworm.EarthwormItem;
+import EdDYON.guaniao.content.bird.hummingbird.HummingbirdDefinition;
 
 import java.util.function.Supplier;
 import java.util.EnumMap;
@@ -69,6 +70,8 @@ public final class GuaniaoItems {
     public static final RegistryObject<Item> KESTREL_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(KestrelDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.KESTREL, KestrelDefinition.SPAWN_EGG_BASE_COLOR, KestrelDefinition.SPAWN_EGG_SPOT_COLOR);
     public static final RegistryObject<Item> CASSOWARY_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(CassowaryDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.CASSOWARY, CassowaryDefinition.SPAWN_EGG_BASE_COLOR, CassowaryDefinition.SPAWN_EGG_SPOT_COLOR);
     public static final RegistryObject<Item> UMBRELLA_COCKATOO_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(UmbrellaCockatooDefinition.SPAWN_EGG_ID, GuaniaoEntityTypes.UMBRELLA_COCKATOO, UmbrellaCockatooDefinition.SPAWN_EGG_BASE_COLOR, UmbrellaCockatooDefinition.SPAWN_EGG_SPOT_COLOR);
+    public static final RegistryObject<Item> HUMMINGBIRD_SPAWN_EGG = GuaniaoItems.registerSpawnEgg(HummingbirdDefinition.SPAWN_EGG_ID,
+            GuaniaoEntityTypes.HUMMINGBIRD, HummingbirdDefinition.SPAWN_EGG_BASE_COLOR, HummingbirdDefinition.SPAWN_EGG_SPOT_COLOR);
     public static final RegistryObject<Item> EARTHWORM = ITEMS.register("earthworm", () -> new EarthwormItem(new Item.Properties().stacksTo(64)));
     public static final RegistryObject<Item> BREADCRUMBS = ITEMS.register("breadcrumbs", () -> new BreadcrumbItem(new Item.Properties()));
     public static final RegistryObject<Item> RAW_FRIES = ITEMS.register("raw_fries", () ->
@@ -145,6 +148,7 @@ public final class GuaniaoItems {
         FEATHERS_BY_SPECIES.put(BirdSpecies.KESTREL, List.of(FEATHER_CHESTNUT, FEATHER_BROWN, FEATHER_BLACK, FEATHER_SPECKLED));
         FEATHERS_BY_SPECIES.put(BirdSpecies.CASSOWARY, List.of(FEATHER_BLACK, FEATHER_BLUE, FEATHER_BROWN));
         FEATHERS_BY_SPECIES.put(BirdSpecies.UMBRELLA_COCKATOO, List.of(FEATHER_WHITE, FEATHER_YELLOW, FEATHER_GREY, FEATHER_ORANGE));
+        FEATHERS_BY_SPECIES.put(BirdSpecies.HUMMINGBIRD, List.of(FEATHER_GREEN, FEATHER_WHITE));
     }
 
     private GuaniaoItems() {

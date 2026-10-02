@@ -28,6 +28,7 @@ final class BirdBathBoneVisibility {
     // Tint colours are shared constants: tintFor/dirtTintFor run per bone per frame,
     // so allocating fresh arrays there would churn the renderer for no benefit.
     private static final float[] WHITE = {1.0F, 1.0F, 1.0F};
+    private static final float[] SUGAR_TINT = {1.0F, 0.94F, 0.72F};
     private static final float[] FROZEN_TINT = {0.74F, 0.88F, 1.0F};
     private static final float[] SPOILED_FISH = {0.46F, 0.56F, 0.40F};
     private static final float[] SPOILED_MEAT = {0.48F, 0.34F, 0.25F};
@@ -72,11 +73,14 @@ final class BirdBathBoneVisibility {
             return false;
         }
         if (type == BirdBathContentType.SPOILED) {
-            BirdBathContentType visualType = spoiledContentType != null && spoiledContentType.isFood() ? spoiledContentType : BirdBathContentType.FISH;
+            BirdBathContentType visualType = spoiledContentType != null && spoiledContentType.isPerishable() ? spoiledContentType : BirdBathContentType.FISH;
+            if (visualType == BirdBathContentType.SUGAR_WATER) {
+                return boneName.equals("water_" + levelName) || boneName.equals("spoiled_" + levelName);
+            }
             return boneName.equals(visualType.serializedName() + "_" + levelName) || boneName.equals("spoiled_" + levelName);
         }
         return switch (type) {
-            case WATER -> boneName.equals("water_" + levelName);
+            case WATER, SUGAR_WATER -> boneName.equals("water_" + levelName);
             case FROZEN_WATER -> boneName.equals("water_" + levelName) || boneName.equals("ice_" + levelName);
             case FISH -> boneName.equals("fish_" + levelName);
             case MEAT -> boneName.equals("meat_" + levelName);
@@ -94,10 +98,10 @@ final class BirdBathBoneVisibility {
                 default -> SPOILED_DEFAULT;
             };
         }
-        if (type == BirdBathContentType.WATER) {
+        if (type == BirdBathContentType.WATER || type == BirdBathContentType.SUGAR_WATER) {
             BirdBathCleanliness normalized = cleanliness == null ? BirdBathCleanliness.CLEAN : cleanliness;
             return switch (normalized) {
-                case CLEAN -> WHITE;
+                case CLEAN -> type == BirdBathContentType.SUGAR_WATER ? SUGAR_TINT : WHITE;
                 case USED -> WATER_USED;
                 case DIRTY -> WATER_DIRTY;
                 case FILTHY -> WATER_FILTHY;
