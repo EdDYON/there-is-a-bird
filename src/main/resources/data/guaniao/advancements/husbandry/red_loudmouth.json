@@ -1,0 +1,28 @@
+{
+  "parent": "guaniao:husbandry/accepted_by_bird",
+  "display": {
+    "icon": {
+      "item": "guaniao:macaw_spawn_egg"
+    },
+    "title": {
+      "translate": "advancements.guaniao.husbandry.red_loudmouth.title"
+    },
+    "description": {
+      "translate": "advancements.guaniao.husbandry.red_loudmouth.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "triggered": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "triggered"
+    ]
+  ]
+}

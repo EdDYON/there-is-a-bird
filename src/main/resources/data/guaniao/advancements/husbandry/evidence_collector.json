@@ -1,0 +1,28 @@
+{
+  "parent": "minecraft:husbandry/root",
+  "display": {
+    "icon": {
+      "item": "guaniao:bird_dropping_2"
+    },
+    "title": {
+      "translate": "advancements.guaniao.evidence_collector.title"
+    },
+    "description": {
+      "translate": "advancements.guaniao.evidence_collector.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "has_dropping": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "has_dropping"
+    ]
+  ]
+}

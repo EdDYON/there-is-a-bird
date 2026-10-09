@@ -1,0 +1,57 @@
+{
+  "render_type": "cutout",
+  "textures": {
+    "crumb": "guaniao:block/breadcrumbs",
+    "particle": "guaniao:block/breadcrumbs"
+  },
+  "elements": [
+    {
+      "from": [2, 0, 3],
+      "to": [4, 1, 5],
+      "faces": {
+        "up": { "texture": "#crumb" },
+        "down": { "texture": "#crumb" },
+        "north": { "texture": "#crumb" },
+        "south": { "texture": "#crumb" },
+        "west": { "texture": "#crumb" },
+        "east": { "texture": "#crumb" }
+      }
+    },
+    {
+      "from": [5, 0, 8],
+      "to": [7, 1, 10],
+      "faces": {
+        "up": { "texture": "#crumb" },
+        "down": { "texture": "#crumb" },
+        "north": { "texture": "#crumb" },
+        "south": { "texture": "#crumb" },
+        "west": { "texture": "#crumb" },
+        "east": { "texture": "#crumb" }
+      }
+    },
+    {
+      "from": [9, 0, 4],
+      "to": [11, 1, 6],
+      "faces": {
+        "up": { "texture": "#crumb" },
+        "down": { "texture": "#crumb" },
+        "north": { "texture": "#crumb" },
+        "south": { "texture": "#crumb" },
+        "west": { "texture": "#crumb" },
+        "east": { "texture": "#crumb" }
+      }
+    },
+    {
+      "from": [11, 0, 10],
+      "to": [13, 1, 12],
+      "faces": {
+        "up": { "texture": "#crumb" },
+        "down": { "texture": "#crumb" },
+        "north": { "texture": "#crumb" },
+        "south": { "texture": "#crumb" },
+        "west": { "texture": "#crumb" },
+        "east": { "texture": "#crumb" }
+      }
+    }
+  ]
+}

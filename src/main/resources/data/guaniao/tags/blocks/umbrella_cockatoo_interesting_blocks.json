@@ -1,0 +1,15 @@
+{
+  "replace": false,
+  "values": [
+    "#guaniao:bird_perches",
+    "minecraft:chest",
+    "minecraft:trapped_chest",
+    "minecraft:barrel",
+    "minecraft:crafting_table",
+    "minecraft:lever",
+    "minecraft:note_block",
+    "minecraft:jukebox",
+    "minecraft:lectern",
+    "#minecraft:buttons"
+  ]
+}

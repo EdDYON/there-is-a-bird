@@ -1,0 +1,28 @@
+{
+  "parent": "minecraft:husbandry/root",
+  "display": {
+    "icon": {
+      "item": "minecraft:iron_helmet"
+    },
+    "title": {
+      "translate": "advancements.guaniao.helmet_saved_the_day.title"
+    },
+    "description": {
+      "translate": "advancements.guaniao.helmet_saved_the_day.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "blocked_with_helmet": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "blocked_with_helmet"
+    ]
+  ]
+}

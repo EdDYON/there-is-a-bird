@@ -1,0 +1,38 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "guaniao:item/wind_feather_fan"
+  },
+  "display": {
+    "firstperson_righthand": {
+      "rotation": [0, -90, 18],
+      "translation": [0.9, 3.5, 1.0],
+      "scale": [0.78, 0.78, 0.78]
+    },
+    "firstperson_lefthand": {
+      "rotation": [0, 90, -18],
+      "translation": [0.9, 3.5, 1.0],
+      "scale": [0.78, 0.78, 0.78]
+    }
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "guaniao:burial_plume": 1.0
+      },
+      "model": "guaniao:item/wind_feather_fan_burial"
+    },
+    {
+      "predicate": {
+        "guaniao:riven_plume": 1.0
+      },
+      "model": "guaniao:item/wind_feather_fan_riven"
+    },
+    {
+      "predicate": {
+        "guaniao:hunting_return": 1.0
+      },
+      "model": "guaniao:item/wind_feather_fan_hunting"
+    }
+  ]
+}

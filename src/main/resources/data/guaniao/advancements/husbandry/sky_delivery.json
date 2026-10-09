@@ -1,0 +1,28 @@
+{
+  "parent": "minecraft:husbandry/root",
+  "display": {
+    "icon": {
+      "item": "guaniao:bird_dropping_1"
+    },
+    "title": {
+      "translate": "advancements.guaniao.sky_delivery.title"
+    },
+    "description": {
+      "translate": "advancements.guaniao.sky_delivery.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "natural_hit": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "natural_hit"
+    ]
+  ]
+}

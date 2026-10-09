@@ -1,0 +1,28 @@
+{
+  "parent": "minecraft:husbandry/root",
+  "display": {
+    "icon": {
+      "item": "guaniao:budgerigar_spawn_egg"
+    },
+    "title": {
+      "translate": "advancements.guaniao.husbandry.chirpy_partner.title"
+    },
+    "description": {
+      "translate": "advancements.guaniao.husbandry.chirpy_partner.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "tame_budgerigar": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "tame_budgerigar"
+    ]
+  ]
+}

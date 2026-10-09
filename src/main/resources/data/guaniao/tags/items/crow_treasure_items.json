@@ -1,0 +1,24 @@
+{
+  "replace": false,
+  "values": [
+    "#guaniao:crow_shiny_items",
+    { "id": "#forge:ores", "required": false },
+    { "id": "#forge:raw_materials", "required": false },
+    { "id": "#forge:ingots", "required": false },
+    { "id": "#forge:nuggets", "required": false },
+    { "id": "#forge:gems", "required": false },
+    { "id": "#forge:dusts", "required": false },
+    "minecraft:coal",
+    "minecraft:charcoal",
+    "minecraft:golden_helmet",
+    "minecraft:golden_chestplate",
+    "minecraft:golden_leggings",
+    "minecraft:golden_boots",
+    "minecraft:golden_sword",
+    "minecraft:golden_pickaxe",
+    "minecraft:golden_axe",
+    "minecraft:golden_shovel",
+    "minecraft:golden_hoe",
+    "minecraft:golden_horse_armor"
+  ]
+}
