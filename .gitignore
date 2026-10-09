@@ -1,0 +1,66 @@
+# eclipse
+bin
+*.launch
+.settings
+.metadata
+.classpath
+.project
+
+# idea
+out
+*.ipr
+*.iws
+*.iml
+.idea
+.vscode
+
+# gradle
+build
+.gradle
+
+# other
+eclipse
+run
+logs
+crash-reports
+*.log
+*.hprof
+*.heapdump
+javac.*.args
+
+# local restore/decompile/tooling scratch
+.backup*
+.*restore*
+.tmp_*
+.tools
+
+# Files from Forge MDK
+forge*changelog.txt
+
+# Local development instructions
+AGENTS.md
+
+# Isolated migration runtime checks
+run-gametest/
+run-client-smoke/
+
+# Local verification evidence and publication output
+docs/verification/
+mcmodsrepo/
+__pycache__/
+*.pyc
+
+# Local authoring, verification, and media files
+/tools/
+/src/test/
+/src/gametest/
+/src/gameTest/
+/src/clientqa/
+/gradle/*.init.gradle
+/.workbuddy/
+/_gen_*.py
+/_measure_*.py
+/src.zip
+/src/main.zip
+/trailer-new/
+/video-production/

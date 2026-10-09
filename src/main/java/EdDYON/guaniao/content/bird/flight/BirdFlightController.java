@@ -1,0 +1,214 @@
+package EdDYON.guaniao.content.bird.flight;
+
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.phys.Vec3;
+
+import java.util.Collections;
+import java.util.Map;
+import java.util.WeakHashMap;
+
+public final class BirdFlightController {
+    private static final float FLIGHT_HEAD_LIMIT = 28.0F;
+    private static final float FLIGHT_PITCH_TURN_RATE = 5.0F;
+    private static final float GROUND_YAW_TURN_RATE = 18.0F;
+    private static final double TAKEOFF_VERTICAL_SPEED = 0.055D;
+    private static final double TAKEOFF_HORIZONTAL_SPEED_SQR = 0.025D;
+    // Above the deliberate 0.23 ground hop, below the 0.28 normal launch.
+    private static final double TAKEOFF_VERTICAL_ONLY_SPEED = 0.26D;
+    private static final double TERMINAL_LANDING_DISTANCE = 0.75D;
+    private static final Map<Mob, FlightProgress> FLIGHT_PROGRESS = Collections.synchronizedMap(new WeakHashMap<>());
+
+    private BirdFlightController() {
+    }
+
+    public static Vec3 blendMovement(Vec3 current, Vec3 desired, double desiredWeight) {
+        double weight = Mth.clamp(desiredWeight, 0.0D, 1.0D);
+        return current.scale(1.0D - weight).add(desired.scale(weight));
+    }
+
+    public static Vec3 steerToward(Mob bird, Vec3 target, double speed, double minVertical, double maxVertical) {
+        Vec3 toTarget = target.subtract(bird.position());
+        Vec3 horizontal = new Vec3(toTarget.x, 0.0D, toTarget.z);
+        if (horizontal.lengthSqr() <= 1.0E-4D) {
+            horizontal = bird.getDeltaMovement().multiply(1.0D, 0.0D, 1.0D);
+        }
+        if (horizontal.lengthSqr() <= 1.0E-4D) {
+            horizontal = bird.getLookAngle().multiply(1.0D, 0.0D, 1.0D);
+        }
+        if (horizontal.lengthSqr() <= 1.0E-4D) {
+            horizontal = new Vec3(1.0D, 0.0D, 0.0D);
+        }
+        double vertical = Mth.clamp(toTarget.y * 0.12D, minVertical, maxVertical);
+        return horizontal.normalize().scale(speed).add(0.0D, vertical, 0.0D);
+    }
+
+    public static double decelerateNearLanding(double baseSpeed, double distance, double decelerationDistance, double minFactor) {
+        if (decelerationDistance <= 0.0D || distance >= decelerationDistance) {
+            return baseSpeed;
+        }
+        double factor = Mth.clamp(distance / decelerationDistance, minFactor, 1.0D);
+        // The minimum is an approach speed, not a speed to maintain at the
+        // perch center. Keeping it there overshoots the target every few ticks
+        // and makes normalized steering repeatedly turn the bird by 180 degrees.
+        // Preserve the existing approach outside the last three quarters of a
+        // block, then brake all the way to zero while vertical descent continues.
+        factor *= Mth.clamp(distance / TERMINAL_LANDING_DISTANCE, 0.0D, 1.0D);
+        return baseSpeed * factor;
+    }
+
+    public static boolean isStalledInAir(Mob bird, int timeFlying, double minMovementSqr) {
+        return timeFlying > 15 && !bird.onGround() && bird.getDeltaMovement().lengthSqr() < minMovementSqr;
+    }
+
+    /** Detects looping by measuring whether distance to the current target is actually shrinking. */
+    public static boolean isFlightProgressStalled(Mob bird, Vec3 target, int graceTicks, int maxStalledTicks) {
+        if (target == null || bird.onGround()) {
+            clearFlightProgress(bird);
+            return false;
+        }
+        double distanceSqr = bird.position().distanceToSqr(target);
+        FlightProgress progress = FLIGHT_PROGRESS.get(bird);
+        if (progress == null || progress.target.distanceToSqr(target) > 0.25D) {
+            FLIGHT_PROGRESS.put(bird, new FlightProgress(target, distanceSqr));
+            return false;
+        }
+        ++progress.ticks;
+        if (distanceSqr + 0.01D < progress.bestDistanceSqr) {
+            progress.bestDistanceSqr = distanceSqr;
+            progress.stalledTicks = 0;
+            return false;
+        }
+        if (progress.ticks <= graceTicks) {
+            return false;
+        }
+        return ++progress.stalledTicks >= maxStalledTicks;
+    }
+
+    public static void clearFlightProgress(Mob bird) {
+        FLIGHT_PROGRESS.remove(bird);
+    }
+
+    public static void faceMovement(Mob bird, Vec3 movement, float maxPitchDegrees) {
+        double horizontalLength = Math.sqrt(movement.x * movement.x + movement.z * movement.z);
+        if (horizontalLength <= 1.0E-4D) {
+            return;
+        }
+        float targetYaw = (float)(Mth.atan2(movement.z, movement.x) * 57.29577951308232D) - 90.0F;
+        float targetPitch = Mth.clamp((float)(-(Math.atan2(movement.y, horizontalLength) * 57.29577951308232D)), -maxPitchDegrees, maxPitchDegrees);
+        float pitch = approachLinear(bird.getXRot(), targetPitch, FLIGHT_PITCH_TURN_RATE);
+
+        // Flight steering writes velocity immediately. Gradually rotating the
+        // model toward that already-changed velocity allowed sharp turns to be
+        // rendered sideways or even backwards for several ticks. Keep the
+        // body and head locked to the actual horizontal travel direction;
+        // pitch remains eased so climbing and landing do not visually snap.
+        bird.setYRot(targetYaw);
+        bird.yBodyRot = targetYaw;
+        bird.setYHeadRot(targetYaw);
+        bird.setXRot(pitch);
+    }
+
+    /**
+     * Faces an already-smoothed flight vector without snapping the model through
+     * a large yaw change in one tick. This is useful for wide-winged birds whose
+     * steering visibly follows long, curved flight paths.
+     */
+    public static void faceMovementSmooth(Mob bird, Vec3 movement, float maxPitchDegrees,
+                                          float maxYawChange) {
+        double horizontalLength = Math.sqrt(movement.x * movement.x + movement.z * movement.z);
+        if (horizontalLength <= 1.0E-4D) {
+            return;
+        }
+        float targetYaw = (float)(Mth.atan2(movement.z, movement.x) * 57.29577951308232D) - 90.0F;
+        float targetPitch = Mth.clamp((float)(-(Math.atan2(movement.y, horizontalLength) * 57.29577951308232D)),
+                -maxPitchDegrees, maxPitchDegrees);
+        float yaw = approachAngle(bird.getYRot(), targetYaw, Math.max(0.1F, maxYawChange));
+        float pitch = approachLinear(bird.getXRot(), targetPitch, FLIGHT_PITCH_TURN_RATE);
+        bird.setYRot(yaw);
+        // The movement vector already turns gradually. Lock the visible body
+        // and head to that single heading so they cannot twist independently.
+        bird.yBodyRot = yaw;
+        bird.setYHeadRot(yaw);
+        bird.setXRot(pitch);
+    }
+
+    public static boolean faceGroundMovement(Mob bird, Vec3 movement, double minHorizontalSpeedSqr) {
+        if (movement.horizontalDistanceSqr() <= minHorizontalSpeedSqr) {
+            return false;
+        }
+        float targetYaw = (float)(Mth.atan2(movement.z, movement.x) * 57.29577951308232D) - 90.0F;
+        float yaw = approachAngle(bird.getYRot(), targetYaw, GROUND_YAW_TURN_RATE);
+        float bodyYaw = approachAngle(bird.yBodyRot, yaw, GROUND_YAW_TURN_RATE);
+        float headYaw = approachAngle(bird.getYHeadRot(), yaw, GROUND_YAW_TURN_RATE);
+        headYaw = bodyYaw + Mth.clamp(Mth.wrapDegrees(headYaw - bodyYaw), -FLIGHT_HEAD_LIMIT, FLIGHT_HEAD_LIMIT);
+        bird.setYRot(yaw);
+        bird.yBodyRot = bodyYaw;
+        bird.setYHeadRot(headYaw);
+        bird.setXRot(approachLinear(bird.getXRot(), 0.0F, FLIGHT_PITCH_TURN_RATE));
+        return true;
+    }
+
+    private static float approachAngle(float current, float target, float maxChange) {
+        return current + Mth.clamp(Mth.wrapDegrees(target - current), -maxChange, maxChange);
+    }
+
+    private static float approachLinear(float current, float target, float maxChange) {
+        return current + Mth.clamp(target - current, -maxChange, maxChange);
+    }
+
+    public static <T extends Mob & BirdFlightAware> boolean shouldPlayFlyAnimation(T bird, boolean airborneState, boolean onGround, boolean noGravity, Vec3 movement, int airborneGraceTicks) {
+        if (bird.isPassenger()) {
+            return false;
+        }
+        if (bird.isBirdFlightActive() || airborneState) {
+            return true;
+        }
+        // Velocity can reach the client before the synced behavior state or
+        // on-ground flag. Treat an obvious upward launch as flight so the
+        // model opens its wings on the first moving frame instead of sliding.
+        if (isTakeoffMotion(movement) || noGravity && movement.y > TAKEOFF_VERTICAL_SPEED) {
+            return true;
+        }
+        if (onGround) {
+            return false;
+        }
+        if (airborneGraceTicks > 0) {
+            return true;
+        }
+        if (noGravity || bird.isBirdLanding() || bird.isBirdEscaping()) {
+            return true;
+        }
+        if (isNearGroundForAnimation(bird, 0.7D)) {
+            return false;
+        }
+        if (movement.y > -0.85D) {
+            return true;
+        }
+        return movement.horizontalDistanceSqr() > 0.001D;
+    }
+
+    static boolean isTakeoffMotion(Vec3 movement) {
+        return movement.y > TAKEOFF_VERTICAL_SPEED
+                && (movement.horizontalDistanceSqr() > TAKEOFF_HORIZONTAL_SPEED_SQR
+                || movement.y >= TAKEOFF_VERTICAL_ONLY_SPEED);
+    }
+
+    private static boolean isNearGroundForAnimation(Mob bird, double distance) {
+        return !bird.level().noCollision(
+                bird,
+                bird.getBoundingBox().expandTowards(0.0D, -Math.max(0.0D, distance), 0.0D).deflate(0.02D, 0.0D, 0.02D));
+    }
+
+    private static final class FlightProgress {
+        private final Vec3 target;
+        private double bestDistanceSqr;
+        private int ticks;
+        private int stalledTicks;
+
+        private FlightProgress(Vec3 target, double bestDistanceSqr) {
+            this.target = target;
+            this.bestDistanceSqr = bestDistanceSqr;
+        }
+    }
+}

@@ -1,0 +1,57 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+      - "mc/**"
+      - "port/**"
+      - "feature/**"
+      - "fix/**"
+  pull_request:
+    branches:
+      - main
+      - "mc/**"
+      - "port/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Gradle build (Java 21)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Check tracked files
+        shell: bash
+        run: |
+          forbidden_files="$(git ls-files -- ':(icase,glob)**/AGENTS.md' ':(icase,glob)**/PORTING.md' 'src/test/' 'src/gameTest/' 'src/gametest/' 'src/clientqa/' 'tools/' 'docs/verification/' 'gradle/*.init.gradle' '_gen_*.py' '_measure_*.py' 'build-mod.bat' 'run-client.bat')"
+          if [[ -n "$forbidden_files" ]]; then
+            echo "::error::Local instructions, tests, and authoring files must not be committed."
+            printf '%s\n' "$forbidden_files"
+            exit 1
+          fi
+
+      - name: Set up Java 21
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Build
+        run: ./gradlew build --no-daemon --stacktrace

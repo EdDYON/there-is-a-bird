@@ -1,0 +1,355 @@
+package EdDYON.guaniao.content.bird.cockatiel;
+
+import EdDYON.guaniao.config.BirdConfigManager;
+import EdDYON.guaniao.config.BirdSpecies;
+import EdDYON.guaniao.content.bird.BirdGroundAnimation;
+import EdDYON.guaniao.content.bird.BirdMovementAnimationController;
+import EdDYON.guaniao.content.bird.BirdScanBudget;
+import EdDYON.guaniao.content.bird.BirdTags;
+import EdDYON.guaniao.content.bird.budgerigar.BudgerigarBehaviorState;
+import EdDYON.guaniao.content.bird.budgerigar.BudgerigarEntity;
+import EdDYON.guaniao.content.bird.flight.BirdFlightProfile;
+import EdDYON.guaniao.content.bird.flight.BirdFlightAnimation;
+import EdDYON.guaniao.content.bird.scale.BirdModelScale;
+import EdDYON.guaniao.content.bird.scale.BirdModelScaleProfile;
+import EdDYON.guaniao.registry.GuaniaoEntityTypes;
+import EdDYON.guaniao.registry.GuaniaoSoundEvents;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.TagKey;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.AgeableMob;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.TamableAnimal;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.ServerLevelAccessor;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
+import software.bernie.geckolib.animatable.GeoAnimatable;
+import software.bernie.geckolib.animation.AnimatableManager;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.AnimationState;
+import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.animation.PlayState;
+
+import javax.annotation.Nullable;
+import java.util.Objects;
+import java.util.UUID;
+
+public class CockatielEntity extends BudgerigarEntity {
+    private static final EntityDataAccessor<Integer> CREST_STATE = SynchedEntityData.defineId(CockatielEntity.class, EntityDataSerializers.INT);
+    private static final RawAnimation IDLE_ANIMATION = RawAnimation.begin().thenLoop("animation.idle");
+    private static final RawAnimation DANCE_ANIMATION = RawAnimation.begin().thenLoop("animation.idle_diff_1");
+    private static final RawAnimation PREEN_ANIMATION = RawAnimation.begin().thenPlay("animation.idle_diff_2").thenLoop("animation.idle");
+    private static final RawAnimation STARTLED_NAP_ANIMATION = RawAnimation.begin().thenPlay("animation.idle_diff_3").thenLoop("animation.idle");
+    private static final RawAnimation FLY_ANIMATION = RawAnimation.begin().thenLoop("animation.fly");
+    private static final RawAnimation SLEEP_ANIMATION = RawAnimation.begin().thenPlay("animation.sleep").thenLoop("animation.sleep_loop");
+    private static final RawAnimation EAT_ANIMATION = RawAnimation.begin().thenPlay("animation.eat").thenLoop("animation.idle");
+    private static final RawAnimation WALK_ANIMATION = RawAnimation.begin().thenLoop("animation.walk");
+    private GuidePreviewAnimation cockatielPreviewAnimation = GuidePreviewAnimation.NONE;
+    private RawAnimation currentIdleAnimation = IDLE_ANIMATION;
+    private long nextIdleAnimationTick;
+    private long happyDanceUntilTick;
+    private boolean wasEating;
+    private int macawAvoidanceCooldown;
+    @Nullable
+    private UUID avoidedMacawUuid;
+
+    public CockatielEntity(EntityType<? extends CockatielEntity> entityType, Level level) {
+        super(entityType, level);
+    }
+
+    @Override
+    public boolean canFlockWith(net.minecraft.world.entity.Entity other) {
+        return other instanceof EdDYON.guaniao.content.bird.macaw.MacawEntity || super.canFlockWith(other);
+    }
+
+    @Override
+    protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(CREST_STATE, CockatielCrestState.RELAXED.ordinal());
+    }
+
+    @Override
+    public void aiStep() {
+        super.aiStep();
+        if (this.macawAvoidanceCooldown > 0) {
+            --this.macawAvoidanceCooldown;
+        }
+        if (!this.level().isClientSide) {
+            this.tickCrestState();
+            this.tickMacawAvoidance();
+        }
+    }
+
+    public CockatielCrestState getCrestState() {
+        return CockatielCrestState.byId(this.entityData.get(CREST_STATE));
+    }
+
+    @Override
+    protected TagKey<Item> foodTag() {
+        return BirdTags.COCKATIEL_FOODS;
+    }
+
+    private void tickCrestState() {
+        if (this.tickCount % 5 != 0) {
+            return;
+        }
+        BudgerigarBehaviorState state = this.getBehaviorState();
+        CockatielCrestState crest = switch (state) {
+            case FLEEING -> CockatielCrestState.AFRAID;
+            case ALERT, SENTINEL -> CockatielCrestState.ALERT;
+            case CURIOUS -> CockatielCrestState.CURIOUS;
+            case DANCING, EATING -> CockatielCrestState.HAPPY;
+            default -> CockatielCrestState.RELAXED;
+        };
+        this.entityData.set(CREST_STATE, crest.ordinal());
+    }
+
+    private void tickMacawAvoidance() {
+        EdDYON.guaniao.content.bird.macaw.MacawEntity macaw = this.findTrackedMacaw();
+        if (macaw != null && this.distanceToSqr(macaw) > 56.25D) {
+            this.avoidedMacawUuid = null;
+            macaw = null;
+        }
+        int threatInterval = BirdConfigManager.threatScanInterval(BirdSpecies.COCKATIEL);
+        if (macaw == null && this.tickCount % threatInterval == 0
+                && this.level() instanceof ServerLevel serverLevel
+                && BirdScanBudget.tryAcquire(serverLevel, this)) {
+            macaw = this.level().getNearestEntity(
+                    this.level().getEntitiesOfClass(EdDYON.guaniao.content.bird.macaw.MacawEntity.class,
+                            this.getBoundingBox().inflate(5.0D), this::shouldAvoid),
+                    net.minecraft.world.entity.ai.targeting.TargetingConditions.forNonCombat(),
+                    this, this.getX(), this.getY(), this.getZ());
+            if (macaw != null) {
+                this.avoidedMacawUuid = macaw.getUUID();
+            }
+        }
+        if (macaw == null || this.isFlying() || this.macawAvoidanceCooldown > 0) {
+            return;
+        }
+        Vec3 away = this.position().subtract(macaw.position()).multiply(1.0D, 0.0D, 1.0D);
+        if (away.lengthSqr() < 1.0E-4D) {
+            away = new Vec3(1.0D, 0.0D, 0.0D);
+        }
+        away = away.normalize().scale(6.0D);
+        int x = (int)Math.floor(this.getX() + away.x);
+        int z = (int)Math.floor(this.getZ() + away.z);
+        int y = this.level().getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, x, z);
+        this.startFlybyFlight(new Vec3(x + 0.5D, y, z + 0.5D));
+        this.macawAvoidanceCooldown = 160;
+    }
+
+    @Nullable
+    private EdDYON.guaniao.content.bird.macaw.MacawEntity findTrackedMacaw() {
+        if (this.avoidedMacawUuid == null || !(this.level() instanceof ServerLevel serverLevel)) {
+            return null;
+        }
+        Entity entity = serverLevel.getEntity(this.avoidedMacawUuid);
+        if (entity instanceof EdDYON.guaniao.content.bird.macaw.MacawEntity macaw && this.shouldAvoid(macaw)) {
+            return macaw;
+        }
+        this.avoidedMacawUuid = null;
+        return null;
+    }
+
+    private boolean shouldAvoid(EdDYON.guaniao.content.bird.macaw.MacawEntity macaw) {
+        return macaw.isAlive() && !(this.isTame() && macaw.isTame()
+                && Objects.equals(this.getOwnerUUID(), macaw.getOwnerUUID()));
+    }
+
+    public static AttributeSupplier.Builder createCockatielAttributes() {
+        return TamableAnimal.createMobAttributes()
+                .add(Attributes.MAX_HEALTH, CockatielDefinition.MAX_HEALTH)
+                .add(Attributes.MOVEMENT_SPEED, CockatielDefinition.WALK_SPEED)
+                .add(Attributes.FLYING_SPEED, CockatielDefinition.FLYING_SPEED)
+                .add(Attributes.FOLLOW_RANGE, CockatielDefinition.FOLLOW_RANGE);
+    }
+
+    public static boolean canCockatielSpawn(EntityType<CockatielEntity> entityType, ServerLevelAccessor level, MobSpawnType spawnType, BlockPos pos, RandomSource random) {
+        BlockState below = level.getBlockState(pos.below());
+        boolean dryOpenGround = below.is(BlockTags.ANIMALS_SPAWNABLE_ON)
+                || below.is(BlockTags.DIRT)
+                || below.is(Blocks.SAND)
+                || below.is(Blocks.RED_SAND)
+                || below.is(Blocks.COARSE_DIRT)
+                || below.is(Blocks.HAY_BLOCK);
+        return dryOpenGround && level.getRawBrightness(pos, 0) > 8;
+    }
+
+    @Nullable
+    @Override
+    public CockatielEntity getBreedOffspring(ServerLevel level, AgeableMob mate) {
+        CockatielEntity child = GuaniaoEntityTypes.COCKATIEL.get().create(level);
+        if (child != null) {
+            child.setSkinVariantForRendering(this.getRandom().nextInt(CockatielDefinition.TEXTURE_VARIANTS.length));
+            float mateScale = mate instanceof BudgerigarEntity other ? other.getIndividualModelScale() : this.getIndividualModelScale();
+            child.setIndividualModelScale(BirdModelScale.inheritIndividualScale(
+                    child.getRandom(), this.getIndividualModelScale(), mateScale, child.modelScaleProfile()));
+        }
+        return child;
+    }
+
+    @Override
+    public ResourceLocation getTextureResource() {
+        return CockatielDefinition.textureForVariant(this.getSkinVariant());
+    }
+
+    @Override
+    public BirdModelScaleProfile modelScaleProfile() {
+        return BirdModelScaleProfile.COCKATIEL;
+    }
+
+    @Override
+    public BirdFlightProfile birdFlightProfile() {
+        return BirdFlightProfile.COCKATIEL;
+    }
+
+    @Override
+    protected double flybyInitialLift() {
+        return 0.08D;
+    }
+
+    @Override
+    protected SoundEvent getAmbientSound() {
+        // Keep the original call pool available to wild birds and other species' mimicry.
+        return this.isTame() && this.getRandom().nextBoolean()
+                ? GuaniaoSoundEvents.COCKATIEL_TAMED_AMBIENT.get()
+                : GuaniaoSoundEvents.COCKATIEL_AMBIENT.get();
+    }
+
+    @Override
+    protected SoundEvent getInteractionSound() {
+        return this.getAmbientSound();
+    }
+
+    @Override
+    protected SoundEvent getHurtSound(DamageSource source) {
+        return GuaniaoSoundEvents.COCKATIEL_HURT.get();
+    }
+
+    @Override
+    protected SoundEvent getDeathSound() {
+        return GuaniaoSoundEvents.COCKATIEL_DEATH.get();
+    }
+
+    @Override
+    public void setGuidePreviewAnimation(BudgerigarEntity.GuidePreviewAnimation animation) {
+        this.cockatielPreviewAnimation = animation == null ? GuidePreviewAnimation.NONE : switch (animation) {
+            case NONE -> GuidePreviewAnimation.NONE;
+            case IDLE, CURIOUS -> GuidePreviewAnimation.IDLE;
+            case PREEN -> GuidePreviewAnimation.PREEN;
+            case DANCE -> GuidePreviewAnimation.DANCE;
+            case EAT -> GuidePreviewAnimation.EAT;
+            case SLEEP -> GuidePreviewAnimation.SLEEP;
+            case WALK -> GuidePreviewAnimation.WALK;
+            case FLY -> GuidePreviewAnimation.FLY;
+        };
+    }
+
+    @Override
+    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
+        controllers.add(new AnimationController[]{new BirdMovementAnimationController((GeoAnimatable) this, "movement", 4, this::movementController)});
+    }
+
+    private <T extends CockatielEntity> PlayState movementController(AnimationState<T> animationState) {
+        animationState.getController().setAnimationSpeed(1.0D);
+        animationState.getController().transitionLength(4);
+        RawAnimation preview = this.cockatielPreviewAnimation.animation;
+        if (preview != null) {
+            return animationState.setAndContinue(preview);
+        }
+        BudgerigarBehaviorState state = this.getBehaviorState();
+        boolean flying = this.shouldPlayFlyAnimation();
+        if (flying) {
+            this.wasEating = false;
+            this.happyDanceUntilTick = 0L;
+            animationState.getController().transitionLength(0);
+            animationState.getController().setAnimationSpeed(this.flightAnimationSpeed());
+            return BirdFlightAnimation.play(animationState, FLY_ANIMATION);
+        }
+        if (state == BudgerigarBehaviorState.EATING) {
+            this.wasEating = true;
+            return animationState.setAndContinue(EAT_ANIMATION);
+        }
+        if (this.wasEating) {
+            this.wasEating = false;
+            if (this.onGround() && this.getRandom().nextInt(3) == 0) {
+                this.happyDanceUntilTick = this.level().getGameTime() + 165L;
+            }
+        }
+        if (state == BudgerigarBehaviorState.SLEEPING || state == BudgerigarBehaviorState.ROOSTING) {
+            this.happyDanceUntilTick = 0L;
+            return animationState.setAndContinue(SLEEP_ANIMATION);
+        }
+        if (this.isDancing() || this.level().getGameTime() < this.happyDanceUntilTick) {
+            return animationState.setAndContinue(DANCE_ANIMATION);
+        }
+        if (shouldWalk(state, animationState.isMoving())) {
+            this.happyDanceUntilTick = 0L;
+            return BirdGroundAnimation.play(animationState, this, WALK_ANIMATION);
+        }
+        if (state == BudgerigarBehaviorState.PREENING) {
+            return animationState.setAndContinue(PREEN_ANIMATION);
+        }
+        return animationState.setAndContinue(this.pickIdleAnimation());
+    }
+
+    private boolean shouldWalk(BudgerigarBehaviorState state, boolean animationMoving) {
+        if (!BirdGroundAnimation.canPlayWalk(this)) {
+            return false;
+        }
+        return BirdGroundAnimation.hasWalkMotion(this, animationMoving)
+                || state == BudgerigarBehaviorState.WALKING
+                || state == BudgerigarBehaviorState.FOLLOWING
+                || state == BudgerigarBehaviorState.FORAGING;
+    }
+
+    private RawAnimation pickIdleAnimation() {
+        if (this.level().getGameTime() >= this.nextIdleAnimationTick) {
+            int roll = this.getRandom().nextInt(10);
+            if (roll < 2) {
+                this.currentIdleAnimation = PREEN_ANIMATION;
+                this.nextIdleAnimationTick = this.level().getGameTime() + 70L;
+            } else if (roll == 2 && this.level().isDay()) {
+                this.currentIdleAnimation = STARTLED_NAP_ANIMATION;
+                this.nextIdleAnimationTick = this.level().getGameTime() + 170L;
+            } else {
+                this.currentIdleAnimation = IDLE_ANIMATION;
+                this.nextIdleAnimationTick = this.level().getGameTime() + 70L + this.getRandom().nextInt(90);
+            }
+        }
+        return this.currentIdleAnimation;
+    }
+
+    private enum GuidePreviewAnimation {
+        NONE(null),
+        IDLE(IDLE_ANIMATION),
+        DANCE(DANCE_ANIMATION),
+        PREEN(PREEN_ANIMATION),
+        STARTLED_NAP(STARTLED_NAP_ANIMATION),
+        FLY(FLY_ANIMATION),
+        SLEEP(SLEEP_ANIMATION),
+        EAT(EAT_ANIMATION),
+        WALK(WALK_ANIMATION);
+
+        private final RawAnimation animation;
+
+        GuidePreviewAnimation(RawAnimation animation) {
+            this.animation = animation;
+        }
+    }
+}

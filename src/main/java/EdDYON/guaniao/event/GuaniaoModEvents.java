@@ -1,0 +1,111 @@
+package EdDYON.guaniao.event;
+
+import EdDYON.guaniao.content.bird.budgerigar.BudgerigarEntity;
+import EdDYON.guaniao.content.bird.columbid.PigeonEntity;
+import EdDYON.guaniao.content.bird.columbid.SpottedDoveEntity;
+import EdDYON.guaniao.content.bird.crow.CrowEntity;
+import EdDYON.guaniao.content.bird.nightheron.NightHeronEntity;
+import EdDYON.guaniao.content.bird.seagull.SeagullEntity;
+import EdDYON.guaniao.content.bird.kiwi.KiwiEntity;
+import EdDYON.guaniao.content.bird.myna.MynaEntity;
+import EdDYON.guaniao.content.bird.woodcock.WoodcockEntity;
+import EdDYON.guaniao.content.bird.kestrel.KestrelEntity;
+import EdDYON.guaniao.content.bird.cassowary.CassowaryEntity;
+import EdDYON.guaniao.content.bird.sparrow.SparrowEntity;
+import EdDYON.guaniao.content.bird.longtailedtit.LongTailedTitEntity;
+import EdDYON.guaniao.content.bird.cockatiel.CockatielEntity;
+import EdDYON.guaniao.content.bird.macaw.MacawEntity;
+import EdDYON.guaniao.content.bird.umbrellacockatoo.UmbrellaCockatooEntity;
+import EdDYON.guaniao.content.bird.hummingbird.HummingbirdEntity;
+import EdDYON.guaniao.content.dropping.BirdDroppingUtil;
+import EdDYON.guaniao.registry.GuaniaoEntityTypes;
+import EdDYON.guaniao.registry.GuaniaoItems;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraft.world.level.ItemLike;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
+import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
+import net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+
+@EventBusSubscriber(modid="guaniao", bus=EventBusSubscriber.Bus.MOD)
+public final class GuaniaoModEvents {
+    private GuaniaoModEvents() {
+    }
+
+    @SubscribeEvent
+    public static void onCommonSetup(FMLCommonSetupEvent event) {
+        event.enqueueWork(BirdDroppingUtil::registerCompostables);
+    }
+
+    @SubscribeEvent
+    public static void onEntityAttributeCreation(EntityAttributeCreationEvent event) {
+        event.put((EntityType)GuaniaoEntityTypes.NIGHT_HERON.get(), NightHeronEntity.createAttributes().build());
+        event.put((EntityType)GuaniaoEntityTypes.SPARROW.get(), SparrowEntity.createAttributes().build());
+        event.put((EntityType)GuaniaoEntityTypes.LONG_TAILED_TIT.get(), SparrowEntity.createAttributes().build());
+        event.put((EntityType)GuaniaoEntityTypes.COCKATIEL.get(), CockatielEntity.createCockatielAttributes().build());
+        event.put((EntityType)GuaniaoEntityTypes.MACAW.get(), MacawEntity.createMacawAttributes().build());
+        event.put((EntityType)GuaniaoEntityTypes.BUDGERIGAR.get(), BudgerigarEntity.createAttributes().build());
+        event.put((EntityType)GuaniaoEntityTypes.SPOTTED_DOVE.get(), SpottedDoveEntity.createAttributes().build());
+        event.put((EntityType)GuaniaoEntityTypes.PIGEON.get(), PigeonEntity.createAttributes().build());
+        event.put((EntityType)GuaniaoEntityTypes.CROW.get(), CrowEntity.createAttributes().build());
+        event.put((EntityType)GuaniaoEntityTypes.SEAGULL.get(), SeagullEntity.createAttributes().build());
+        event.put((EntityType)GuaniaoEntityTypes.KIWI.get(), KiwiEntity.createAttributes().build());
+        event.put((EntityType)GuaniaoEntityTypes.MYNA.get(), MynaEntity.createAttributes().build());
+        event.put((EntityType)GuaniaoEntityTypes.WOODCOCK.get(), WoodcockEntity.createAttributes().build());
+        event.put((EntityType)GuaniaoEntityTypes.KESTREL.get(), KestrelEntity.createAttributes().build());
+        event.put((EntityType)GuaniaoEntityTypes.CASSOWARY.get(), CassowaryEntity.createAttributes().build());
+        event.put((EntityType)GuaniaoEntityTypes.UMBRELLA_COCKATOO.get(), UmbrellaCockatooEntity.createUmbrellaCockatooAttributes().build());
+        event.put(GuaniaoEntityTypes.HUMMINGBIRD.get(), HummingbirdEntity.createAttributes().build());
+    }
+
+    @SubscribeEvent
+    public static void onRegisterSpawnPlacements(RegisterSpawnPlacementsEvent event) {
+        event.register(GuaniaoEntityTypes.HUMMINGBIRD.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, HummingbirdEntity::canSpawn, RegisterSpawnPlacementsEvent.Operation.REPLACE);
+        event.register((EntityType)GuaniaoEntityTypes.NIGHT_HERON.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, NightHeronEntity::canSpawn, RegisterSpawnPlacementsEvent.Operation.REPLACE);
+        event.register((EntityType)GuaniaoEntityTypes.SPARROW.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, SparrowEntity::canSpawn, RegisterSpawnPlacementsEvent.Operation.REPLACE);
+        event.register(GuaniaoEntityTypes.LONG_TAILED_TIT.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, LongTailedTitEntity::canLongTailedTitSpawn, RegisterSpawnPlacementsEvent.Operation.REPLACE);
+        event.register(GuaniaoEntityTypes.COCKATIEL.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, CockatielEntity::canCockatielSpawn, RegisterSpawnPlacementsEvent.Operation.REPLACE);
+        event.register(GuaniaoEntityTypes.MACAW.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING, MacawEntity::canMacawSpawn, RegisterSpawnPlacementsEvent.Operation.REPLACE);
+        event.register((EntityType)GuaniaoEntityTypes.BUDGERIGAR.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, BudgerigarEntity::canSpawn, RegisterSpawnPlacementsEvent.Operation.REPLACE);
+        event.register((EntityType)GuaniaoEntityTypes.SPOTTED_DOVE.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, SpottedDoveEntity::canSpawn, RegisterSpawnPlacementsEvent.Operation.REPLACE);
+        event.register((EntityType)GuaniaoEntityTypes.PIGEON.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, PigeonEntity::canSpawn, RegisterSpawnPlacementsEvent.Operation.REPLACE);
+        event.register((EntityType)GuaniaoEntityTypes.CROW.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, CrowEntity::canSpawn, RegisterSpawnPlacementsEvent.Operation.REPLACE);
+        event.register((EntityType)GuaniaoEntityTypes.SEAGULL.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, SeagullEntity::canSpawn, RegisterSpawnPlacementsEvent.Operation.REPLACE);
+        event.register((EntityType)GuaniaoEntityTypes.KIWI.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, KiwiEntity::canSpawn, RegisterSpawnPlacementsEvent.Operation.REPLACE);
+        event.register(GuaniaoEntityTypes.MYNA.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, MynaEntity::canMynaSpawn, RegisterSpawnPlacementsEvent.Operation.REPLACE);
+        event.register(GuaniaoEntityTypes.WOODCOCK.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, WoodcockEntity::canWoodcockSpawn, RegisterSpawnPlacementsEvent.Operation.REPLACE);
+        event.register(GuaniaoEntityTypes.KESTREL.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING, KestrelEntity::canSpawn, RegisterSpawnPlacementsEvent.Operation.REPLACE);
+        event.register(GuaniaoEntityTypes.CASSOWARY.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, CassowaryEntity::canSpawn, RegisterSpawnPlacementsEvent.Operation.REPLACE);
+        event.register(GuaniaoEntityTypes.UMBRELLA_COCKATOO.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING, UmbrellaCockatooEntity::canUmbrellaCockatooSpawn, RegisterSpawnPlacementsEvent.Operation.REPLACE);
+    }
+
+    @SubscribeEvent
+    public static void onBuildCreativeModeTabContents(BuildCreativeModeTabContentsEvent event) {
+        if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
+            event.accept((ItemLike)GuaniaoItems.EARTHWORM.get());
+        }
+        if (event.getTabKey() == CreativeModeTabs.SPAWN_EGGS) {
+            event.accept((ItemLike)GuaniaoItems.NIGHT_HERON_SPAWN_EGG.get());
+            event.accept((ItemLike)GuaniaoItems.SPARROW_SPAWN_EGG.get());
+            event.accept((ItemLike)GuaniaoItems.LONG_TAILED_TIT_SPAWN_EGG.get());
+            event.accept((ItemLike)GuaniaoItems.COCKATIEL_SPAWN_EGG.get());
+            event.accept((ItemLike)GuaniaoItems.MACAW_SPAWN_EGG.get());
+            event.accept((ItemLike)GuaniaoItems.BUDGERIGAR_SPAWN_EGG.get());
+            event.accept((ItemLike)GuaniaoItems.SPOTTED_DOVE_SPAWN_EGG.get());
+            event.accept((ItemLike)GuaniaoItems.PIGEON_SPAWN_EGG.get());
+            event.accept((ItemLike)GuaniaoItems.CROW_SPAWN_EGG.get());
+            event.accept((ItemLike)GuaniaoItems.SEAGULL_SPAWN_EGG.get());
+            event.accept((ItemLike)GuaniaoItems.KIWI_SPAWN_EGG.get());
+            event.accept((ItemLike)GuaniaoItems.MYNA_SPAWN_EGG.get());
+            event.accept((ItemLike)GuaniaoItems.WOODCOCK_SPAWN_EGG.get());
+            event.accept((ItemLike)GuaniaoItems.KESTREL_SPAWN_EGG.get());
+            event.accept((ItemLike)GuaniaoItems.CASSOWARY_SPAWN_EGG.get());
+            event.accept((ItemLike)GuaniaoItems.UMBRELLA_COCKATOO_SPAWN_EGG.get());
+            event.accept(GuaniaoItems.HUMMINGBIRD_SPAWN_EGG.get());
+        }
+    }
+}

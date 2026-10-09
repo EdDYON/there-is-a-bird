@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "#guaniao:foods/sparrow", "minecraft:sweet_berries", "minecraft:glow_berries",
+    "minecraft:spider_eye", "minecraft:apple"
+  ]
+}

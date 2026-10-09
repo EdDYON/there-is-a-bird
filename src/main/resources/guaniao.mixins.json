@@ -1,0 +1,16 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "EdDYON.guaniao.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "BlockStateBaseMixin",
+    "PressurePlateBlockMixin",
+    "WeightedPressurePlateBlockMixin"
+  ],
+  "client": [],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

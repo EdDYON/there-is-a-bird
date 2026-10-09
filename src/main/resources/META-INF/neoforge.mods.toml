@@ -1,0 +1,36 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="MIT (code); restricted license (model assets)"
+
+[[mods]]
+modId="guaniao"
+version="${mod_version}"
+displayName="Bird Watching"
+logoFile="guaniao_logo.png"
+enumExtensions="META-INF/enumextensions.json"
+authors="EdDYON"
+description="我去！哪来的鸟？"
+
+[[mixins]]
+config="guaniao.mixins.json"
+
+[[dependencies.guaniao]]
+modId="neoforge"
+type="required"
+versionRange="[21.1.248,21.2)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.guaniao]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1]"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.guaniao]]
+modId="geckolib"
+type="required"
+versionRange="[4.6.6,5)"
+ordering="AFTER"
+side="BOTH"

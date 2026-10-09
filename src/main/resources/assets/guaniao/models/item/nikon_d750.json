@@ -1,0 +1,23 @@
+{
+  "loader": "neoforge:separate_transforms",
+  "gui_light": "front",
+  "textures": {
+    "particle": "guaniao:item/nikon_d750_icon"
+  },
+  "base": {
+    "parent": "builtin/entity",
+    "gui_light": "front",
+    "textures": {
+      "particle": "guaniao:item/nikon_d750_icon"
+    }
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "gui_light": "front",
+      "textures": {
+        "layer0": "guaniao:item/nikon_d750_icon"
+      }
+    }
+  }
+}

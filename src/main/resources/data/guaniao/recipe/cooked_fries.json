@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:smelting",
+  "category": "food",
+  "ingredient": {
+    "item": "guaniao:raw_fries"
+  },
+  "result": {
+    "id": "guaniao:cooked_fries"
+  },
+  "experience": 0.35,
+  "cookingtime": 200
+}

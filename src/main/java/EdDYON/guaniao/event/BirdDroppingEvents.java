@@ -1,0 +1,278 @@
+package EdDYON.guaniao.event;
+
+import EdDYON.guaniao.config.BirdConfigManager;
+import EdDYON.guaniao.config.BirdSpecies;
+import EdDYON.guaniao.content.bird.BirdAmbientDropControl;
+import EdDYON.guaniao.content.bird.BirdDroppingAreaLimiter;
+import EdDYON.guaniao.content.dropping.BirdDroppingItem;
+import EdDYON.guaniao.content.dropping.BirdDroppingProjectileEntity;
+import EdDYON.guaniao.content.dropping.BirdDroppingSplatEntity;
+import EdDYON.guaniao.content.dropping.BirdDroppingVariant;
+import EdDYON.guaniao.registry.GuaniaoEntityTypes;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+
+public final class BirdDroppingEvents {
+    private static final String TAG_COOLDOWN = "GuaniaoDroppingCooldown";
+    private static final int CHECK_INTERVAL_TICKS = 20;
+    private static final int RETRY_MIN_TICKS = 20 * 5;
+    private static final int RETRY_MAX_TICKS = 20 * 10;
+    private static final int INITIAL_JITTER_TICKS = 20 * 30;
+    private static final int MIN_EXISTING_AGE_TICKS = 200;
+
+    private BirdDroppingEvents() {
+    }
+
+    public static void tickBird(LivingEntity entity) {
+        if (!(entity.level() instanceof ServerLevel level) || !isBird(entity) || entity.tickCount < MIN_EXISTING_AGE_TICKS) {
+            return;
+        }
+        BirdSpecies species = BirdSpecies.from(entity);
+        if (BirdConfigManager.droppingMultiplier(species) <= 0.0D) {
+            return;
+        }
+        if ((entity.tickCount + entity.getId()) % CHECK_INTERVAL_TICKS != 0) {
+            return;
+        }
+        if (!BirdAmbientDropControl.hasNearbyPlayer(level, entity)) {
+            return;
+        }
+
+        CompoundTag data = entity.getPersistentData();
+        if (!data.contains(TAG_COOLDOWN)) {
+            long initialCooldown = (long)nextNaturalCooldown(entity)
+                    + entity.getRandom().nextInt(INITIAL_JITTER_TICKS + 1);
+            data.putInt(TAG_COOLDOWN, (int)Math.min(Integer.MAX_VALUE, initialCooldown));
+            return;
+        }
+
+        int cooldown = Math.max(0, data.getInt(TAG_COOLDOWN) - CHECK_INTERVAL_TICKS);
+        if (cooldown > 0) {
+            data.putInt(TAG_COOLDOWN, cooldown);
+            return;
+        }
+
+        if (trySpawnDropping(level, entity)) {
+            data.putInt(TAG_COOLDOWN, nextNaturalCooldown(entity));
+        } else {
+            data.putInt(TAG_COOLDOWN, randomBetween(entity.getRandom(), RETRY_MIN_TICKS, RETRY_MAX_TICKS));
+        }
+    }
+
+    private static boolean trySpawnDropping(ServerLevel level, LivingEntity bird) {
+        return trySpawnDropping(level, bird, false);
+    }
+
+    private static boolean trySpawnDropping(ServerLevel level, LivingEntity bird, boolean laxative) {
+        if (bird.isDeadOrDying() || bird.isRemoved() || bird.isInWaterOrBubble() || !bird.isAlive()) {
+            return false;
+        }
+        Vec3 spawnPosition = droppingSpawnPosition(bird);
+        BlockPos areaPosition = BlockPos.containing(spawnPosition);
+        if (laxative) {
+            if (!hasLaxativeDroppingCapacity(level, spawnPosition)) {
+                return false;
+            }
+        } else {
+            // Ordinary ambient droppings share a regional cooldown and the configurable soft cap.
+            if (!BirdDroppingAreaLimiter.canDrop(level, areaPosition)
+                    || !hasNaturalDroppingCapacity(level, bird)
+                    || !BirdDroppingSplatEntity.canAddSplatAt(level, spawnPosition)) {
+                return false;
+            }
+        }
+
+        BirdDroppingVariant variant = chooseVariantForBird(bird);
+        BirdDroppingProjectileEntity dropping = new BirdDroppingProjectileEntity(level, bird, variant);
+        if (laxative) {
+            dropping.markLaxativeDropping(bird.getUUID());
+        } else {
+            dropping.markNaturalDropping(bird.getUUID());
+        }
+        Vec3 birdMotion = bird.getDeltaMovement();
+        RandomSource random = bird.getRandom();
+        double horizontalX = Mth.nextDouble(random, -0.035D, 0.035D);
+        double horizontalZ = Mth.nextDouble(random, -0.035D, 0.035D);
+        double downward = Mth.nextDouble(random, -0.18D, -0.10D);
+        Vec3 motion = new Vec3(
+                birdMotion.x * 0.12D + horizontalX,
+                Math.min(birdMotion.y * 0.08D, 0.04D) + downward,
+                birdMotion.z * 0.12D + horizontalZ
+        );
+
+        dropping.setPos(spawnPosition.x, spawnPosition.y, spawnPosition.z);
+        dropping.setDeltaMovement(motion);
+        if (!level.addFreshEntity(dropping)) {
+            return false;
+        }
+        if (!laxative) {
+            BirdDroppingAreaLimiter.recordDrop(level, areaPosition, random);
+        }
+        return true;
+    }
+
+    /** Server-side entry point for the delayed laxative effect on seagulls. */
+    public static boolean spawnLaxativeDropping(ServerLevel level, LivingEntity bird) {
+        return trySpawnDropping(level, bird, true);
+    }
+
+    /**
+     * Laxative droppings deliberately bypass the ambient soft cap and area cooldown, but never the
+     * fixed nearby entity ceiling. Falling natural projectiles are included so one gull cannot queue
+     * more droppings than the area may safely contain.
+     */
+    private static boolean hasLaxativeDroppingCapacity(ServerLevel level, Vec3 position) {
+        double radius = BirdAmbientDropControl.LOCAL_CAP_RADIUS;
+        AABB area = new AABB(
+                position.x - radius,
+                position.y - radius,
+                position.z - radius,
+                position.x + radius,
+                position.y + radius,
+                position.z + radius
+        );
+        int cap = BirdAmbientDropControl.HARD_MAX_DROPPINGS_NEARBY;
+        int count = level.getEntitiesOfClass(
+                BirdDroppingProjectileEntity.class,
+                area,
+                projectile -> projectile.isAlive() && projectile.isNaturalDropping()
+        ).size();
+        if (count >= cap) {
+            return false;
+        }
+
+        count += level.getEntitiesOfClass(BirdDroppingSplatEntity.class, area, Entity::isAlive).size();
+        if (count >= cap) {
+            return false;
+        }
+
+        count += level.getEntitiesOfClass(
+                ItemEntity.class,
+                area,
+                item -> item.isAlive() && item.getItem().getItem() instanceof BirdDroppingItem
+        ).size();
+        return count < cap;
+    }
+
+    private static boolean hasNaturalDroppingCapacity(ServerLevel level, LivingEntity bird) {
+        int cap = Math.min(
+                BirdConfigManager.maxGroundDroppingsNearby(),
+                BirdAmbientDropControl.HARD_MAX_DROPPINGS_NEARBY
+        );
+        if (cap <= 0) {
+            return false;
+        }
+
+        AABB area = bird.getBoundingBox().inflate(BirdConfigManager.droppingNearbyRadius());
+        int count = level.getEntitiesOfClass(
+                BirdDroppingProjectileEntity.class,
+                area,
+                projectile -> projectile.isAlive() && projectile.isNaturalDropping()
+        ).size();
+        if (count >= cap) {
+            return false;
+        }
+
+        count += level.getEntitiesOfClass(BirdDroppingSplatEntity.class, area, Entity::isAlive).size();
+        if (count >= cap) {
+            return false;
+        }
+
+        count += level.getEntitiesOfClass(
+                ItemEntity.class,
+                area,
+                item -> item.isAlive() && item.getItem().getItem() instanceof BirdDroppingItem
+        ).size();
+        return count < cap;
+    }
+
+    private static Vec3 droppingSpawnPosition(LivingEntity bird) {
+        Vec3 look = bird.getLookAngle();
+        Vec3 rearOffset = new Vec3(-look.x, 0.0D, -look.z);
+        if (rearOffset.lengthSqr() > 1.0E-4D) {
+            rearOffset = rearOffset.normalize().scale(Math.max(0.04D, bird.getBbWidth() * 0.24D));
+        }
+        double y = bird.getY() + Math.max(0.08D, bird.getBbHeight() * 0.28D);
+        return new Vec3(bird.getX(), y, bird.getZ()).add(rearOffset);
+    }
+
+    private static int nextNaturalCooldown(LivingEntity bird) {
+        RandomSource random = bird.getRandom();
+        BirdSpecies species = BirdSpecies.from(bird);
+        if (species == null) {
+            return randomBetween(random, 6000, 12000);
+        }
+        int baseCooldown = randomBetween(random, species.defaultDroppingMinTicks(), species.defaultDroppingMaxTicks());
+        double multiplier = BirdConfigManager.droppingMultiplier(species);
+        if (multiplier <= 0.0D) {
+            return Integer.MAX_VALUE;
+        }
+        return (int)Math.max(CHECK_INTERVAL_TICKS,
+                Math.min(Integer.MAX_VALUE, Math.round(baseCooldown / multiplier)));
+    }
+
+    private static int randomBetween(RandomSource random, int minInclusive, int maxInclusive) {
+        return minInclusive + random.nextInt(Math.max(1, maxInclusive - minInclusive + 1));
+    }
+
+    private static BirdDroppingVariant chooseVariantForBird(LivingEntity bird) {
+        RandomSource random = bird.getRandom();
+        EntityType<?> type = bird.getType();
+        if (type == GuaniaoEntityTypes.SPARROW.get() || type == GuaniaoEntityTypes.LONG_TAILED_TIT.get()) {
+            return BirdDroppingVariant.ONE;
+        }
+        if (type == GuaniaoEntityTypes.BUDGERIGAR.get()) {
+            return random.nextBoolean() ? BirdDroppingVariant.ONE : BirdDroppingVariant.TWO;
+        }
+        if (type == GuaniaoEntityTypes.COCKATIEL.get()) {
+            return random.nextInt(3) == 0 ? BirdDroppingVariant.TWO : BirdDroppingVariant.ONE;
+        }
+        if (type == GuaniaoEntityTypes.MACAW.get()) {
+            return random.nextBoolean() ? BirdDroppingVariant.THREE : BirdDroppingVariant.FOUR;
+        }
+        if (type == GuaniaoEntityTypes.PIGEON.get() || type == GuaniaoEntityTypes.SPOTTED_DOVE.get()) {
+            return random.nextBoolean() ? BirdDroppingVariant.TWO : BirdDroppingVariant.THREE;
+        }
+        if (type == GuaniaoEntityTypes.NIGHT_HERON.get()) {
+            return random.nextBoolean() ? BirdDroppingVariant.THREE : BirdDroppingVariant.FOUR;
+        }
+        if (type == GuaniaoEntityTypes.SEAGULL.get()) {
+            return random.nextInt(3) == 0 ? BirdDroppingVariant.FOUR : BirdDroppingVariant.THREE;
+        }
+        if (type == GuaniaoEntityTypes.CROW.get()) {
+            int roll = random.nextInt(10);
+            if (roll < 2) {
+                return BirdDroppingVariant.TWO;
+            }
+            return roll < 7 ? BirdDroppingVariant.THREE : BirdDroppingVariant.FOUR;
+        }
+        return BirdDroppingVariant.random(random);
+    }
+
+    private static boolean isBird(Entity entity) {
+        return BirdSpecies.from(entity) != null;
+    }
+
+    public static void refreshLoadedBirdCooldowns(MinecraftServer server) {
+        if (server == null) {
+            return;
+        }
+        for (ServerLevel level : server.getAllLevels()) {
+            for (Entity entity : level.getAllEntities()) {
+                if (entity instanceof LivingEntity bird && isBird(bird)) {
+                    bird.getPersistentData().putInt(TAG_COOLDOWN, nextNaturalCooldown(bird));
+                }
+            }
+        }
+    }
+}

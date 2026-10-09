@@ -1,0 +1,13 @@
+{
+  "entries": [
+    {
+      "enum": "net/minecraft/client/model/HumanoidModel$ArmPose",
+      "name": "GUANIAO_CAMERA_HOLD",
+      "constructor": "(ZLnet/neoforged/neoforge/client/IArmPoseTransformer;)V",
+      "parameters": {
+        "class": "EdDYON/guaniao/client/camera/NikonCameraArmPose",
+        "field": "CAMERA_HOLD"
+      }
+    }
+  ]
+}
