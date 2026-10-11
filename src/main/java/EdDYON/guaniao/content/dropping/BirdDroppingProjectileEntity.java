@@ -1,0 +1,270 @@
+package EdDYON.guaniao.content.dropping;
+
+import EdDYON.guaniao.registry.GuaniaoEntityTypes;
+import net.minecraft.core.Direction;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.animal.IronGolem;
+import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.ThrowableItemProjectile;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.network.NetworkHooks;
+import org.jetbrains.annotations.NotNull;
+import software.bernie.geckolib.animatable.GeoEntity;
+import software.bernie.geckolib.core.animatable.GeoAnimatable;
+import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.core.animation.AnimatableManager;
+import software.bernie.geckolib.util.GeckoLibUtil;
+
+import java.util.UUID;
+
+public class BirdDroppingProjectileEntity extends ThrowableItemProjectile implements GeoEntity {
+    private static final int MAX_FLIGHT_LIFETIME_TICKS = 20 * 10;
+    private static final EntityDataAccessor<Integer> DATA_VARIANT = SynchedEntityData.defineId(BirdDroppingProjectileEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Boolean> DATA_NATURAL_DROPPING = SynchedEntityData.defineId(BirdDroppingProjectileEntity.class, EntityDataSerializers.BOOLEAN);
+    private final AnimatableInstanceCache animationCache = GeckoLibUtil.createInstanceCache((GeoAnimatable)this);
+    private int lifeTicks;
+    private boolean impactResolved;
+    private boolean laxativeDropping;
+    private UUID sourceBirdUuid;
+
+    public BirdDroppingProjectileEntity(EntityType<? extends BirdDroppingProjectileEntity> entityType, Level level) {
+        super(entityType, level);
+    }
+
+    public BirdDroppingProjectileEntity(Level level, LivingEntity owner, BirdDroppingVariant variant) {
+        super(GuaniaoEntityTypes.BIRD_DROPPING_PROJECTILE.get(), owner, level);
+        this.setVariant(variant);
+    }
+
+    @Override
+    protected void defineSynchedData() {
+        super.defineSynchedData();
+        this.entityData.define(DATA_VARIANT, BirdDroppingVariant.ONE.id());
+        this.entityData.define(DATA_NATURAL_DROPPING, false);
+    }
+
+    @Override
+    protected @NotNull Item getDefaultItem() {
+        return this.getVariant().item();
+    }
+
+    @Override
+    protected float getGravity() {
+        return 0.06F;
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (this.level().isClientSide || this.isRemoved()) {
+            return;
+        }
+        ++this.lifeTicks;
+        if (this.isInWaterOrBubble() || this.lifeTicks >= MAX_FLIGHT_LIFETIME_TICKS) {
+            this.impactResolved = true;
+            this.discard();
+        }
+    }
+
+    @Override
+    protected void onHitEntity(EntityHitResult result) {
+        super.onHitEntity(result);
+        if (this.level().isClientSide || !this.beginImpactResolution()) {
+            return;
+        }
+
+        Entity hit = result.getEntity();
+        if (BirdDroppingInteractionHandler.handleEntityHit(this, hit)) {
+            this.splat();
+            this.discard();
+            return;
+        }
+
+        if (hit instanceof Player player) {
+            if (this.isNaturalDropping()) {
+                BirdDroppingPrankHandler.handleNaturalHitPlayer(this, player);
+            } else {
+                player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 80, 0));
+            }
+        } else if (hit instanceof Villager villager) {
+            BirdDroppingPrankHandler.handleVillagerHit(this, villager);
+        } else if (hit instanceof IronGolem golem) {
+            BirdDroppingPrankHandler.handleIronGolemHit(this, golem);
+        } else if (hit instanceof LivingEntity living) {
+            living.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 80, 0));
+        }
+
+        this.attachStickySplat(hit);
+        this.splat();
+        this.discard();
+    }
+
+    /** Spawns the sticky splat variant that rides the victim; the splat follows its
+     * host every tick until it ages out. A helmet keeps the mess off, consistent
+     * with the prank handler. */
+    private void attachStickySplat(Entity hit) {
+        if (!(hit instanceof LivingEntity living)
+                || !(this.level() instanceof ServerLevel serverLevel)
+                || !this.canAddImpactSplatAt(serverLevel, living.position())) {
+            return;
+        }
+        if (hit instanceof Player player && !player.getItemBySlot(EquipmentSlot.HEAD).isEmpty()) {
+            return;
+        }
+        Vec3 anchor = living.position().add(0.0D, living.getBbHeight() * 0.92D, 0.0D);
+        BirdDroppingSplatEntity splat = BirdDroppingSplatEntity.onEntity(
+                serverLevel, living, anchor, Direction.UP);
+        serverLevel.addFreshEntity(splat);
+    }
+
+    @Override
+    protected void onHitBlock(BlockHitResult result) {
+        super.onHitBlock(result);
+        if (this.level().isClientSide || !this.beginImpactResolution()) {
+            return;
+        }
+
+        if (BirdDroppingPrankHandler.handleCakeHit(this, result.getBlockPos())) {
+            this.discard();
+            return;
+        }
+
+        if (BirdDroppingInteractionHandler.handleNearbyFoodHit(this, result.getLocation())) {
+            this.splat();
+            this.discard();
+            return;
+        }
+
+        if (this.level() instanceof ServerLevel serverLevel) {
+            BirdDroppingPressurePlatePulse.tryTrigger(serverLevel, result.getBlockPos(), this);
+        }
+        this.spawnBlockSplat(result);
+        this.splat();
+        this.discard();
+    }
+
+    private boolean beginImpactResolution() {
+        if (this.impactResolved) {
+            return false;
+        }
+        this.impactResolved = true;
+        return true;
+    }
+
+    private void spawnBlockSplat(BlockHitResult result) {
+        Level level = this.level();
+        if (level.getFluidState(result.getBlockPos().relative(result.getDirection())).isSource()) {
+            return;
+        }
+        if (!this.canAddImpactSplatAt(level, result.getLocation())) {
+            return;
+        }
+        BirdDroppingSplatEntity splat = BirdDroppingSplatEntity.onBlock(level, result.getLocation(), result.getDirection(), result.getBlockPos());
+        level.addFreshEntity(splat);
+    }
+
+    private void splat() {
+        Level level = this.level();
+        level.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.SLIME_BLOCK_HIT, SoundSource.NEUTRAL, 0.65F, 0.85F + level.random.nextFloat() * 0.25F);
+        if (level instanceof ServerLevel serverLevel) {
+            serverLevel.sendParticles(ParticleTypes.POOF, this.getX(), this.getY(), this.getZ(), 4, 0.08D, 0.04D, 0.08D, 0.004D);
+        }
+    }
+
+    public BirdDroppingVariant getVariant() {
+        return BirdDroppingVariant.byId(this.entityData.get(DATA_VARIANT));
+    }
+
+    public void setVariant(BirdDroppingVariant variant) {
+        if (variant == null) {
+            variant = BirdDroppingVariant.ONE;
+        }
+        this.entityData.set(DATA_VARIANT, variant.id());
+    }
+
+    public boolean isNaturalDropping() {
+        return this.entityData.get(DATA_NATURAL_DROPPING);
+    }
+
+    public void markNaturalDropping(UUID birdUuid) {
+        this.entityData.set(DATA_NATURAL_DROPPING, true);
+        this.sourceBirdUuid = birdUuid;
+    }
+
+    public void markLaxativeDropping(UUID birdUuid) {
+        this.markNaturalDropping(birdUuid);
+        this.laxativeDropping = true;
+    }
+
+    public boolean isLaxativeDropping() {
+        return this.laxativeDropping;
+    }
+
+    private boolean canAddImpactSplatAt(Level level, Vec3 position) {
+        return this.isLaxativeDropping()
+                ? BirdDroppingSplatEntity.canAddHardCappedSplatAt(level, position)
+                : BirdDroppingSplatEntity.canAddSplatAt(level, position);
+    }
+
+    public UUID getSourceBirdUuid() {
+        return this.sourceBirdUuid;
+    }
+
+    @Override
+    public void addAdditionalSaveData(CompoundTag tag) {
+        super.addAdditionalSaveData(tag);
+        tag.putInt("Variant", this.getVariant().id());
+        tag.putBoolean("NaturalDropping", this.isNaturalDropping());
+        tag.putBoolean("LaxativeDropping", this.isLaxativeDropping());
+        tag.putInt("LifeTicks", this.lifeTicks);
+        if (this.sourceBirdUuid != null) {
+            tag.putUUID("SourceBirdUuid", this.sourceBirdUuid);
+        }
+    }
+
+    @Override
+    public void readAdditionalSaveData(CompoundTag tag) {
+        super.readAdditionalSaveData(tag);
+        this.setVariant(BirdDroppingVariant.byId(tag.getInt("Variant")));
+        this.entityData.set(DATA_NATURAL_DROPPING, tag.getBoolean("NaturalDropping"));
+        this.laxativeDropping = tag.getBoolean("LaxativeDropping");
+        this.lifeTicks = Math.max(0, tag.getInt("LifeTicks"));
+        if (tag.hasUUID("SourceBirdUuid")) {
+            this.sourceBirdUuid = tag.getUUID("SourceBirdUuid");
+        }
+    }
+
+    @Override
+    public @NotNull Packet<ClientGamePacketListener> getAddEntityPacket() {
+        return NetworkHooks.getEntitySpawningPacket(this);
+    }
+
+    @Override
+    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
+    }
+
+    @Override
+    public AnimatableInstanceCache getAnimatableInstanceCache() {
+        return this.animationCache;
+    }
+}

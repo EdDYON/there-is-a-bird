@@ -1,0 +1,23 @@
+{
+  "replace": false,
+  "values": [
+    "guaniao:night_heron",
+    "guaniao:sparrow",
+    "guaniao:long_tailed_tit",
+    "guaniao:cockatiel",
+    "guaniao:macaw",
+    "guaniao:budgerigar",
+    "guaniao:spotted_dove",
+    "guaniao:pigeon",
+    "guaniao:crow",
+    "guaniao:seagull",
+    "guaniao:kiwi",
+    "guaniao:myna",
+    "guaniao:woodcock",
+    "guaniao:kestrel",
+    "guaniao:cassowary",
+    "guaniao:umbrella_cockatoo",
+    "minecraft:parrot",
+    "minecraft:chicken"
+  ]
+}

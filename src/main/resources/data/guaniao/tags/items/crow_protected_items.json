@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:diamond", "minecraft:emerald", "minecraft:netherite_ingot",
+    "minecraft:nether_star", "minecraft:heart_of_the_sea", "minecraft:totem_of_undying"
+  ]
+}

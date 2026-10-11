@@ -1,0 +1,28 @@
+{
+  "parent": "minecraft:husbandry/root",
+  "display": {
+    "icon": {
+      "item": "guaniao:bird_guide"
+    },
+    "title": {
+      "translate": "advancements.guaniao.husbandry.bird_conference.title"
+    },
+    "description": {
+      "translate": "advancements.guaniao.husbandry.bird_conference.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "triggered": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "triggered"
+    ]
+  ]
+}

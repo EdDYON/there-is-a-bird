@@ -1,0 +1,13 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:chicken",
+    "guaniao:sparrow",
+    "guaniao:spotted_dove",
+    "guaniao:budgerigar",
+    {
+      "id": "guaniao:meep",
+      "required": false
+    }
+  ]
+}

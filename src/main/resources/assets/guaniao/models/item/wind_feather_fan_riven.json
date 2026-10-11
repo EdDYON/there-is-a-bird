@@ -1,0 +1,18 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "guaniao:item/wind_feather_fan_riven"
+  },
+  "display": {
+    "firstperson_righthand": {
+      "rotation": [0, -90, 18],
+      "translation": [0.9, 3.5, 1.0],
+      "scale": [0.78, 0.78, 0.78]
+    },
+    "firstperson_lefthand": {
+      "rotation": [0, 90, -18],
+      "translation": [0.9, 3.5, 1.0],
+      "scale": [0.78, 0.78, 0.78]
+    }
+  }
+}

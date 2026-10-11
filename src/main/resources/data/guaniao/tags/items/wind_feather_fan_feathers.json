@@ -1,0 +1,20 @@
+{
+  "replace": false,
+  "values": [
+    "guaniao:feather_white",
+    "guaniao:feather_grey",
+    "guaniao:feather_black",
+    "guaniao:feather_brown",
+    "guaniao:feather_chestnut",
+    "guaniao:feather_red",
+    "guaniao:feather_orange",
+    "guaniao:feather_yellow",
+    "guaniao:feather_green",
+    "guaniao:feather_blue",
+    "guaniao:feather_pink",
+    "guaniao:feather_purple",
+    "guaniao:feather_rainbow",
+    "guaniao:feather_speckled",
+    "guaniao:feather_barred"
+  ]
+}

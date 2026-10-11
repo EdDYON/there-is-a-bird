@@ -1,0 +1,14 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:rotten_flesh", "minecraft:spider_eye", "minecraft:beef", "minecraft:porkchop",
+    "minecraft:chicken", "minecraft:mutton", "minecraft:rabbit", "minecraft:cod",
+    "minecraft:salmon", "minecraft:tropical_fish", "minecraft:pufferfish", "minecraft:sweet_berries",
+    "minecraft:glow_berries", "minecraft:wheat_seeds", "minecraft:melon_seeds",
+    "minecraft:pumpkin_seeds", "minecraft:beetroot_seeds", "minecraft:torchflower_seeds",
+    "minecraft:pitcher_pod", "minecraft:wheat", "minecraft:bread", "minecraft:cooked_beef",
+    "minecraft:cooked_porkchop", "minecraft:cooked_chicken", "minecraft:cooked_mutton",
+    "minecraft:cooked_rabbit", "minecraft:cooked_cod", "minecraft:cooked_salmon",
+    "minecraft:apple", "minecraft:beetroot"
+  ]
+}
