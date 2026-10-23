@@ -1,0 +1,650 @@
+package EdDYON.guaniao.network;
+
+import EdDYON.guaniao.GuaniaoMod;
+import EdDYON.guaniao.config.BirdConfigManager;
+import EdDYON.guaniao.content.camera.PhotoImageCodec;
+import EdDYON.guaniao.content.camera.PhotoIndexSavedData;
+import EdDYON.guaniao.content.camera.PhotoIndexSavedData.PhotoRecord;
+import EdDYON.guaniao.content.camera.PhotoIndexSavedData.PhotoStatus;
+import EdDYON.guaniao.content.camera.PhotoIoService;
+import EdDYON.guaniao.content.camera.PhotoMaintenance;
+import EdDYON.guaniao.content.camera.PhotoRepository;
+import EdDYON.guaniao.content.camera.PhotoTransferLimits;
+import EdDYON.guaniao.content.camera.PhotographData;
+import EdDYON.guaniao.content.camera.PhotographEntity;
+import EdDYON.guaniao.registry.GuaniaoItems;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.decoration.ItemFrame;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.ItemStack;
+
+/** Main-thread session state backed by bounded asynchronous photograph I/O. */
+public final class PhotoUploadManager {
+    private static final DateTimeFormatter PHOTO_NAME_DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private static final Map<UUID, UploadSession> ACTIVE_UPLOADS = new HashMap<>();
+    private static final Map<UUID, UUID> PROCESSING_UPLOADS = new HashMap<>();
+    private static final int MAX_COMPLETED_UPLOADS = 256;
+    private static final long COMPLETED_UPLOAD_TTL_TICKS = 6_000L;
+    private static final Map<UploadKey, Long> COMPLETED_UPLOADS = new LinkedHashMap<>();
+    /** Pending store byte count: one entry per player (at most one pending store per player). */
+    private static final Map<UUID, Integer> PENDING_STORE_BYTES = new HashMap<>();
+    private static final Map<UUID, ArrayDeque<RateEntry>> UPLOAD_RATE = new HashMap<>();
+    private static final Map<UUID, RequestWindow> DOWNLOAD_RATE = new HashMap<>();
+    private static final Map<UUID, Object> PENDING_DOWNLOADS = new HashMap<>();
+    private static final Map<UUID, DownloadSession> DOWNLOADS = new LinkedHashMap<>();
+    private static final ArrayDeque<UUID> DOWNLOAD_ORDER = new ArrayDeque<>();
+    /** Actual server tracking, not client-supplied photo ids or a permanent sharing grant. */
+    private static final Map<UUID, Set<Entity>> TRACKED_PHOTO_SOURCES = new HashMap<>();
+
+    private PhotoUploadManager() {
+    }
+
+    public static void begin(ServerPlayer player, UUID uploadId, InteractionHand hand, int totalBytes, int width, int height, String contentHash) {
+        long now = gameTime(player.server);
+        cleanupExpired(player.server, now);
+        if (acknowledgeCompleted(player, uploadId)) {
+            return;
+        }
+        UploadSession active = ACTIVE_UPLOADS.get(player.getUUID());
+        if (active != null && active.uploadId.equals(uploadId)
+                || uploadId.equals(PROCESSING_UPLOADS.get(player.getUUID()))) {
+            return;
+        }
+        if (PhotoMaintenance.isRunning() || !canUpload(player)
+                || ACTIVE_UPLOADS.containsKey(player.getUUID())
+                || PROCESSING_UPLOADS.containsKey(player.getUUID())
+                || totalBytes <= 0
+                || totalBytes > PhotoTransferLimits.MAX_COMPRESSED_BYTES
+                || !PhotoTransferLimits.isCaptureDimensions(width, height)
+                || !PhotoImageCodec.isSha256(contentHash)
+                || !quotaAllows(player.server, player.getUUID(), totalBytes)) {
+            fail(player, uploadId);
+            return;
+        }
+
+        ItemStack camera = player.getItemInHand(hand);
+        if (!camera.is(GuaniaoItems.NIKON_D750.get()) || player.getCooldowns().isOnCooldown(camera.getItem())) {
+            fail(player, uploadId);
+            return;
+        }
+        if (!reserveUploadBytes(player.getUUID(), now, totalBytes)) {
+            fail(player, uploadId);
+            return;
+        }
+
+        player.getCooldowns().addCooldown(camera.getItem(), PhotoTransferLimits.CAPTURE_COOLDOWN_TICKS);
+        ACTIVE_UPLOADS.put(player.getUUID(), new UploadSession(uploadId, totalBytes, contentHash, now));
+    }
+
+    public static void acceptChunk(ServerPlayer player, UUID uploadId, int chunkIndex, byte[] data) {
+        UploadSession session = ACTIVE_UPLOADS.get(player.getUUID());
+        if (session == null || !session.uploadId.equals(uploadId)) {
+            return;
+        }
+        if (!session.accept(chunkIndex, data)) {
+            ACTIVE_UPLOADS.remove(player.getUUID());
+            fail(player, session.uploadId);
+        }
+    }
+
+    public static void finish(ServerPlayer player, UUID uploadId) {
+        UUID playerId = player.getUUID();
+        if (acknowledgeCompleted(player, uploadId)) {
+            return;
+        }
+        UploadSession session = ACTIVE_UPLOADS.get(playerId);
+        if (session == null || !session.uploadId.equals(uploadId)) {
+            return;
+        }
+        ACTIVE_UPLOADS.remove(playerId);
+        if (!session.complete()
+                || !quotaAllows(player.server, playerId, session.totalBytes)) {
+            fail(player, session.uploadId);
+            return;
+        }
+
+        MinecraftServer server = player.server;
+        String ownerName = player.getScoreboardName();
+        long gameTime = player.level().getGameTime();
+        String filmName = captureDate();
+        String location = captureLocation(player);
+        reservePendingStore(playerId, session.totalBytes);
+        PROCESSING_UPLOADS.put(playerId, uploadId);
+
+        boolean accepted = PhotoIoService.submitMutation(
+                server, "upload:" + uploadId,
+                () -> validateAndStore(server, session),
+                result -> finishStoredUpload(server, playerId, ownerName, gameTime, filmName, location, uploadId, result),
+                throwable -> {
+                    releasePendingStore(playerId);
+                    PROCESSING_UPLOADS.remove(playerId);
+                    GuaniaoMod.LOGGER.warn("Failed to validate or store photograph for {}", ownerName, throwable);
+                    ServerPlayer online = server.getPlayerList().getPlayer(playerId);
+                    if (online != null) {
+                        fail(online, uploadId);
+                    }
+                }
+        );
+        if (!accepted) {
+            releasePendingStore(playerId);
+            PROCESSING_UPLOADS.remove(playerId);
+            fail(player, uploadId);
+        }
+    }
+
+    public static void requestDownload(ServerPlayer player, String photoId, String expectedHash) {
+        UUID playerId = player.getUUID();
+        if (!allowDownload(player)
+                || !PhotoRepository.isValidPhotoId(photoId)
+                || (!expectedHash.isEmpty() && !PhotoImageCodec.isSha256(expectedHash))
+                || PENDING_DOWNLOADS.containsKey(playerId)
+                || DOWNLOADS.containsKey(playerId)
+                || PENDING_DOWNLOADS.size() + DOWNLOADS.size() >= BirdConfigManager.maxConcurrentPhotoDownloads()) {
+            sendMissing(player, photoId);
+            return;
+        }
+        PhotoRecord indexed = PhotoIndexSavedData.get(player.server).get(photoId);
+        // Only an indexed photo may be served. A disk file with no index record is an orphan —
+        // never revive it as ACTIVE (its dimensions/hash would be fabricated). Maintenance tools
+        // are the sole path that rebuilds the index, and they go through TRASH handling.
+        if (indexed == null) {
+            sendMissing(player, photoId);
+            return;
+        }
+        if (indexed.status() != PhotoStatus.ACTIVE
+                || !expectedHash.isEmpty() && !expectedHash.equals(indexed.contentHash())) {
+            sendMissing(player, photoId);
+            return;
+        }
+
+        // A displayed or handed-over photograph must also be readable by its viewer.
+        // An id alone does not grant access; recheck the live server references below.
+        if (!canDownload(player, indexed, indexed.contentHash())) {
+            sendMissing(player, photoId);
+            return;
+        }
+
+        MinecraftServer server = player.server;
+        Object request = new Object();
+        PENDING_DOWNLOADS.put(playerId, request);
+        boolean accepted = PhotoIoService.submit(
+                server,
+                () -> loadDownload(server, photoId, expectedHash),
+                loaded -> {
+                    if (!PENDING_DOWNLOADS.remove(playerId, request)) {
+                        return;
+                    }
+                    ServerPlayer online = server.getPlayerList().getPlayer(playerId);
+                    if (online == null) {
+                        return;
+                    }
+                    PhotoIndexSavedData index = PhotoIndexSavedData.get(server);
+                    PhotoRecord record = index.get(photoId);
+                    long now = System.currentTimeMillis();
+                    if (!canDownload(online, record, loaded.contentHash)) {
+                        // Index entry vanishes (corruption/maintenance) after the file loaded:
+                        // do not resurrect a fabricated ACTIVE record; report missing.
+                        sendMissing(online, photoId);
+                        return;
+                    }
+                    index.updateFileMetadata(
+                            photoId, loaded.data.length,
+                            loaded.width, loaded.height,
+                            loaded.contentHash, now
+                    );
+                    GuaniaoNetwork.sendToPlayer(new PhotoDownloadStartPacket(
+                            photoId, true, loaded.data.length,
+                            loaded.width, loaded.height,
+                            loaded.contentHash
+                    ), online);
+                    DOWNLOADS.put(playerId, new DownloadSession(photoId, loaded.data, loaded.contentHash, gameTime(server)));
+                    DOWNLOAD_ORDER.addLast(playerId);
+                },
+                throwable -> {
+                    if (!PENDING_DOWNLOADS.remove(playerId, request)) {
+                        return;
+                    }
+                    ServerPlayer online = server.getPlayerList().getPlayer(playerId);
+                    if (online != null) {
+                        GuaniaoMod.LOGGER.debug("Unable to serve photograph {} to {}", photoId, online.getScoreboardName(), throwable);
+                        sendMissing(online, photoId);
+                    }
+                }
+        );
+        if (!accepted) {
+            PENDING_DOWNLOADS.remove(playerId, request);
+            sendMissing(player, photoId);
+        }
+    }
+
+    public static boolean allowDownload(ServerPlayer player) {
+        long now = gameTime(player.server);
+        RequestWindow window = DOWNLOAD_RATE.computeIfAbsent(player.getUUID(), ignored -> new RequestWindow(now));
+        if (now - window.startedAt >= 20L) {
+            window.startedAt = now;
+            window.requests = 0;
+        }
+        return ++window.requests <= 8;
+    }
+
+    public static void tick(MinecraftServer server) {
+        long now = gameTime(server);
+        cleanupExpired(server, now);
+        int budget = BirdConfigManager.photoDownloadBytesPerTick();
+        int sessionsThisTick = DOWNLOAD_ORDER.size();
+        for (int visited = 0; visited < sessionsThisTick && budget > 0; visited++) {
+            UUID playerId = DOWNLOAD_ORDER.pollFirst();
+            if (playerId == null) {
+                break;
+            }
+            DownloadSession session = DOWNLOADS.get(playerId);
+            ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+            if (session == null || player == null || now - session.lastProgressAt > PhotoTransferLimits.DOWNLOAD_TIMEOUT_TICKS) {
+                DOWNLOADS.remove(playerId);
+                continue;
+            }
+            if (!canDownload(player, PhotoIndexSavedData.get(server).get(session.photoId), session.contentHash)) {
+                DOWNLOADS.remove(playerId);
+                sendMissing(player, session.photoId);
+                continue;
+            }
+            int chunkBytes = session.nextChunkBytes();
+            if (chunkBytes > budget) {
+                DOWNLOAD_ORDER.addFirst(playerId);
+                break;
+            }
+            GuaniaoNetwork.sendToPlayer(session.nextPacket(), player);
+            budget -= chunkBytes;
+            // A session that keeps making progress must not be dropped while it waits in a
+            // legitimate high-concurrency queue; measure timeout from the last successful chunk.
+            session.lastProgressAt = now;
+            if (session.complete()) {
+                DOWNLOADS.remove(playerId);
+            } else {
+                DOWNLOAD_ORDER.addLast(playerId);
+            }
+        }
+    }
+
+    public static void disconnect(UUID playerId) {
+        ACTIVE_UPLOADS.remove(playerId);
+        DOWNLOAD_RATE.remove(playerId);
+        PENDING_DOWNLOADS.remove(playerId);
+        DOWNLOADS.remove(playerId);
+        DOWNLOAD_ORDER.removeIf(playerId::equals);
+        TRACKED_PHOTO_SOURCES.remove(playerId);
+    }
+
+    public static void startTracking(ServerPlayer player, Entity target) {
+        if (target instanceof PhotographEntity || target instanceof ItemEntity
+                || target instanceof ItemFrame || target instanceof LivingEntity) {
+            TRACKED_PHOTO_SOURCES.computeIfAbsent(player.getUUID(), ignored -> new HashSet<>()).add(target);
+        }
+    }
+
+    public static void stopTracking(ServerPlayer player, Entity target) {
+        Set<Entity> sources = TRACKED_PHOTO_SOURCES.get(player.getUUID());
+        if (sources != null && sources.remove(target) && sources.isEmpty()) {
+            TRACKED_PHOTO_SOURCES.remove(player.getUUID());
+        }
+    }
+
+    public static void clear() {
+        ACTIVE_UPLOADS.clear();
+        PROCESSING_UPLOADS.clear();
+        COMPLETED_UPLOADS.clear();
+        PENDING_STORE_BYTES.clear();
+        UPLOAD_RATE.clear();
+        DOWNLOAD_RATE.clear();
+        PENDING_DOWNLOADS.clear();
+        DOWNLOADS.clear();
+        DOWNLOAD_ORDER.clear();
+        TRACKED_PHOTO_SOURCES.clear();
+    }
+
+    public static int activeUploads() {
+        return ACTIVE_UPLOADS.size() + PROCESSING_UPLOADS.size();
+    }
+
+    public static int activeDownloads() {
+        return PENDING_DOWNLOADS.size() + DOWNLOADS.size();
+    }
+
+    private static CaptureJobResult validateAndStore(MinecraftServer server, UploadSession session) throws IOException {
+        byte[] jpeg = session.assemble();
+        String actualHash = PhotoImageCodec.sha256(jpeg);
+        if (!session.contentHash.equals(actualHash)) {
+            throw new IOException("Photograph hash mismatch");
+        }
+        PhotoImageCodec.Dimensions dimensions = PhotoImageCodec.validateJpeg(jpeg);
+        String photoId = UUID.randomUUID().toString();
+        PhotoRepository.storeValidated(server, photoId, jpeg);
+        return new CaptureJobResult(photoId, jpeg.length, dimensions.width(), dimensions.height(), actualHash);
+    }
+
+    private static void finishStoredUpload(
+            MinecraftServer server,
+            UUID playerId,
+            String ownerName,
+            long gameTime,
+            String filmName,
+            String location,
+            UUID uploadId,
+            CaptureJobResult result
+    ) {
+        releasePendingStore(playerId);
+        PROCESSING_UPLOADS.remove(playerId);
+        long now = System.currentTimeMillis();
+        PhotoIndexSavedData index = PhotoIndexSavedData.get(server);
+        index.register(new PhotoRecord(
+                result.photoId, playerId, ownerName, now, now, 0L, result.bytes,
+                result.width, result.height, result.contentHash, PhotoStatus.ACTIVE
+        ));
+
+        ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+        if (player == null) {
+            trashUndelivered(server, index, result.photoId, now);
+            return;
+        }
+
+        try {
+            ItemStack film = new ItemStack(GuaniaoItems.FILM.get());
+            PhotographData.writeReference(
+                    film, result.photoId, ownerName, playerId, gameTime,
+                    result.width, result.height, result.contentHash
+            );
+            film.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.translatable("item.guaniao.film.named", filmName, location));
+            if (!player.getInventory().add(film)) {
+                player.drop(film, false);
+            }
+            rememberCompleted(playerId, uploadId, gameTime(server));
+            player.level().playSound(null, player.blockPosition(), SoundEvents.ITEM_FRAME_ADD_ITEM, SoundSource.PLAYERS, 0.8F, 1.25F);
+            GuaniaoNetwork.sendToPlayer(new PhotoCaptureResultPacket(uploadId, true), player);
+        } catch (RuntimeException exception) {
+            GuaniaoMod.LOGGER.warn("Failed to deliver stored photograph {}", result.photoId, exception);
+            if (!COMPLETED_UPLOADS.containsKey(new UploadKey(playerId, uploadId))) {
+                trashUndelivered(server, index, result.photoId, now);
+                fail(player, uploadId);
+            }
+        }
+    }
+
+    private static void trashUndelivered(MinecraftServer server, PhotoIndexSavedData index, String photoId, long now) {
+        index.moveToTrash(photoId, now);
+        PhotoIoService.submitMutation(server, photoId, () -> {
+            PhotoRepository.moveToTrash(server, photoId);
+            return photoId;
+        }, ignored -> { }, throwable -> GuaniaoMod.LOGGER.warn("Failed to trash an undelivered photograph {}", photoId, throwable));
+    }
+
+    private static LoadedDownload loadDownload(MinecraftServer server, String photoId, String expectedHash) throws IOException {
+        byte[] data = PhotoRepository.load(server, photoId);
+        String hash = PhotoImageCodec.sha256(data);
+        if (!expectedHash.isEmpty() && !expectedHash.equals(hash)) {
+            throw new IOException("Photograph hash mismatch");
+        }
+        PhotoImageCodec.Dimensions dimensions = PhotoImageCodec.validateJpeg(data);
+        return new LoadedDownload(data, hash, dimensions.width(), dimensions.height());
+    }
+
+    private static boolean canDownload(ServerPlayer player, PhotoRecord record, String contentHash) {
+        return record != null && record.status() == PhotoStatus.ACTIVE
+                && contentHash.equals(record.contentHash())
+                && (player.getUUID().equals(record.owner()) || player.hasPermissions(2)
+                || hasSharedReference(player, record));
+    }
+
+    private static boolean hasSharedReference(ServerPlayer player, PhotoRecord record) {
+        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
+            if (matchesReference(player.getInventory().getItem(slot), record)) return true;
+        }
+        if (player.containerMenu.stillValid(player)) {
+            if (matchesReference(player.containerMenu.getCarried(), record)) return true;
+            for (var slot : player.containerMenu.slots) {
+                if (slot.isActive() && matchesReference(slot.getItem(), record)) return true;
+            }
+        }
+        Set<Entity> sources = TRACKED_PHOTO_SOURCES.get(player.getUUID());
+        if (sources == null) return false;
+        for (Entity source : sources) {
+            if (source.isRemoved() || source.level() != player.serverLevel()) continue;
+            if (source instanceof PhotographEntity frame && matchesReference(frame.getItem(), record)) return true;
+            if (source instanceof ItemEntity item && matchesReference(item.getItem(), record)) return true;
+            if (source instanceof ItemFrame frame && matchesReference(frame.getItem(), record)) return true;
+            if (source instanceof LivingEntity living) {
+                for (ItemStack held : living.getHandSlots()) {
+                    if (matchesReference(held, record)) return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean matchesReference(ItemStack stack, PhotoRecord record) {
+        return (stack.is(GuaniaoItems.PHOTOGRAPH.get()) || stack.is(GuaniaoItems.FILM.get()))
+                && PhotographData.hasImage(stack)
+                && record.id().equals(PhotographData.id(stack))
+                && record.contentHash().equals(PhotographData.contentHash(stack));
+    }
+
+    private static boolean canUpload(ServerPlayer player) {
+        return BirdConfigManager.photoUploadsEnabled()
+                && (!BirdConfigManager.photoUploadsOperatorOnly() || player.hasPermissions(2))
+                && (!BirdConfigManager.photoUploadsWhitelistedOnly()
+                || player.hasPermissions(2)
+                || player.server.getPlayerList().getWhiteList().isWhiteListed(player.getGameProfile()));
+    }
+
+    private static boolean quotaAllows(MinecraftServer server, UUID playerId, int bytes) {
+        PhotoIndexSavedData.Usage usage = PhotoIndexSavedData.get(server).usage(playerId);
+        int pendingWorldCount = PENDING_STORE_BYTES.size();
+        long pendingWorldBytes = PENDING_STORE_BYTES.values().stream().mapToLong(Integer::longValue).sum();
+        int pendingPlayerCount = PENDING_STORE_BYTES.containsKey(playerId) ? 1 : 0;
+        long pendingPlayerBytes = PENDING_STORE_BYTES.getOrDefault(playerId, 0);
+        return usage.playerCount() + pendingPlayerCount + 1 <= BirdConfigManager.maxPhotosPerPlayer()
+                && usage.playerBytes() + pendingPlayerBytes + bytes <= BirdConfigManager.maxPhotoBytesPerPlayer()
+                && usage.worldCount() + pendingWorldCount + 1 <= BirdConfigManager.maxPhotosPerWorld()
+                && usage.worldBytes() + pendingWorldBytes + bytes <= BirdConfigManager.maxPhotoBytesPerWorld();
+    }
+
+    private static void reservePendingStore(UUID playerId, int bytes) {
+        PENDING_STORE_BYTES.put(playerId, bytes);
+    }
+
+    private static void releasePendingStore(UUID playerId) {
+        PENDING_STORE_BYTES.remove(playerId);
+    }
+
+    private static boolean reserveUploadBytes(UUID playerId, long now, int bytes) {
+        ArrayDeque<RateEntry> entries = UPLOAD_RATE.computeIfAbsent(playerId, ignored -> new ArrayDeque<>());
+        while (!entries.isEmpty() && now - entries.peekFirst().gameTime >= 1200L) {
+            entries.removeFirst();
+        }
+        int used = entries.stream().mapToInt(RateEntry::bytes).sum();
+        if (used + bytes > PhotoTransferLimits.MAX_UPLOAD_BYTES_PER_MINUTE) {
+            return false;
+        }
+        entries.addLast(new RateEntry(now, bytes));
+        return true;
+    }
+
+    private static void cleanupExpired(MinecraftServer server, long now) {
+        COMPLETED_UPLOADS.entrySet().removeIf(entry -> now - entry.getValue() > COMPLETED_UPLOAD_TTL_TICKS);
+        ACTIVE_UPLOADS.entrySet().removeIf(entry -> {
+            UploadSession session = entry.getValue();
+            if (now - session.startedAt <= PhotoTransferLimits.UPLOAD_TIMEOUT_TICKS) {
+                return false;
+            }
+            ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
+            if (player != null) {
+                fail(player, session.uploadId);
+            }
+            return true;
+        });
+        UPLOAD_RATE.entrySet().removeIf(entry -> {
+            ArrayDeque<RateEntry> entries = entry.getValue();
+            while (!entries.isEmpty() && now - entries.peekFirst().gameTime >= 1200L) {
+                entries.removeFirst();
+            }
+            return entries.isEmpty();
+        });
+    }
+
+    private static void fail(ServerPlayer player, UUID uploadId) {
+        GuaniaoNetwork.sendToPlayer(new PhotoCaptureResultPacket(uploadId, false), player);
+    }
+
+    private static boolean acknowledgeCompleted(ServerPlayer player, UUID uploadId) {
+        if (!COMPLETED_UPLOADS.containsKey(new UploadKey(player.getUUID(), uploadId))) {
+            return false;
+        }
+        GuaniaoNetwork.sendToPlayer(new PhotoCaptureResultPacket(uploadId, true), player);
+        return true;
+    }
+
+    private static void rememberCompleted(UUID playerId, UUID uploadId, long now) {
+        COMPLETED_UPLOADS.put(new UploadKey(playerId, uploadId), now);
+        while (COMPLETED_UPLOADS.size() > MAX_COMPLETED_UPLOADS) {
+            var iterator = COMPLETED_UPLOADS.keySet().iterator();
+            iterator.next();
+            iterator.remove();
+        }
+    }
+
+    private static void sendMissing(ServerPlayer player, String photoId) {
+        GuaniaoNetwork.sendToPlayer(PhotoDownloadStartPacket.missing(photoId), player);
+    }
+
+    private static long gameTime(MinecraftServer server) {
+        return server.overworld().getGameTime();
+    }
+
+    private static String captureDate() {
+        return LocalDateTime.now().format(PHOTO_NAME_DATE);
+    }
+
+    private static String captureLocation(ServerPlayer player) {
+        BlockPos pos = player.blockPosition();
+        String dimension = player.level().dimension().location().getPath();
+        return dimension + " " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ();
+    }
+
+    private record RateEntry(long gameTime, int bytes) {
+    }
+
+    private record UploadKey(UUID playerId, UUID uploadId) {
+    }
+
+    private record CaptureJobResult(String photoId, int bytes, int width, int height, String contentHash) {
+    }
+
+    private record LoadedDownload(byte[] data, String contentHash, int width, int height) {
+    }
+
+    private static final class RequestWindow {
+        private long startedAt;
+        private int requests;
+
+        private RequestWindow(long startedAt) {
+            this.startedAt = startedAt;
+        }
+    }
+
+    private static final class UploadSession {
+        private final UUID uploadId;
+        private final int totalBytes;
+        private final String contentHash;
+        private final long startedAt;
+        private final byte[][] chunks;
+        private int receivedBytes;
+
+        private UploadSession(UUID uploadId, int totalBytes, String contentHash, long startedAt) {
+            this.uploadId = uploadId;
+            this.totalBytes = totalBytes;
+            this.contentHash = contentHash;
+            this.startedAt = startedAt;
+            this.chunks = new byte[(totalBytes + PhotoTransferLimits.MAX_CHUNK_BYTES - 1) / PhotoTransferLimits.MAX_CHUNK_BYTES][];
+        }
+
+        private boolean accept(int chunkIndex, byte[] data) {
+            if (chunkIndex < 0 || chunkIndex >= this.chunks.length) {
+                return false;
+            }
+            if (this.chunks[chunkIndex] != null) {
+                return Arrays.equals(this.chunks[chunkIndex], data);
+            }
+            int expected = Math.min(PhotoTransferLimits.MAX_CHUNK_BYTES,
+                    this.totalBytes - chunkIndex * PhotoTransferLimits.MAX_CHUNK_BYTES);
+            if (data.length != expected || this.receivedBytes + data.length > this.totalBytes) {
+                return false;
+            }
+            this.chunks[chunkIndex] = Arrays.copyOf(data, data.length);
+            this.receivedBytes += data.length;
+            return true;
+        }
+
+        private boolean complete() {
+            return this.receivedBytes == this.totalBytes && Arrays.stream(this.chunks).allMatch(chunk -> chunk != null);
+        }
+
+        private byte[] assemble() throws IOException {
+            ByteArrayOutputStream output = new ByteArrayOutputStream(this.totalBytes);
+            for (byte[] chunk : this.chunks) {
+                output.write(chunk);
+            }
+            return output.toByteArray();
+        }
+    }
+
+    private static final class DownloadSession {
+        private final String photoId;
+        private final byte[] data;
+        private final String contentHash;
+        private long lastProgressAt;
+        private int offset;
+        private int chunkIndex;
+
+        private DownloadSession(String photoId, byte[] data, String contentHash, long startedAt) {
+            this.photoId = photoId;
+            this.data = data;
+            this.contentHash = contentHash;
+            this.lastProgressAt = startedAt;
+        }
+
+        private int nextChunkBytes() {
+            return Math.min(PhotoTransferLimits.MAX_CHUNK_BYTES, this.data.length - this.offset);
+        }
+
+        private PhotoDownloadChunkPacket nextPacket() {
+            int end = Math.min(this.offset + PhotoTransferLimits.MAX_CHUNK_BYTES, this.data.length);
+            byte[] chunk = Arrays.copyOfRange(this.data, this.offset, end);
+            PhotoDownloadChunkPacket packet = new PhotoDownloadChunkPacket(this.photoId, this.chunkIndex++, chunk);
+            this.offset = end;
+            return packet;
+        }
+
+        private boolean complete() {
+            return this.offset >= this.data.length;
+        }
+    }
+}

@@ -1,0 +1,8 @@
+{
+  "values": {
+    "guaniao:bird_dropping_1": { "chance": 0.60 },
+    "guaniao:bird_dropping_2": { "chance": 0.65 },
+    "guaniao:bird_dropping_3": { "chance": 0.70 },
+    "guaniao:bird_dropping_4": { "chance": 0.75 }
+  }
+}

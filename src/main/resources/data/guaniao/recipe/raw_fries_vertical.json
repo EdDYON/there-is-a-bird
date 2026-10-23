@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "P",
+    "P"
+  ],
+  "key": {
+    "P": {
+      "item": "minecraft:potato"
+    }
+  },
+  "result": {
+    "id": "guaniao:raw_fries"
+  }
+}
