@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "guaniao:kestrel",
+    { "id": "alexsmobs:bald_eagle", "required": false }
+  ]
+}

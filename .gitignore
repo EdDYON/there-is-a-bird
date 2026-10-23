@@ -1,0 +1,102 @@
+# eclipse
+bin
+*.launch
+.settings
+.metadata
+.classpath
+.project
+
+# idea
+out
+*.ipr
+*.iws
+*.iml
+.idea
+.vscode
+
+# gradle
+build
+.gradle
+
+# other
+eclipse
+run
+logs
+crash-reports
+*.log
+*.hprof
+*.heapdump
+javac.*.args
+
+# local restore/decompile/tooling scratch
+.backup*
+.*restore*
+.tmp_*
+.tools
+
+# Files from Forge MDK
+forge*changelog.txt
+
+# Local authoring, verification, and media files
+/tools/
+/src/test/
+/src/gametest/
+/src/clientqa/
+/gradle/*.init.gradle
+__pycache__/
+/_gen_*.py
+/_measure_*.py
+/src.zip
+/src/main.zip
+/trailer-new/
+/video-production/
+
+# Private online album and local operational data
+/services/
+/memory/
+/.private*/
+/backups/
+/deploy/
+/src/main/java/EdDYON/guaniao/client/camera/album/
+/src/main/java/EdDYON/guaniao/content/camera/album/
+/src/main/java/EdDYON/guaniao/network/Album*.java
+/src/main/java/EdDYON/guaniao/client/camera/frame/FrameDesignExchange.java
+/src/main/resources/assets/guaniao/textures/gui/album/
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.sqlite
+*.sqlite3
+*.db
+
+# Local test code and launch tools
+/src/gameTest/
+/src/main/java/**/*Test*.java
+/src/main/java/**/*Smoke*.java
+/src/main/java/**/*Qa*.java
+/src/main/java/**/command/CockatooSpecialCallCommands.java
+/src/main/java/**/command/KingfisherFishingCommands.java
+/src/main/java/**/command/KiwiFightCommands.java
+/run-*/
+/build-mod.bat
+/run-client.bat
+
+# Only project documentation and repository configuration are public
+**/*.[mM][dD]
+!/README.md
+!/CHANGELOG.md
+!/CONTRIBUTING.md
+!/CODE_OF_CONDUCT.md
+!/SECURITY.md
+!/DISTRIBUTION-POLICY.md
+!/LICENSE-MODELS.md
+!/docs/SERVER_ADMIN.md
+**/.*/
+/.*
+!/.github/
+!/.github/pull_request_template.md
+!/.gitignore
+!/.gitattributes

@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "#guaniao:foods/seagull", "minecraft:baked_potato", "minecraft:cookie",
+    "minecraft:carrot", "minecraft:beetroot", "minecraft:apple", "minecraft:dried_kelp"
+  ]
+}

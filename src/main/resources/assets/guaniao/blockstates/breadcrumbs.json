@@ -1,0 +1,36 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "layers": "1"
+      },
+      "apply": {
+        "model": "guaniao:block/breadcrumbs_layer1"
+      }
+    },
+    {
+      "when": {
+        "layers": "2"
+      },
+      "apply": {
+        "model": "guaniao:block/breadcrumbs_layer2"
+      }
+    },
+    {
+      "when": {
+        "layers": "3"
+      },
+      "apply": {
+        "model": "guaniao:block/breadcrumbs_layer3"
+      }
+    },
+    {
+      "when": {
+        "layers": "4"
+      },
+      "apply": {
+        "model": "guaniao:block/breadcrumbs_layer4"
+      }
+    }
+  ]
+}

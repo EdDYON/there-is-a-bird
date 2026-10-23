@@ -1,0 +1,15 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_crafting_table": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": { "items": [{ "items": ["minecraft:crafting_table"] }] }
+    },
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": { "recipe": "guaniao:frame_workbench" }
+    }
+  },
+  "requirements": [["has_crafting_table", "has_the_recipe"]],
+  "rewards": { "recipes": ["guaniao:frame_workbench"] }
+}
